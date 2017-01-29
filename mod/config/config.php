@@ -112,7 +112,7 @@ return array(
 	'comment' => array( //评论模块设置
 		'keys' => array( //字段设置
 			'require' => 'comment_content|comment_time|post_id', //添加数据必需字段
-			'filter' => 'comment_likes|comment_time|post_id|*comment_parent', //更新数据过滤字段
+			'filter' => 'comment_time|post_id|*comment_parent', //更新数据过滤字段
 			)
 		)
 	);

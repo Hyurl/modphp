@@ -1,0 +1,5 @@
+<?php
+final class post extends mod{
+	const TABLE = 'post';
+	const PRIMKEY = 'post_id';
+}

@@ -106,18 +106,18 @@ final class mysql{
 	 * @return object           当前对象
 	 */
 	static function open($name){
+		self::$name = $name;
 		if(empty(self::$link[$name])){
 			self::$link[$name] = null;
 			if(filter_var($name, FILTER_VALIDATE_IP)){
 				self::host($name);
-			}elseif(strpos($name, '.')){
+			}else{
 				$host = gethostbyname($name);
 				if(filter_var($host, FILTER_VALIDATE_IP)){
-					self::host($host);
+					self::host($name);
 				}
 			}
 		}
-		self::$name = $name;
 		return new self;
 	}
 	/**

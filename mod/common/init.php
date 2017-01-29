@@ -5,7 +5,7 @@
 set_time_limit(0); //设置脚本不超时
 error_reporting(E_ALL & ~E_STRICT); //关闭严格性检查
 /** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '1.4.2');
+define('MOD_VERSION', '1.4.3');
 define('__TIME__', time(), true);
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true);
 define('__SCRIPT__', substr($_SERVER['SCRIPT_FILENAME'], strlen(__ROOT__)), true);
@@ -91,7 +91,7 @@ init(); //执行系统初始化
 function init(){
 	/** 系统初始化接口 */
 	$init = array('__DISPLAY__' => null);
-	do_hooks('mod.init', $init); //执行初始化回调函数
+	if(config('mod.installed')) do_hooks('mod.init', $init); //执行初始化回调函数
 	/** 设置禁止访问方法列表 */
 	if(__SCRIPT__ == 'mod.php' || __SCRIPT__ == 'ws.php'){
 		global ${'denyMds_'.__TIME__};
@@ -151,7 +151,7 @@ function init(){
 						}else{
 							$init['__DISPLAY__'] = $err404;
 						}
-					}elseif($url[0] == 'install.php'){
+					}elseif($url[0] == site_url('install.php')){
 						$init['__DISPLAY__'] = 'install.php';
 					}else{
 						$init['__DISPLAY__'] = $err403;

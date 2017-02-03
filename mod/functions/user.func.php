@@ -61,7 +61,7 @@ function is_editor(){
  */
 function is_profile($key = 0){
 	if(is_template(config('user.template'))){
-		if($key && is_int($key)){
+		if($key && is_numeric($key)){
 			return user_id() == $key;
 		}elseif($key && is_string($key)){
 			return user_name() == $key;

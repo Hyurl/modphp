@@ -7,7 +7,7 @@
 function category_tree($arg = array()){
 	static $tree = false;
 	static $sid = '';
-	if(is_int($arg)) $arg = array('category_id'=>$arg);
+	if(is_numeric($arg)) $arg = array('category_id'=>$arg);
 	if(!$tree || $arg || $sid != session_id()){
 		$sid = session_id();
 		$tree = Category::getTree($arg);
@@ -25,7 +25,7 @@ function category_tree($arg = array()){
  */
 function is_category($key = 0){
 	if(is_template(config('category.template'))){
-		if($key && is_int($key)){
+		if($key && is_numeric($key)){
 				return category_id() == $key;
 		}elseif($key && is_string($key)){
 				return category_name() == $key;

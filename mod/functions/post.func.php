@@ -9,7 +9,7 @@
  */
 function is_single($key = 0){
 	if(is_template(config('post.template'))) {
-		if($key && is_int($key)){
+		if($key && is_numeric($key)){
 			return post_id() == $key;
 		}elseif($key && is_string($key)){
 			return post_title() == $key;

@@ -708,7 +708,7 @@ function register_module_functions($table = ''){
 			static $_act = "getMulti";
 			static $i = 0;
 			static $sid = "";
-			if(is_int($arg)){
+			if(is_numeric($arg)){
 				if(isset($result["data"][$arg])){
 					$i = $arg;
 					return the_'.$table.'($result["data"][$i]);
@@ -757,7 +757,7 @@ function register_module_functions($table = ''){
 			static $result = array();
 			static $_arg = array();
 			static $sid = "";
-			if(is_int($arg)) $arg = array("'.$primkey.'"=>$arg);
+			if(is_numeric($arg)) $arg = array("'.$primkey.'"=>$arg);
 			if(!$result || (is_assoc($arg) && $_arg != $arg) || $sid != session_id()){
 				the_'.$table.'(null);
 				$result = array();

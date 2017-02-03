@@ -5,7 +5,7 @@
 set_time_limit(0); //设置脚本不超时
 error_reporting(E_ALL & ~E_STRICT); //关闭严格性检查
 /** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '1.4.3');
+define('MOD_VERSION', '1.4.5');
 define('__TIME__', time(), true);
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true);
 define('__SCRIPT__', substr($_SERVER['SCRIPT_FILENAME'], strlen(__ROOT__)), true);
@@ -48,8 +48,6 @@ function pre_init(){
 		session_set_cookie_params(0, $path);
 		if(!empty($_COOKIE[session_name()])) session_start();
 	}
-	/** 加载自动备份/恢复程序 */
-	include_once __ROOT__.'mod/common/recover.php';
 	/** 配置模板引擎 */
 	$compiler = config('mod.template.compiler');
 	template::$rootDir = __ROOT__;
@@ -89,6 +87,8 @@ unset($dir, $file, $path); //释放变量
 @include_once template_path('function.php');
 init(); //执行系统初始化
 function init(){
+	/** 加载自动恢复程序 */
+	include_once __ROOT__.'mod/common/recover.php';
 	/** 系统初始化接口 */
 	$init = array('__DISPLAY__' => null);
 	if(config('mod.installed')) do_hooks('mod.init', $init); //执行初始化回调函数

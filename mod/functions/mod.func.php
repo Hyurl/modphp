@@ -320,7 +320,7 @@ function is_display($file){
  * @return boolean
  */
 function is_template($file = ''){
-	$dp = defined('__DISPLAY__') ? __DISPLAY__ : template_file();
+	$dp = defined('__DISPLAY__') ? __DISPLAY__ : config('mod.template.savePath').template_file();
 	if(!$file || $file[strlen($file)-1] == '/') return stripos($dp, config('mod.template.savePath').$file) === 0;
 	else return is_display(config('mod.template.savePath').$file);
 }
@@ -335,14 +335,10 @@ function is_home(){
  * @return boolean 
  */
 function is_client_call($obj = '', $act = ''){
-	$obj = strtolower($obj);
-	$act = strtolower($act);
-	$_obj = strtolower(@$_GET['obj']);
-	$_act = strtolower(@$_GET['act']);
-	if(!$_obj && !$_act) return false;
-	elseif($obj && $act) return $_obj == $obj && $_act == $act;
-	elseif($obj) return $_obj == $obj;
-	elseif($act) return $_act == $act;
+	if(empty($_GET['obj']) && empty($_GET['act'])) return false;
+	elseif($obj && $act) return !strcasecmp($obj, @$_GET['obj']) && !strcasecmp($act, @$_GET['act']);
+	elseif($obj) return !strcasecmp($obj, @$_GET['obj']);
+	elseif($act) return !strcasecmp($act, @$_GET['act']);
 	else return true;
 }
 /**
@@ -564,12 +560,14 @@ function get_template_file($url = '', $tpldir = '', $rootURL = '', $isTop = true
  * @param  string $url 设置 URL 地址，不设置则为当前地址
  * @return string      模板文件名
  */
-function template_file($url = ''){
+function template_file($url = '', $set = false){
 	static $file = '';
-	if($file !== '' && !$url) return $file;
 	if(!$url && __SCRIPT__ == 'mod.php' && isset($_SERVER['HTTP_REFERER'])){
 		$url = $_SERVER['HTTP_REFERER'];
+	}elseif(__SCRIPT__ == 'ws.php' && $set){
+		return $file = $url;
 	}
+	if($file !== '' && !$url) return $file;
 	$url = $url ?: url();
 	$uri = strstr($url, '?', true) ?: $url;
 	$template = config('mod.template.savePath');
@@ -577,6 +575,8 @@ function template_file($url = ''){
 		return $file = config('site.home.template');
 	}elseif(stripos($uri, site_url()) === 0){
 		$uri = substr($uri, strlen(site_url()));
+	}elseif(strpos($uri, '://') !== false){
+		return $file = __SCRIPT__;
 	}
 	$uri = rtrim($uri, '/');
 	$tpl = get_template_file($url, $template, site_url());
@@ -901,7 +901,7 @@ function register_module_functions($table = ''){
  * @param string $file 错误页面文件名（相对于模板目录）
  */
 function report_http_error($code, $msg = ''){
-	$uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : __DISPLAY__;
+	$uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : (defined('__DISPLAY__') ? __DISPLAY__ : __SCRIPT__);
 	$status = array(
 		403 => 'Forbidden',
 		404 => 'Not Found',
@@ -912,6 +912,10 @@ function report_http_error($code, $msg = ''){
 		404 => "<p>The requested URL ".$uri." was not found on this server.</p>",
 		500 => "<p>The server encountered an internal error or misconfiguration and was unable to complete your request.</p><p>Please contact the server administrator".(isset($_SERVER['SERVER_ADMIN']) ? ", {$_SERVER['SERVER_ADMIN']}" : '')." and inform them of the time the error occurred, and anything you might have done that may have caused the error.</p>\n\t<p>More information about this error may be available in the server error log.</p>",
 		);
+	if(is_websocket()){
+		websocket::send(json_encode(error($msg ?: "$code {$status[$code]}", array('status'=>$code, 'statusText'=>$status[$code], 'obj'=>$_GET['obj'], 'act'=>$_GET['act']))));
+		return;
+	}
 	$file = config('site.errorPage.'.$code);
 	$file = $file ? template_path($file) : false;
 	Header('HTTP/1.1 '.$code.' '.$status[$code]);

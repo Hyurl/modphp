@@ -445,7 +445,7 @@ function is_ajax(){
  * @return boolean
  */
 function is_curl(){
-	return is_agent() && (empty($_SERVER['HTTP_USER_AGENT']) || stripos($_SERVER['HTTP_USER_AGENT'], 'curl/') === 0);
+	return is_agent() && (empty($_SERVER['HTTP_USER_AGENT']) || stripos($_SERVER['HTTP_USER_AGENT'], 'curl/') === 0 || empty($_SERVER['HTTP_CONNECTION']));
 }
 /**
  * is_post() 判断当前是否为 POST 请求
@@ -613,6 +613,7 @@ function curl($options = array()){
 		'username'=>'', //HTTP 访问认证用户名;
 		'password'=>'', //HTTP 访问认证密码;
 		'charset'=>'', //目标页面编码
+		'parseJSON'=>false, //解析 JSON
 		'success'=>null, //请求成功时的回调函数
 		'error'=>null, //请求失败时的回调函数
 		'extra'=>array() //其他 CURL 选项参数
@@ -624,7 +625,7 @@ function curl($options = array()){
 	if($data && is_array($data) && !is_assoc($data)){
 		$data = explode_assoc(implode('&', $data), '&', '=');
 	}
-	if(strtolower($method) == 'post') {
+	if(strtolower($method) == 'post'){
 		curl_setopt($ch, CURLOPT_POST, 1);
 		curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 	}else{
@@ -668,11 +669,7 @@ function curl($options = array()){
 	}
 	if(curl_errno($ch)){
 		$curlInfo['error'] = curl_error($ch);
-		curl_info($curlInfo);
-		if(is_callable($error)){
-			curl_info('error', $error(curl_info('error')));
-		}
-		return curl_info('error');
+		goto returnError;
 	}
 	curl_close($ch);
 	if(!$charset){
@@ -692,12 +689,23 @@ function curl($options = array()){
 	if(strtolower(str_replace('-', '', $charset)) != 'utf8') $data = iconv($charset, 'UTF-8', $data);
 	$curlInfo['response_headers'] = parse_header(substr($data, 0, $curlInfo['header_size']));
 	$data = unicode_decode(substr($data, $curlInfo['header_size']));
+	if($curlInfo['http_code'] >= 400){
+		$curlInfo['error'] = $data;
+		goto returnError;
+	}
+	if(stripos($curlInfo['content_type'], 'application/json') !== false && $parseJSON) $data = json_decode($data, true);
 	curl_info($curlInfo);
 	if(is_callable($success)){
 		$_data = $success($data);
 		if(!is_null($_data)) $data = $_data;
 	}
 	return $data;
+	returnError:
+	curl_info($curlInfo);
+	if(is_callable($error)){
+		curl_info('error', $error(curl_info('error')));
+	}
+	return curl_info('error');
 }
 /**
  * curl_info() 函数获取 CURL 请求的相关信息，需要运行在 curl() 函数之后
@@ -719,8 +727,8 @@ function curl_info($key = '', $value = null){
 }
 /**
  * curl_cookie_str() 获取 CURL 响应头中的 Cookie 字符串
- * @param  boolean $withSentCooke 返回值包含发送的 Cookie(如果有)
- * @return string                 返回所有的 Cookie 字符串
+ * @param  boolean $withSentCookie 返回值包含发送的 Cookie(如果有)
+ * @return string                  返回所有的 Cookie 字符串
  */
 function curl_cookie_str($withSentCookie = false){
 	$cookie = '';
@@ -749,6 +757,7 @@ function curl_cookie_str($withSentCookie = false){
  * @return string                  请求结果
  */
 function http_post($url, $data, $success = null, $error = null){
+	trigger_error('function http_post() is not advisable for use, it might be removed in the future.', E_USER_WARNING);
 	return curl(array('url'=>$url, 'method'=>'post', 'data'=>$data, 'success'=>$success, 'error'=>$error));
 }
 /**
@@ -759,6 +768,7 @@ function http_post($url, $data, $success = null, $error = null){
  * @return string                     请求结果
  */
 function http_get($url, $success = null, $error = null){
+	trigger_error('function http_get() is not advisable for use, it might be removed in the future.', E_USER_WARNING);
 	return curl(array('url'=>$url, 'success'=>$success, 'error'=>$error));
 }
 /**
@@ -771,8 +781,8 @@ function parse_header($str){
 	$_headers = array();
 	$__headers = array();
 	foreach($headers as $header){
-		if($i = strpos($header, ':')){
-			$header = array(strstr($header, ':', true), trim(substr($header, $i+1)));
+		if($i = strpos($header, ': ')){
+			$header = array(strstr($header, ': ', true), trim(substr($header, $i+1)));
 			if(array_key_exists($header[0], $_headers)){
 			   if(!is_array($_headers[$header[0]])) $_headers[$header[0]] = array($_headers[$header[0]]);
 			   array_push($_headers[$header[0]], $header[1]);

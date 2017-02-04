@@ -562,6 +562,8 @@ function get_template_file($url = '', $tpldir = '', $rootURL = '', $isTop = true
  */
 function template_file($url = '', $set = false){
 	static $file = '';
+	static $_file = '';
+	static $sid = null;
 	if(!$url && __SCRIPT__ == 'mod.php' && isset($_SERVER['HTTP_REFERER'])){
 		$url = $_SERVER['HTTP_REFERER'];
 	}elseif(__SCRIPT__ == 'ws.php' && $set){
@@ -618,7 +620,11 @@ function template_file($url = '', $set = false){
 						if(isset($where) && ($result = mysql::open(0)->select($k, "{$k}_id", $where)) && $result->num_rows){
 							if(__SCRIPT__ == 'index.php') $_GET = array_merge($_GET, $args);
 							$file = $config[$k]['template'];
-							$get($_GET);
+							if($_file !== $file || $sid !== session_id()){
+								$_file = $file;
+								$sid = session_id();
+								$get($_GET);
+							}
 							return $file;
 						}
 					}
@@ -631,7 +637,11 @@ function template_file($url = '', $set = false){
 					$result = mysql::open(0)->select($k, "{$k}_id", "`{$k}_link` = '{$link}'");
 					if($result && $result->num_rows){
 						$file = $config[$k]['template'];
-						$get(array($k.'_link'=>$link));
+						if($_file !== $file || $sid !== session_id()){
+							$_file = $file;
+							$sid = session_id();
+							$get(array($k.'_link'=>$link));
+						}
 						return $file;
 					}
 				}

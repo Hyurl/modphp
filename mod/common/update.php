@@ -54,7 +54,7 @@ foreach($database as $table => $fields){
 		foreach ($fields as $field => $attr) {
 			$sql .= "`{$field}` {$attr}, ";
 		}
-		$sql .= ') DEFAULT CHARSET=utf8';
+		$sql .= ') ENGINE=InnoDB DEFAULT CHARSET=utf8';
 		mysql::query(str_replace(', )', ')', $sql));
 	}
 }

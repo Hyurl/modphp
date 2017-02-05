@@ -187,7 +187,7 @@ function init(){
 			if(isset($_GET['obj'], $_GET['act'])){
 				$obj = strtolower($_GET['obj']);
 				$act = $_GET['act'];
-				if($obj != 'mod' && !is_subclass_of($obj, 'mod') || (!method_exists($obj, $act) && !is_object(hooks($obj.'.'.$act))) || in_array($obj.'::'.$act, ${'denyMds_'.__TIME__})){
+				if($obj != 'mod' && !is_subclass_of($obj, 'mod') || (!method_exists($obj, $act) && !is_callable(hooks($obj.'.'.$act))) || in_array($obj.'::'.$act, ${'denyMds_'.__TIME__})){
 					define('__DISPLAY__', $err403, true);
 				}else if($init['__DISPLAY__']){
 				 	define('__DISPLAY__', $init['__DISPLAY__'], true);
@@ -307,7 +307,7 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 		}elseif($key = array_search($event['client'], $WS_SESS)){
 			session_retrieve($key); //重现会话
 		}
-		if(($obj == 'mod' || is_subclass_of($obj, 'mod')) && (method_exists($obj, $act) || is_object(hooks($obj.'.'.$act))) && !in_array($obj.'::'.$act, ${'denyMds_'.__TIME__})){
+		if(($obj == 'mod' || is_subclass_of($obj, 'mod')) && (method_exists($obj, $act) || is_callable(hooks($obj.'.'.$act))) && !in_array($obj.'::'.$act, ${'denyMds_'.__TIME__})){
 			unset(${'denyMds_'.__TIME__});
 			$uid = me_id();
 			sendResult:

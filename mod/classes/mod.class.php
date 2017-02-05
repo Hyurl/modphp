@@ -343,8 +343,8 @@ class mod{
 			if(!empty($arg['upgrade'])){
 				if(empty($arg['src']) || empty($arg['md5'])) return error(lang('mod.missingArguments'));
 				$file = 'modphp_'.__TIME__.'.zip';
-				file_put_contents($file, @curl(array('url'=>$arg['src'], 'followLocation'=>1)));
-				if(md5_file($file) == $arg['md5']){
+				$len = file_put_contents($file, @file_get_contents($arg['src']) ?: @curl(array('url'=>$arg['src'], 'followLocation'=>1)));
+				if($len && md5_file($file) == $arg['md5']){
 					$ok = zip_extract($file, __ROOT__);
 					export(load_config_file('config.php'), __ROOT__.'user/config/config.php');
 				}

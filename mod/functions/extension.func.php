@@ -412,7 +412,8 @@ function is_img($src, $strict = false){
  * @return boolean
  */
 function is_agent($agent = ''){
-	if(!isset($_SERVER['HTTP_USER_AGENT']) && !isset($_SERVER['HTTP_HOST'])) return false;
+	if(!isset($_SERVER['HTTP_HOST'])) return false;
+	if($agent === true || $agent === 1) return !empty($_SERVER['HTTP_USER_AGENT']);
 	return $agent ? stripos(@$_SERVER['HTTP_USER_AGENT'], $agent) !== false : true;
 }
 /**
@@ -421,7 +422,7 @@ function is_agent($agent = ''){
  * @return boolean
  */
 function is_browser($agent = ''){
-	return is_agent($agent) && !is_curl();
+	return isset($_SERVER['HTTP_USER_AGENT']) && is_agent($agent) && !is_curl();
 }
 /**
  * is_mobile() 判断当前是否为手机浏览器访问
@@ -435,17 +436,17 @@ function is_mobile($agent = ''){
 }
 /**
  * is_ajax() 判断当前是否为 AJAX 请求
- * @return boolean 
+ * @return boolean
  */
 function is_ajax(){
-	return is_agent() && !is_curl() && (strtolower(@$_SERVER["HTTP_X_REQUESTED_WITH"]) == 'xmlhttprequest' || !empty($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ACCEPT'] == '*/*');
+	return is_agent() && !is_curl() && !empty($_SERVER['HTTP_CONNECTION']) && (strtolower(@$_SERVER["HTTP_X_REQUESTED_WITH"]) == 'xmlhttprequest' || !empty($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ACCEPT'] == '*/*');
 }
 /**
  * is_curl() 判断当前是否为 CURL 请求
  * @return boolean
  */
 function is_curl(){
-	return is_agent() && (empty($_SERVER['HTTP_USER_AGENT']) || stripos($_SERVER['HTTP_USER_AGENT'], 'curl/') === 0 || empty($_SERVER['HTTP_CONNECTION']));
+	return is_agent() && !empty($_SERVER['HTTP_ACCEPT']) && (empty($_SERVER['HTTP_USER_AGENT']) || stripos($_SERVER['HTTP_USER_AGENT'], 'curl/') === 0 || empty($_SERVER['HTTP_CONNECTION']));
 }
 /**
  * is_post() 判断当前是否为 POST 请求

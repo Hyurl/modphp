@@ -693,7 +693,7 @@ function curl($options = array()){
 		$curlInfo['error'] = $data;
 		goto returnError;
 	}
-	if(stripos($curlInfo['content_type'], 'application/json') !== false && $parseJSON) $data = json_decode($data, true);
+	if(stripos($curlInfo['content_type'], 'application/json') !== false || $parseJSON) $data = json_decode($data, true);
 	curl_info($curlInfo);
 	if(is_callable($success)){
 		$_data = $success($data);
@@ -747,29 +747,6 @@ function curl_cookie_str($withSentCookie = false){
 		$cookie .= $reqHr['Cookie'];
 	}
 	return rtrim($cookie, '; ');
-}
-/**
- * http_post() 进行远程 POST 请求
- * @param  string         $url     URL 地址
- * @param  array|string   $data    POST 数据
- * @param  callable       $success 请求成功的回调函数
- * @param  callable       $error   请求失败的回调函数
- * @return string                  请求结果
- */
-function http_post($url, $data, $success = null, $error = null){
-	trigger_error('function http_post() is not advisable for use, it might be removed in the future.', E_USER_WARNING);
-	return curl(array('url'=>$url, 'method'=>'post', 'data'=>$data, 'success'=>$success, 'error'=>$error));
-}
-/**
- * http_get() 进行远程 GET 请求
- * @param  string   $url     URL 地址
- * @param  callable $success 请求成功的回函数
- * @param  callable $error   请求失败的回调函数
- * @return string                     请求结果
- */
-function http_get($url, $success = null, $error = null){
-	trigger_error('function http_get() is not advisable for use, it might be removed in the future.', E_USER_WARNING);
-	return curl(array('url'=>$url, 'success'=>$success, 'error'=>$error));
 }
 /**
  * parse_header() 解析头部信息为关联数组

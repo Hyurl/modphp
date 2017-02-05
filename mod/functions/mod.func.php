@@ -349,26 +349,43 @@ function is_websocket(){
 	return @$_SERVER['WEBSOCKET'] == 'on';
 }
 /** detect_site_url() 检测网站根目录地址 */
-function detect_site_url(){
-	if(!is_agent()) return false;
+function detect_site_url($header = '', $host = ''){
 	static $siteUrl = '';
-	if($siteUrl) return $siteUrl;
-	$docRoot = $_SERVER['DOCUMENT_ROOT'];
+	$docRoot = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
+	$script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
 	if(is_link($docRoot)) $docRoot = readlink($docRoot);
-	$docRoot = rtrim($docRoot, '/').'/';
-	$script = $_SERVER['SCRIPT_NAME'];
+	if($docRoot) $docRoot = rtrim($docRoot, '/').'/';
+	$notAgent = strpos($script, __ROOT__) === 0;
+	if($siteUrl && !$header || ($notAgent && !$header)) return $siteUrl;
+	if($notAgent && $header){
+		if(!function_exists('get_document_root')){
+			function get_document_root($path){
+				if(!$path || $path == '/') return __ROOT__;
+				$i = strrpos(__ROOT__, $path);
+				if($i !== false && $i == (strlen(__ROOT__) - strlen($path))){
+					return substr(__ROOT__, 0, $i);
+				}else{
+					$path = rtrim($path, '/');
+					$path = substr($path, 0, strrpos($path, '/')+1);
+					return get_document_root($path);
+				}
+			}
+		}
+		$header = explode(' ', $header);
+		$path = strstr($header[1], '?', true) ?: $header[1];
+		$path = substr($path, 1, strrpos($path, '/')+1);
+		$docRoot = get_document_root($path);
+		$scheme = is_ssl() ? 'https' : 'http';
+		$port = is_ssl() ? '443' : '';
+		$host = strstr($host, ':', true) ?: $host;
+	}
 	if(stripos(__ROOT__, $docRoot) === 0){
 		$sitePath = substr(__ROOT__, strlen($docRoot));
 	}else{
-		$sitePath = substr($script, 0, strrpos($script, '/')+1);
+		$sitePath = substr($script, 1, strrpos($script, '/')+1);
 	}
-	$sitePath = ltrim($sitePath, '/');
-	$url = parse_url(url());
-	$siteUrl = $url['scheme'].'://'.$url['host'].(isset($url['port']) ? ':'.$url['port'] : '').'/'.$sitePath;
-	if(stripos(url(), $siteUrl) === 0){
-		$siteUrl = substr(url(), 0, strlen($siteUrl));
-	}
-	return $siteUrl;
+	if(!$notAgent) extract(parse_url(url()));
+	return $siteUrl = $scheme.'://'.$host.(!empty($port) ? ':'.$port : '').'/'.$sitePath;
 }
 /**
  * site_url() 获取网站根目录地址
@@ -960,3 +977,22 @@ foreach (array(403, 404, 500) as $code) {
 	}');
 }
 unset($code);
+/**
+ * websocket_retrieve_session() WebSocket 模式下重现会话
+ * @param  string $sid   会话 ID
+ * @param  array  $event 事件
+ * @return bool
+ */
+function websocket_retrieve_session($sid, $event){
+	global $WS_SESS, $WS_USER;
+	if(session_retrieve($sid)){  //重现会话
+		$WS_SESS[session_id()] = $event['client']; //将会话 ID 和 WebSocket 客户端绑定
+		$uid = me_id();
+		if(!isset($WS_USER[$uid])) $WS_USER[$uid] = array();
+		if(!in_array($event['client'], $WS_USER[$uid])){
+			array_push($WS_USER[$uid], $event['client']); //将用户 ID 和 WebSocket 客户端绑定
+		}
+		return true;
+	}
+	return false;
+}

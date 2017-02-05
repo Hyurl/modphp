@@ -5,7 +5,7 @@
 set_time_limit(0); //设置脚本不超时
 error_reporting(E_ALL & ~E_STRICT); //关闭严格性检查
 /** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '1.4.9');
+define('MOD_VERSION', '1.5.1');
 define('__TIME__', time(), true);
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true);
 define('__SCRIPT__', substr($_SERVER['SCRIPT_FILENAME'], strlen(__ROOT__)), true);
@@ -240,11 +240,22 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 	if(!file_exists($file = __ROOT__.'.websocket')) file_put_contents($file, 'on');
 	$file = fopen($file, 'r');
 	if(!flock($file, LOCK_EX | LOCK_NB)) report_500('WebSocket has been already started.');
-	$WS_SESS = $WS_USER = array();
-	WebSocket::on('open', function($event){
+	/** 设置 WS 全局变量 */
+	$WS_SESS = $WS_USER = $WS_HEADER = array();
+	WebSocket::on('open', function($event){ //绑定连接事件
+		global $WS_HEADER;
 		do_hooks('WebSocket.open', $event);
-	})->on('message', function($event){
-		global $WS_SESS, $WS_USER, ${'denyMds_'.__TIME__};
+		if(isset($event['request_headers']['Cookie'])){
+			$cookie = explode_assoc($event['request_headers']['Cookie'], '; ', '=');
+			$sname = session_name();
+			if(!empty($cookie[$sname])){
+				websocket_retrieve_session($cookie[$sname], $event);
+			}
+		}
+		$i = (int)$event['client'];
+		if(!isset($WS_HEADER[$i])) $WS_HEADER[$i] = $event['request_headers'];
+	})->on('message', function($event){ //绑定消息事件
+		global $WS_SESS, $WS_USER, $WS_HEADER, ${'denyMds_'.__TIME__};
 		do_hooks('WebSocket.message', $event);
 		if(error()) if(error()) goto sendResult;
 		$data = json_decode($event['data'], true);
@@ -253,7 +264,16 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 		$obj = strtolower($_GET['obj']);
 		$act = $_GET['act'];
 		unset($data['obj'], $data['act']);
-		if(isset($data['HTTP_REFERER'])){
+		$i = (int)$event['client'];
+		detect_site_url($WS_HEADER[$i][0], $WS_HEADER[$i]['Host']);
+		if(isset($data['HTTP_REFERER']) || isset($WS_HEADER[$i][0])){
+			if(empty($data['HTTP_REFERER'])){
+				$header = explode(' ', $WS_HEADER[$i][0]);
+				$scheme = is_ssl() ? 'https' : 'http';
+				$port = is_ssl() ? ':443' : '';
+				$host = strstr($WS_HEADER[$i]['Host'], ':', true) ?: $WS_HEADER[$i]['Host'];
+				$data['HTTP_REFERER'] = $scheme.'://'.$host.$port.$header[1];
+			}
 			$url = explode('?', $data['HTTP_REFERER']);
 			if($url[0] == site_url('ws.php') || $url[0] == site_url('mod.php')){
 				template_file(config('site.errorPage.403'), true);
@@ -283,26 +303,17 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 		}
 		$sname = session_name();
 		if(!empty($data[$sname])){
-			if(session_retrieve($data[$sname])){  //重现会话
-				$WS_SESS[session_id()] = $event['client']; //将会话 ID 和 WebSocket 客户端绑定
-				$uid = get_me('id');
-				if(!isset($WS_USER[$uid])) $WS_USER[$uid] = array();
-				if(!in_array($event['client'], $WS_USER[$uid])){
-					array_push($WS_USER[$uid], $event['client']); //将用户 ID 和 WebSocket 客户端绑定
-				}
-			}else goto forbidden;
+			if(!websocket_retrieve_session($data[$sname], $event)) goto forbidden;
 		}elseif($key = array_search($event['client'], $WS_SESS)){
 			session_retrieve($key); //重现会话
 		}
 		if(($obj == 'mod' || is_subclass_of($obj, 'mod')) && (method_exists($obj, $act) || is_object(hooks($obj.'.'.$act))) && !in_array($obj.'::'.$act, ${'denyMds_'.__TIME__})){
 			unset(${'denyMds_'.__TIME__});
-			if($obj == 'user' && !strcasecmp('logout', $act) && is_logined()){
-				$uid = get_me('id');
-			}
+			$uid = me_id();
 			sendResult:
 			if(!error()) do_hooks('mod.client.call', $data);
 			$result = error() ?: $obj::$act($data);
-			WebSocket::send(json_encode(array_merge($result, array('obj'=>$_GET['obj'], 'act'=>$_GET['act'])))); //发送 JSON 结果
+			WebSocket::send(json_encode(array_merge($result, array('obj'=>$_GET['obj'], 'act'=>$_GET['act'], 'template'=>template_file())))); //发送 JSON 结果
 			if($obj == 'user' && $result['success']){
 				if(!strcasecmp('login', $act)){
 					$WS_SESS[session_id()] = $event['client'];
@@ -311,11 +322,10 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 					if(!in_array($event['client'], $WS_USER[$uid])){
 						array_push($WS_USER[$uid], $event['client']); //将用户 ID 和 WebSocket 客户端绑定
 					}
-				}elseif(!strcasecmp('logout', $act)){
+				}elseif(!strcasecmp('logout', $act) && $uid){
 					unset($WS_SESS[session_id()]);
-					if($i = array_search($event['client'], $WS_USER[$uid])){
-						unset($WS_USER[$uid][$i]);
-					}
+					$i = array_search($event['client'], $WS_USER[$uid]);
+					if($i !== false) unset($WS_USER[$uid][$i]);
 					if(!$WS_USER[$uid]) unset($WS_USER[$uid]);
 				}
 			}
@@ -326,10 +336,20 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 			report_403();
 		}
 		template_file('', true);
-	})->on('error', function($event){
+	})->on('error', function($event){ //绑定错误事件
 		do_hooks('WebSocket.error', $event);
-	})->on('close', function($event){
+	})->on('close', function($event){ //绑定关闭事件
+		global $WS_SESS, $WS_USER, $WS_HEADER;
 		do_hooks('WebSocket.close', $event);
+		$i = (int)$event['client'];
+		unset($WS_HEADER[$i]);
+		if($key = array_search($event['client'], $WS_SESS)) unset($WS_SESS[$key]);
+		if(is_logined()){
+			$uid = me_id();
+			$i = array_search($WS_USER[$uid], $event['client']);
+			if($i !== false) unset($WS_USER[$uid][$i]);
+			if(!$WS_USER[$uid]) unset($WS_USER[$uid]);
+		}
 	})->listen(config('mod.websocketPort'), function($socket){
 		echo "WebSocket $socket started on ".config('mod.websocketPort')." at ".date('Y-m-d H:i:s').".\n";
 	});

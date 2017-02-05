@@ -139,7 +139,7 @@
 						<h3>更新内核版本</h3>
 						<?php
 						if(function_exists('curl_version')){
-							$ver = @json_decode(curl($host.'version'), true);
+							$ver = @json_decode(file_get_contents($host.'version'), true) ?: @curl(array('url'=>$host.'version', 'parseJSON'=>true));
 							if($ver){
 								$gt = version_compare($ver['version'], MOD_VERSION);
 								if($gt > 0){

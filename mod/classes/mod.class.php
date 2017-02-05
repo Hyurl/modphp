@@ -9,7 +9,7 @@ class mod{
 	/** __callStatic() 动态添加方法 */
 	final static function __callStatic($method, $args){
 		$api = get_class(new static).'.'.$method;
-		if(is_object(hooks($api))){
+		if(is_callable(hooks($api))){
 			do_hooks($api, $args[0]);
 			return $args[0];
 		}else{

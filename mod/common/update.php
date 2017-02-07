@@ -58,5 +58,6 @@ foreach($database as $table => $fields){
 		mysql::query(str_replace(', )', ')', $sql));
 	}
 }
+$config['mod']['installed'] = true;
 config($config);
 export(config(), __ROOT__.'user/config/config.php'); //更新配置文件

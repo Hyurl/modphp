@@ -2,10 +2,11 @@
 /**
  * 系统初始化程序，加载系统运行所需的各类文件及配置
  */
+if(version_compare(PHP_VERSION, '5.3.0') < 0) exit('PHP version lower 5.3.0, unable to start ModPHP.');
 set_time_limit(0); //设置脚本不超时
 error_reporting(E_ALL & ~E_STRICT); //关闭严格性检查
 /** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '1.5.2');
+define('MOD_VERSION', '1.5.4');
 define('__TIME__', time(), true);
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true);
 define('__SCRIPT__', substr($_SERVER['SCRIPT_FILENAME'], strlen(__ROOT__)), true);
@@ -126,9 +127,9 @@ function init(){
 						define('__DISPLAY__', $init['__DISPLAY__'], true);
 					}else{
 						$err = trim(config('site.maintenance.report'));
-						if(stripos($err, 'is_403') === 0){
+						if(stripos($err, 'report_403') === 0){
 							define('__DISPLAY__', $err403, true);
-						}elseif(stripos($err, 'is_500') === 0){
+						}elseif(stripos($err, 'report_500') === 0){
 							define('__DISPLAY__', $err500, true);
 						}else{
 							define('__DISPLAY__', $err404, true);
@@ -151,10 +152,8 @@ function init(){
 						}else{
 							$init['__DISPLAY__'] = $err404;
 						}
-					}elseif($url[0] == site_url('install.php')){
-						$init['__DISPLAY__'] = 'install.php';
 					}else{
-						$init['__DISPLAY__'] = $err403;
+						$init['__DISPLAY__'] = substr($url[0], strlen(site_url()));
 					}
 				}
 			}
@@ -196,9 +195,9 @@ function init(){
 				define('__DISPLAY__', $err403, true);
 			}
 		}
+		conv_request_vars(); //转换表单请求参数
 	}
 	if(!defined('__DISPLAY__') && __SCRIPT__ != 'ws.php') define('__DISPLAY__', __SCRIPT__, true);
-	conv_request_vars(); //转换表单请求参数
 }
 /** 打开输出缓冲区 */
 ob_start(null, config('mod.outputBuffering'));
@@ -215,8 +214,7 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 	}else report_403();
 }elseif(is_agent() && __SCRIPT__ == 'index.php'){ /** 载入模板文件 */
 	/** 如果系统未安装则跳转到安装页面 */
-	if(!config('mod.installed') && is_agent()) {
-		install:
+	if(!config('mod.installed')){
 		redirect(site_url('install.php'));
 	}else{
 		do_hooks('mod.template.load'); //在载入模板前执行挂钩回调函数

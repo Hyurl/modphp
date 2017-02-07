@@ -69,7 +69,7 @@ final class template{
 				if(strpos($file, self::$rootDir) === 0){
 					$file = self::compile($file, false);
 				}
-				if($file) $code[] = "@include '".substr($file, 0, strrpos($file, '.')).".php'";
+				if($file) $code[] = "include '".substr($file, 0, strrpos($file, '.')).".php'";
 			}
 			$code = implode('; ', $code);
 		}elseif($tagName == 'case'){

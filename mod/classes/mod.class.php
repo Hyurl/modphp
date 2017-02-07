@@ -238,8 +238,7 @@ class mod{
 			static::configFilter($arg);
 			config($arg);
 			include __ROOT__.'mod/common/update.php'; //调用执行数据库更新程序
-			config('mod.installed', true); //更新系统安装状态
-			export(config(), __ROOT__.'user/config/config.php'); //写出配置文件
+			if(error()) return error();
 			/** 切换至用户模块以添加管理员用户 */
 			$user = array(
 				'user_name'     => $username,
@@ -351,6 +350,7 @@ class mod{
 				unlink($file);
 			}else{
 				include __ROOT__.'mod/common/update.php'; //调用执行数据库更新程序
+				if(error()) return error();
 				$ok = true;
 			}
 			return $ok ? success(lang('mod.updated')) : error(lang('mod.updateFailed', ''));

@@ -152,9 +152,11 @@ final class file extends mod{
 			$result = parent::delete($arg);
 			if(error()) return error();
 			$src = file_src();
-			if(stripos($src, site_url()) === 0) $src = substr($src, strlen(site_url()));
+			if(stripos($src, site_url()) === 0) $src = __ROOT__.substr($src, strlen(site_url()));
+			$dir = pathinfo($src, PATHINFO_DIRNAME);
 			if(@unlink($src)){
 				self::deleteMoreImage($src);
+				if(is_empty_dir($dir)) rmdir($dir);
 			}
 			return success($result['data']);
 		}

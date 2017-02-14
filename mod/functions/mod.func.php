@@ -256,7 +256,9 @@ function lang($key = ''){
 	$arg = array_splice(func_get_args(), 1);
 	if(!$lang){
 		$path = 'lang/'.strtolower(config('mod.language')).'.php';
-		$lang = include(__ROOT__.'mod/'.$path);
+		if(file_exists($file = __ROOT__.'mod/'.$path)){
+			$lang = include(__ROOT__.'mod/'.$path);
+		}
 		if(file_exists($file = __ROOT__.'user/'.$path)){
 			$lang = array_xmerge($lang, include($file));
 		}
@@ -335,7 +337,7 @@ function is_home(){
  * @return boolean 
  */
 function is_client_call($obj = '', $act = ''){
-	if(empty($_GET['obj']) && empty($_GET['act'])) return false;
+	if((__SCRIPT__ != 'mod.php' && __SCRIPT__ != 'ws.php') || (empty($_GET['obj']) && empty($_GET['act']))) return false;
 	elseif($obj && $act) return !strcasecmp($obj, @$_GET['obj']) && !strcasecmp($act, @$_GET['act']);
 	elseif($obj) return !strcasecmp($obj, @$_GET['obj']);
 	elseif($act) return !strcasecmp($act, @$_GET['act']);
@@ -351,10 +353,10 @@ function is_websocket(){
 /** detect_site_url() 检测网站根目录地址 */
 function detect_site_url($header = '', $host = ''){
 	static $siteUrl = '';
-	$docRoot = str_replace('\\', '/', $_SERVER['DOCUMENT_ROOT']);
+	$docRoot = $_SERVER['DOCUMENT_ROOT'];
 	$script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
 	if(is_link($docRoot)) $docRoot = readlink($docRoot);
-	if($docRoot) $docRoot = rtrim($docRoot, '/').'/';
+	if($docRoot) $docRoot = rtrim(str_replace('\\', '/', $docRoot), '/').'/';
 	$notAgent = strpos($script, __ROOT__) === 0;
 	if($siteUrl && !$header || ($notAgent && !$header)) return $siteUrl;
 	if($notAgent && $header){

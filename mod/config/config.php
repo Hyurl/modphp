@@ -14,7 +14,7 @@ return array(
 		'installed' => false, //是否已安装
 		'language' => 'zh_CN', //语言
 		'timezone' => 'Asia/Shanghai', //时区
-		'outputBuffering' => 2, //输出缓冲区大小，可设置为 1-4096(4 KB) 的值，0 则不限制，在 PHP 5.4.0 之前，1 等于 4096
+		'outputBuffering' => 0, //输出缓冲区大小，可设置为 1-4096(4 KB) 的值，0 则不限制，在 PHP 5.4.0 之前，1 等于 4096
 		'websocketPort' => 8080, //WebSocket 监听端口
 		'escapeTags' => '<script><style><iframe>', //过滤 HTML 标签
 		'database' => array( //数据库设置

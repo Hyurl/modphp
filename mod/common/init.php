@@ -6,7 +6,7 @@ if(version_compare(PHP_VERSION, '5.3.0') < 0) exit('PHP version lower 5.3.0, una
 set_time_limit(0); //设置脚本不超时
 error_reporting(E_ALL & ~E_STRICT); //关闭严格性检查
 /** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '1.5.4');
+define('MOD_VERSION', '1.5.8');
 define('__TIME__', time(), true);
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true);
 define('__SCRIPT__', substr($_SERVER['SCRIPT_FILENAME'], strlen(__ROOT__)), true);
@@ -67,6 +67,34 @@ function pre_init(){
 			 ->login($conf['username'], $conf['password']);
 		if($err = mysql::$error) return error($err);
 	}
+	/** 填充 $_GET */
+	if(__SCRIPT__ == 'mod.php' && url() != site_url('mod.php')){
+		$url = parse_url(url());
+		if(isset($url['query']) && preg_match('/[_0-9a-zA-Z]+::.*/', $url['query'])){
+			array_shift($_GET);
+			$arg = explode('|', $url['query']);
+			$arg[0] = explode('::', $arg[0]);
+			$_GET['obj'] = $arg[0][0];
+			$_GET['act'] = $arg[0][1];
+			$arg = array_splice($arg, 1);
+			foreach ($arg as $param) {
+				$sep = strpos($param, ':') ? ':' : '=';
+				$param = explode($sep, $param);
+				$_GET = array_merge($_GET, array($param[0] => @$param[1]));
+			}
+		}elseif(preg_match('/mod.php\/(.*)\/(.*)/i', $url['path'])) {
+			$url['path'] = substr(url(), strlen(site_url())+8);
+			$url['path'] = explode('/', $url['path']);
+			if(isset($url['path'][0], $url['path'][1])){
+				$_GET['obj'] = $url['path'][0];
+				$_GET['act'] = $url['path'][1];
+				for ($i=2; $i < count($url['path']); $i += 2) { 
+					$_GET = array_merge($_GET, array($url['path'][$i] => @$url['path'][$i+1] ?: ''));
+				}
+			}
+		}
+	}
+	conv_request_vars(); //转换表单请求参数
 }
 /** 加载自定义模块类文件 */
 $dir = scandir($path = __ROOT__.'user/classes/');
@@ -157,32 +185,6 @@ function init(){
 					}
 				}
 			}
-			if(url() != site_url('mod.php')){
-				$url = parse_url(url());
-				if(isset($url['query']) && preg_match('/[_0-9a-zA-Z]+::.*/', $url['query'])){
-					array_shift($_GET);
-					$arg = explode('|', $url['query']);
-					$arg[0] = explode('::', $arg[0]);
-					$_GET['obj'] = $arg[0][0];
-					$_GET['act'] = $arg[0][1];
-					$arg = array_splice($arg, 1);
-					foreach ($arg as $param) {
-						$sep = strpos($param, ':') ? ':' : '=';
-						$param = explode($sep, $param);
-						$_GET = array_merge($_GET, array($param[0] => @$param[1]));
-					}
-				}elseif(preg_match('/mod.php\/[_0-9a-zA-Z]+\/[_0-9a-zA-Z]+/i', $url['path'])) {
-					$url['path'] = substr($url['path'], stripos($url['path'], 'mod.php')+7);
-					$url['path'] = explode('/', $url['path']);
-					if(isset($url['path'][0], $url['path'][1])){
-						$_GET['obj'] = $url['path'][0];
-						$_GET['act'] = $url['path'][1];
-						for ($i=2; $i < count($url['path']); $i += 2) { 
-							$_GET = array_merge($_GET, array($url['path'][$i] => @$url['path'][$i+1]));
-						}
-					}
-				}
-			}
 			if(isset($_GET['obj'], $_GET['act'])){
 				$obj = strtolower($_GET['obj']);
 				$act = $_GET['act'];
@@ -195,7 +197,6 @@ function init(){
 				define('__DISPLAY__', $err403, true);
 			}
 		}
-		conv_request_vars(); //转换表单请求参数
 	}
 	if(!defined('__DISPLAY__') && __SCRIPT__ != 'ws.php') define('__DISPLAY__', __SCRIPT__, true);
 }

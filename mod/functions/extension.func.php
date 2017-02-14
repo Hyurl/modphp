@@ -439,7 +439,15 @@ function is_mobile($agent = ''){
  * @return boolean
  */
 function is_ajax(){
-	return is_agent() && !is_curl() && !empty($_SERVER['HTTP_CONNECTION']) && (strtolower(@$_SERVER["HTTP_X_REQUESTED_WITH"]) == 'xmlhttprequest' || !empty($_SERVER['HTTP_ORIGIN']) || $_SERVER['HTTP_ACCEPT'] == '*/*');
+	if(is_agent(true) && !is_curl() && !empty($_SERVER['HTTP_CONNECTION'])){
+		if(!strcasecmp(@$_SERVER["HTTP_X_REQUESTED_WITH"], 'XMLHttpRequest')) return true;
+		if(empty($_SERVER['CONTENT_TYPE'])){
+			return $_SERVER['HTTP_ACCEPT'] == '*/*' || !empty($_SERVER['HTTP_ORIGIN']);
+		}else{
+			return $_SERVER['HTTP_ACCEPT'] == '*/*';
+		}
+	}
+	return false;
 }
 /**
  * is_curl() 判断当前是否为 CURL 请求

@@ -18,7 +18,7 @@ function conv_request_vars(&$input = null){
 		elseif($v === 'true') $v = true;
 		elseif($v === 'false') $v = false;
 		elseif($v === 'undefined' || $v === 'null') $v = null;
-		elseif(is_numeric($v) && (int)$v < 2147483647) $v = (int)$v;
+		elseif(is_numeric($v) && (int)$v < PHP_INT_MAX) $v = (int)$v;
 		$_k = "['".str_replace('_', "']['", $k)."']";
 		if(strpos($k, '_') && ((is_client_call('mod', 'install') && strpos($k, 'user_') !== 0) || is_client_call('mod', 'config')) && eval('return isset($config'.$_k.');')){
 			unset($input[$k]);
@@ -225,27 +225,27 @@ function database($key = '', $withAttr = false){
 }
 
 /**
- * staticurl() 设置或获取指定模板文件的伪静态 URL 格式
+ * staticuri() 设置或获取指定模板文件的伪静态 URL 格式
  * @param  string|array $file   模板文件名
  * @param  string       $format 伪静态 URL 格式
  * @return mixed                如果未提供参数，则返回所有伪静态地址格式
  *         						如果仅提供 $file 参数，则返回对应的伪静态地址
  *         						如果同时提供两个参数，则始终返回 $format
  */
-function staticurl($file = '', $format = ''){
-	static $url = array();
-	if(!$url) $url = load_config_file('staticurl.php');
-	if(!$file) return $url;
+function staticuri($file = '', $format = ''){
+	static $uri = array();
+	if(!$uri) $uri = load_config_file('static-uri.php');
+	if(!$file) return $uri;
 	if(is_assoc($file)){
-		$url = array_merge($url, $file);
+		$uri = array_merge($uri, $file);
 		return true;
 	}elseif($format){
-		return $url[$file] = $format;
+		return $uri[$file] = $format;
 	}
 	if(!pathinfo($file, PATHINFO_EXTENSION)) $file .= '.php';
-	return isset($url[$file]) ? $url[$file] : null;
+	return isset($uri[$file]) ? $uri[$file] : null;
 }
-
+function_alias('staticuri', 'staticurl');
 /**
  * lang() 设置和获取语言提示
  * @param  string|array $key 指定语言提示或设置为关联数组以设置语言提示
@@ -253,9 +253,10 @@ function staticurl($file = '', $format = ''){
  */
 function lang($key = ''){
 	static $lang = array();
-	$arg = array_splice(func_get_args(), 1);
+	$_arg = func_get_args();
+	$arg = array_splice($_arg, 1);
 	if(!$lang){
-		$path = 'lang/'.strtolower(config('mod.language')).'.php';
+		$path = 'lang/'.str_replace('_', '-', strtolower(config('mod.language'))).'.php';
 		if(file_exists($file = __ROOT__.'mod/'.$path)){
 			$lang = include(__ROOT__.'mod/'.$path);
 		}
@@ -274,7 +275,8 @@ function lang($key = ''){
 	}
 	$_key = "['".str_replace('.', "']['", $key)."']";
 	eval('$msg =  isset($lang'.$_key.') ? $lang'.$_key.' : "'.$key.'";');
-	if(preg_match_all('/{(.*)}/U', $msg, $matches)){
+	if(!is_string($msg)) return $msg;
+	if(preg_match_all('/{(.+)}/U', $msg, $matches)){
 		return str_replace($matches[0], $arg, $msg);
 	}
 	return $msg;
@@ -308,23 +310,25 @@ function error($data = '', array $extra = array()){
 	}
 }
 /**
- * is_display() 判断当前展示的页面是否为页面
+ * is_display() 判断当前展示的页面是否为指定页面
  * @param  string  $file 页面文件名
  * @return boolean
  */
 function is_display($file){
-	$dp = defined('__DISPLAY__') ? __DISPLAY__ : (template_file() ? config('mod.template.savePath').template_file() : __SCRIPT__);
-	return $file == $dp;
+	if(!display_file()) return false;
+	if($file[strlen($file)-1] == '/') return strapos(display_file(), $file) === 0;
+	return $file == display_file();
 }
 /**
- * is_template() 函数判断当前展示的页面是否为模板页面
+ * is_template() 函数判断当前展示的页面是否为模板页面或在模板目录中
  * @param  string  $file 模板文件名
  * @return boolean
  */
 function is_template($file = ''){
-	$dp = defined('__DISPLAY__') ? __DISPLAY__ : config('mod.template.savePath').template_file();
-	if(!$file || $file[strlen($file)-1] == '/') return stripos($dp, config('mod.template.savePath').$file) === 0;
-	else return is_display(config('mod.template.savePath').$file);
+	if(!template_file()) return false;
+	$path = template_path('', false);
+	$dp = $path.template_file();
+	return is_display($path.$file);
 }
 /** is_home() 判断是否为首页 */
 function is_home(){
@@ -357,7 +361,7 @@ function detect_site_url($header = '', $host = ''){
 	$script = str_replace('\\', '/', $_SERVER['SCRIPT_NAME']);
 	if(is_link($docRoot)) $docRoot = readlink($docRoot);
 	if($docRoot) $docRoot = rtrim(str_replace('\\', '/', $docRoot), '/').'/';
-	$notAgent = strpos($script, __ROOT__) === 0;
+	$notAgent = !$docRoot || strapos($script, __ROOT__) === 0;
 	if($siteUrl && !$header || ($notAgent && !$header)) return $siteUrl;
 	if($notAgent && $header){
 		if(!function_exists('get_document_root')){
@@ -381,7 +385,7 @@ function detect_site_url($header = '', $host = ''){
 		$port = is_ssl() ? '443' : '';
 		$host = strstr($host, ':', true) ?: $host;
 	}
-	if(stripos(__ROOT__, $docRoot) === 0){
+	if(strapos(__ROOT__, $docRoot) === 0){
 		$sitePath = substr(__ROOT__, strlen($docRoot));
 	}else{
 		$sitePath = substr($script, 1, strrpos($script, '/')+1);
@@ -404,7 +408,7 @@ function site_url($file = ''){
  * @return string       模板目录 URL 地址，如果设置 $file, 则将返回包含 $file 的地址
  */
 function template_url($file = ''){
-	return site_url().config('mod.template.savePath').$file;
+	return site_url().template_path($file, false);
 }
 /**
  * create_url() 自动生成 URL 链接，第一个参数为伪静态 URL 格式, 其他参数用于替换 {} 标注的关键字
@@ -414,13 +418,14 @@ function template_url($file = ''){
  */
 function create_url($format, $args){
 	$args = is_array($args) ? $args : array_splice(func_get_args(), 1);
+	$index = config('mod.pathinfoMode') ? 'index.php/' : '';
 	if(is_assoc($args)){
 		if(empty($args['page'])) $args['page'] = 1;
-		return site_url().@str_replace(array_map(function($k){
+		return site_url($index).@str_replace(array_map(function($k){
 			return '{'.$k.'}';
 		}, array_keys($args)), array_values($args), $format);
-	}elseif(preg_match_all('/{(.*)}/U', $format, $matches)){
-		return site_url().str_replace($matches[0], $args, $format);
+	}elseif(preg_match_all('/{(.+)}/U', $format, $matches)){
+		return site_url($index).str_replace($matches[0], $args, $format);
 	}
 	return false;
 }
@@ -432,8 +437,9 @@ function create_url($format, $args){
  */
 function analyze_url($format, $url = ''){
 	$url = $url ?: url();
-	$uri = stripos($url, site_url()) === 0 ? substr($url, strlen(site_url())) : $url;
-	$uri = strstr($uri, '?', true) ?: $uri;
+	$uri = strstr($url, '?', true) ?: $url;
+	if(strapos($uri, site_url('index.php')) === 0) $uri = site_url().substr($uri, strlen(site_url())+10);
+	if(strapos($uri, site_url()) === 0) $uri = substr($uri, strlen(site_url()));
 	$format = explode('/', trim($format, '/'));
 	$uri = explode('/', trim($uri, '/'));
 	for ($i=0,$args=array(); $i < count($format); $i++) {
@@ -482,12 +488,20 @@ function current_dir($file = ''){
 /**
  * template_path() 函数获取模板目录的绝对地址
  * @param  string $file 目录下的文件
+ * @param  bool   $abs  返回绝对路径
  * @return string       模板目录的绝对地址，如果设置 $file, 则将返回包含 $file 的地址
  */
-function template_path($file = ''){
-	return __ROOT__.config('mod.template.savePath').$file;
+function template_path($file = '', $abs = true){
+	return ($abs ? __ROOT__ : '').config('mod.template.appPath').config('mod.template.savePath').$file;
 }
 function_alias('template_path', 'template_dir');
+/** 
+ * template_file() 获取显示的模板文件名
+ * @return string  文件名
+ */
+function template_file(){
+	return strapos(display_file(), template_path('', false)) === 0 ? substr(display_file(), strlen(template_path('', false))) : '';
+}
 /**
  * current_dir_url() 函数获取当前目录的完整 URL 地址
  * @param  string $file 目录下的文件
@@ -504,12 +518,12 @@ function current_dir_url($file = ''){
  * @return null|mixed   如果载入的是 php 文件或未知文件，则返回其内容
  */
 function import($file, $tag = '', $attr = ''){
-	if(stripos($file, __ROOT__) === 0) $url = site_url(substr($file, strlen(__ROOT__)));
+	if(strapos($file, __ROOT__) === 0) $url = site_url(substr($file, strlen(__ROOT__)));
 	elseif(strpos($file, '://')) $url = $file;
 	elseif(strpos($file, ':') !== 1 && strpos($file, '/') !== 0){
 		$url =  current_dir_url($file);
 		$file = current_dir($file);
-		if(template::$saveDir && strpos($file, template::$saveDir) === 0){
+		if(template::$saveDir && strapos($file, template::$saveDir) === 0){
 			$path = substr($file, strlen(template::$saveDir));
 			$file = template::$rootDir.$path;
 			$url = template::$rootDirURL.$path;
@@ -528,10 +542,10 @@ function import($file, $tag = '', $attr = ''){
 	}elseif($tag){
 		echo '<'.$tag.' src="'.$url.'"'.$attr.($tag == 'img' || $tag == 'embed' ? ' />' : '></'.$tag.'>');
 	}else{
-		${'file_'.__TIME__} = $file;
+		${'file'.__TIME__} = $file;
 		unset($file, $tag, $attr, $url, $ext, $path);
 		extract($GLOBALS);
-		return include ${'file_'.__TIME__};
+		return include ${'file'.__TIME__};
 	}
 }
 /**
@@ -546,9 +560,10 @@ function get_template_file($url = '', $tpldir = '', $rootURL = '', $isTop = true
 	if($isTop){
 		$url = $url ?: url();
 		$rootURL = $rootURL ?: current_dir_url();
-		if(stripos($url, $rootURL) === 0) $uri = substr($url, strlen($rootURL));
+		if(strapos($url, $rootURL) === 0) $uri = substr($url, strlen($rootURL));
 		$query = strstr($uri, '?');
 		$uri = $_uri = strstr($uri, '?', true) ?: $uri;
+		if(strapos($uri, 'index.php/') === 0) $uri = substr($uri, 10);
 		$uri = rtrim($tpldir.$uri, '/');
 	}
 	$exts = template::$extensions;
@@ -575,40 +590,44 @@ function get_template_file($url = '', $tpldir = '', $rootURL = '', $isTop = true
 	return false;
 }
 /**
- * template_file() 获取 URL 地址所请求加载的模板文件
- * @param  string $url 设置 URL 地址，不设置则为当前地址
- * @return string      模板文件名
+ * display_file() 获取显示页面文件名
+ * @param  string  $url URL 地址，不设置则为当前地址
+ * @param  boolean $set 将 $url 设置为一个文件名，然后设置 $set 为 true，以此设置显示页面
+ * @return string
  */
-function template_file($url = '', $set = false){
+function display_file($url = '', $set = false){
 	static $file = '';
 	static $_file = '';
 	static $sid = null;
-	if(!$url && __SCRIPT__ == 'mod.php' && isset($_SERVER['HTTP_REFERER'])){
-		$url = $_SERVER['HTTP_REFERER'];
-	}elseif(__SCRIPT__ == 'ws.php' && $set){
-		return $file = $url;
-	}
 	if($file !== '' && !$url) return $file;
+	if($set){
+		if(strapos($url, __ROOT__) === 0) $url = substr($url, strlen(__ROOT__));
+		return $file = $url;
+	}elseif(!$url && (__SCRIPT__ == 'mod.php' || __SCRIPT__ == 'ws.php') && isset($_SERVER['HTTP_REFERER'])){
+		$url = $_SERVER['HTTP_REFERER'];
+	}
 	$url = $url ?: url();
+	if(!$url) return false;
 	$uri = strstr($url, '?', true) ?: $url;
-	$template = config('mod.template.savePath');
-	if($uri == site_url()){
-		return $file = config('site.home.template');
-	}elseif(stripos($uri, site_url()) === 0){
+	if(strapos($uri, site_url('index.php')) === 0) $uri = site_url().substr($uri, strlen(site_url())+10);
+	$tplPath = template_path('', false);
+	$appPath = config('mod.template.appPath') ?: $tplPath;
+	$home = config('site.home.template');
+	if($uri == site_url() || $uri == site_url($home)){
+		return $file = $tplPath.$home;
+	}elseif(strapos($uri, site_url()) === 0){
 		$uri = substr($uri, strlen(site_url()));
 	}elseif(strpos($uri, '://') !== false){
 		return $file = __SCRIPT__;
 	}
+	$isIndex = __SCRIPT__ == 'index.php';
 	$uri = rtrim($uri, '/');
-	$tpl = get_template_file($url, $template, site_url());
-	if(!$tpl) return $file = config('site.errorPage.403');
-	if(stripos($tpl, $template) !== 0) return false;
-	if($tpl == $template.config('site.home.template')){
-		if(($args = analyze_url(config('site.home.staticURL'), $url)) !== false){
-			if(__SCRIPT__ == 'index.php') $_GET = array_merge($_GET, $args);
-			return $file = substr($tpl, strlen($template));
-		}else goto end;
-	}else{
+	$tpl = '';
+	$tpl = get_template_file($url, $appPath, site_url());
+	if(!$tpl) $tpl = get_template_file($url, $tplPath, site_url());
+	if(!$tpl) return $file = $tplPath.config('site.errorPage.403');
+	if(strapos($tpl, $appPath) !== 0) return false;
+	if($tpl != $tplPath.$home){
 		$ext = strtolower(pathinfo($tpl, PATHINFO_EXTENSION));
 		if($ext){
 			$cts = load_config_file('mime.ini');
@@ -617,57 +636,61 @@ function template_file($url = '', $set = false){
 			}
 		}
 		if(!isset($mime)) $mime = 'text/plain';
-		set_content_type($mime);
-		if($tpl == $template.$uri || $tpl == $template.$uri.'.php'){
-			$file = substr($tpl, strlen($template));
-			if(array_key_exists($file, staticurl()) && $args = analyze_url(staticurl($file), $url)){
-				if(__SCRIPT__ == 'index.php') $_GET = array_merge($_GET, $args);
-			}
-			return $file;
-		}else{
-			end:
-			$config = config();
-			foreach(database() as $k => $v){ //尝试获取模块记录
-				if(array_key_exists($k, $config) && !empty($config[$k]['staticURL'])){
-					$get = 'get_'.$k;
-					if($args = analyze_url($config[$k]['staticURL'], $url)){
-						foreach($args as $_k => $_v){
-							if(in_array($_k, database($k)) && strpos($_k, $k) === 0){
-								$where[$_k] = $_v;
-							}
-						}
-						if(isset($where) && ($result = mysql::open(0)->select($k, "{$k}_id", $where)) && $result->num_rows){
-							if(__SCRIPT__ == 'index.php') $_GET = array_merge($_GET, $args);
-							$file = $config[$k]['template'];
-							if($_file !== $file || $sid !== session_id()){
-								$_file = $file;
-								$sid = session_id();
-								$get($_GET);
-							}
-							return $file;
+		if($isIndex) set_content_type($mime);
+		if(array_key_exists($file, staticuri()) && $args = analyze_url(staticuri($file), $uri)){
+			if($isIndex) $_GET = array_merge($_GET, $args);
+		}
+		return $file = $tpl;
+	}else{
+		$URI = config('site.home.staticURI') ?: config('site.home.staticURL');
+		if($URI && ($args = analyze_url($URI, $uri)) !== false){
+			if($isIndex) $_GET = array_merge($_GET, $args);
+			return $file = $tpl;
+		}
+		if(!config('mod.installed')) return $file = $tpl;
+		$config = config();
+		foreach(database() as $k => $v){ //尝试获取模块记录
+			$URI = @$config[$k]['staticURI'] ?: @$config[$k]['staticURL'];
+			if(array_key_exists($k, $config) && $URI){
+				$get = 'get_'.$k;
+				if($args = analyze_url($URI, $uri)){
+					foreach($args as $_k => $_v){
+						if(in_array($_k, database($k)) && strpos($_k, $k) === 0){
+							$where[$_k] = $_v;
 						}
 					}
-				}
-			}
-			foreach(database() as $k => $v){ //尝试根据自定义永久链接获取记录
-				if(array_key_exists($k.'_link', $v)){
-					$link = substr($url, strlen(site_url()));
-					$get = 'get_'.$k;
-					$result = mysql::open(0)->select($k, "{$k}_id", "`{$k}_link` = '{$link}'");
-					if($result && $result->num_rows){
-						$file = $config[$k]['template'];
+					if(isset($where) && ($result = mysql::open(0)->select($k, "{$k}_id", $where)) && $result->num_rows){
+						if($isIndex) $_GET = array_merge($_GET, $args);
+						set:
+						$file = $tplPath.$config[$k]['template'];
 						if($_file !== $file || $sid !== session_id()){
 							$_file = $file;
 							$sid = session_id();
-							$get(array($k.'_link'=>$link));
+							$get($_GET);
 						}
 						return $file;
 					}
 				}
 			}
-			return $file = config('site.errorPage.404');
+		}
+		foreach(database() as $k => $v){ //尝试根据自定义永久链接获取记录
+			if(array_key_exists($k.'_link', $v)){
+				$link = substr($url, strlen(site_url()));
+				$get = 'get_'.$k;
+				$result = mysql::open(0)->select($k, "{$k}_id", "`{$k}_link` = '{$link}'");
+				if($result && $result->num_rows){
+					$file =$tplPath.$config[$k]['template'];
+					if($_file !== $file || $sid !== session_id()){
+						$_file = $file;
+						$sid = session_id();
+						$get(array($k.'_link'=>$link));
+					}
+					return $file;
+				}
+			}
 		}
 	}
+	return $file = $tplPath.config('site.errorPage.404');
 }
 /**
  * get_table_by_primkey() 通过主键获取表名
@@ -788,9 +811,9 @@ function register_module_functions($table = ''){
 			static $sid = "";
 			if(is_numeric($arg)) $arg = array("'.$primkey.'"=>$arg);
 			if(!$result || (is_assoc($arg) && $_arg != $arg) || $sid != session_id()){
+				$_arg = $arg;
 				the_'.$table.'(null);
 				$result = array();
-				$_arg = $arg;
 				$sid = session_id();
 				$_result = '.$table.'::get($_arg);
 				error(null);
@@ -812,7 +835,7 @@ function register_module_functions($table = ''){
 			}
 			if(!$key) return $result;
 			else if(isset($result[$key])) return $result[$key];
-			else if(stripos($key, "'.$table.'_") !== 0){
+			else if(strpos($key, "'.$table.'_") !== 0){
 				$key = "'.$table.'_".$key;
 				return isset($result[$key]) ? $result[$key] : null;
 			}else return null;
@@ -838,7 +861,7 @@ function register_module_functions($table = ''){
 			}
 			if(!$key || is_array($key)) return $result;
 			else if(isset($result[$key])) return $result[$key];
-			else if(stripos($key, "'.$table.'_") !== 0){
+			else if(strpos($key, "'.$table.'_") !== 0){
 				$key = "'.$table.'_".$key;
 				return isset($result[$key]) ? $result[$key] : null;
 			}else return null;
@@ -860,7 +883,7 @@ function register_module_functions($table = ''){
 						$result = the_'.$table.'("'.$keys[$i].'");
 						if(!$key) return $result;
 						else if(isset($result[$key])) return $result[$key];
-						else if(stripos($key, "'.$table.'_") !== 0){
+						else if(strpos($key, "'.$table.'_") !== 0){
 							$key = "'.$table.'_".$key;
 							return isset($result[$key]) ? $result[$key] : null;
 						}else return null;
@@ -886,7 +909,7 @@ function register_module_functions($table = ''){
 						}
 						if(!$key) return $result;
 						else if(isset($result[$key])) return $result[$key];
-						else if(stripos($key, "'.$table.'_") !== 0){
+						else if(strpos($key, "'.$table.'_") !== 0){
 							$key = "'.$table.'_".$key;
 							return isset($result[$key]) ? $result[$key] : null;
 						}else return null;
@@ -912,7 +935,7 @@ function register_module_functions($table = ''){
 						}
 						if(!$key) return $result;
 						else if(isset($result[$key])) return $result[$key];
-						else if(stripos($key, "'.$_table.'_") !== 0){
+						else if(strpos($key, "'.$_table.'_") !== 0){
 							$key = "'.$_table.'_".$key;
 							return isset($result[$key]) ? $result[$key] : null;
 						}else return null;
@@ -961,7 +984,7 @@ function report_http_error($code, $msg = ''){
 	}else{
 		echo $msg ?: "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n\t<title>{$code} {$status[$code]}</title>\n</head>\n<body>\n\t<h1>{$status[$code]}</h1>\n\t{$html[$code]}\n</body>\n</html>";
 	}
-	exit();
+	if(is_agent()) exit();
 }
 /**
  * report_403/404/500() 报告 403/404/500 错误
@@ -997,4 +1020,8 @@ function websocket_retrieve_session($sid, $event){
 		return true;
 	}
 	return false;
+}
+/** strapos() 查找字符串中第一次出现的位置，根据操作系统自动决定是否使用大小写敏感 */
+function strapos($str, $find, $start = 0){
+	return PHP_OS == 'WINNT' ? stripos($str, $find, $start) : strpos($str, $find, $start);
 }

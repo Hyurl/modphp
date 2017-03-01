@@ -1,4 +1,82 @@
 ﻿【ModPHP 更新日志】
+版本 1.7.1 (2017-3-1 12:35)
+1. 修复在 PHP 5.5 之后报不再支持 /e 标记的正则表达式的问题。
+2. 类继承时不再忽略严格性检查。
+3. 修复在高版本 PHP 环境下的一些其他的 BUG。
+
+版本 1.7.0 (2017-2-24 1:40)
+1. 修复初次运行报 user/ 目录不存在的 BUG。
+2. 初次运行不再自动跳转到 install.php 文件。
+
+版本 1.6.9 (2017-2-23 19:38)
+1. 变量 $init['__DISPLAY__'] 也可以设置为绝对路径，但目录分割符必须是 /。
+2. 修复之前的更新导致维护页面不报告错误的 BUG。
+
+版本 1.6.8 (2017-2-22 8:00)
+1. 修复默认 WebSocket 模式中客户端关闭后服务器不删除 $WS_USER 中的连接资源的 BUG。
+2. $WS_USER 变量以及 WebSocket 事件的回调函数参数中的客户端资源使用引用值。
+3. 去除 $WS_SESS、$WS_HEADER 变量，使用 $WS_INFO 替代。
+4. 控制台模式下 report_403/404/500() 函数不结束程序。
+5. 修复 get_me() 和 user::logout() 在非客户端环境下的 BUG。
+
+版本 1.6.7 (2017-2-21 13:00)
+1. 增加实时控制台模式，通过直接在命令行中运行 mod.php 文件（无参数），将 ModPHP 运行于守护进程中，
+   并等待用户输入，仅支持 PHP 语法，不支持 shell 命令语法，示例如：
+   modphp>print_r(get_user(1));
+
+版本 1.6.6 (2017-2-21 8:40)
+1. 增加 parse_cli_param() 函数用来解析命令行命令，同时支持长参数(--key value)和短参数(-k value)，
+   以及无键名参数(value)，可以同时支持多个或多种参数。
+2. 程序入口文件 mod.php 支持命令行模式，并添加 config('mod.cliCharset') 选项来设置运行于
+   命令行模式时操作系统所支持的编码，支持使用分号 ; 来同时运行多个命令。使用示例如:
+   (1) ~>php mod.php curl http://modphp.hyurl.com/version
+   (2) ~>php mod.php user::get --user_id 1
+   (3) ~>php mod.php MOD_VERSION
+   (4) ~>php mod.php 100+100
+
+版本 1.6.5 (2017-2-20 22:20)
+1. 提升路径检测严格性。
+2. curl() 函数添加 convert 选项，用来将结果转换为指定的编码。
+3. 修改配置项中的 staticURL 为 staticURI，并将 staticurl() 函数和配置文件 staticurl.php 分别修改为
+   staticuri() 和 static-uri.php，但依旧保留对原来用法的支持(只兼容，不推荐)。除了 staticurl.php 文件需要手动修改为
+   static-uri.php。
+
+版本 1.6.4 (2016-2-20 8:00)
+1. 修复访问 http://<网站地址>/index.html 时报告 404 错误的问题。
+2. 移除 __DISPLAY__ 常量，增加函数 display_file() 用以替换。
+3. 更改了 template_file() 函数的行为，现在，display_file() 函数的行为完善了 template_file() 函数。
+4. 新增配置 config('mod.template.appPath') 选项，如果设置，那模板根目录则相对于它而不是网站根目录。
+5. 在 config('mod.template.appPath') 所设置目录下(非模板目录)的模板也会被编译，
+   如果开启了 config('mod.template.compiler.enable') 选项。
+6. 修复 url() 函数在使用 IP 访问时返回值中使用域名的问题。
+
+版本 1.6.3 (2016-2-19 18:23)
+1. 修复直接访问 http://<网站地址>/index.php 时报告 404 错误的问题，
+   增加模板页面的 pathinfo 模式支持，需要开启 config('mod.pathinfoMode') 选项，
+   开启后 create_url() 函数创建的 URL 地址将包含 index.php 模板入口文件。
+2. 增加对 NGINX 服务器的全面支持，但 WebSocket 不能通过浏览器启动而运行于 Fast-CGI 模式。
+   NGINX 服务器需要自己修改服务器配置文件来实现 php 的支持，ModPHP 提供修改建议(在 nginx.conf.txt 中)。
+3. Session 保存路径默认使用 PHP 默认的设置。
+3. 修复了一些其他的 BUG。
+
+版本 1.6.2 (2016-2-18 22:10)
+1. 模板引擎新增布局支持，使用 <layout> 标签，支持一个 data 属性为布局模板文件名。
+   布局模板中使用 __CONTENT__ 标记来表示内容，支持嵌套的布局。
+
+版本 1.6.1 (2017-2-18 7:00)
+1. 完善一些正则表达式。
+2. 修复直接使用控制台运行 ws.php 时可能出现报错或者无法启动程序的 BUG。
+3. 修复登录后在浏览器中尝试开启 WebSocket 模式时导致服务器挂起的问题。
+4. 修改为任何管理员都可以在浏览器中开启 WebSocket 模式。
+5. 将语言包文件命名方式修改为默认 RFC 1766 标准的小写字母形式。
+
+版本 1.6.0 (2017-2-17 17:05)
+1. 增加安装前检测和安装新版本的功能。
+
+版本 1.5.9 (2017-2-16 20:00)
+1. 第一次安装成功后不再自动登录。
+2. 将 clearTrash 统一修改为 cleanTrash。
+
 版本 1.5.8 (2017-2-9 13:00)
 1. 完善语言包加载机制。
 

@@ -10,8 +10,12 @@
 	$host = 'http://modphp.hyurl.com/';
 	$update = url() == site_url('install.php?update');
 	$uninstall = url() == site_url('install.php?uninstall');
+	$ver = @json_decode(file_get_contents($host.'version'), true) ?: @curl(array('url'=>$host.'version', 'parseJSON'=>true));
+	$gt = $ver ? version_compare($ver['version'], MOD_VERSION) : -1;
+	$newVerTip = $gt > 0 ? '<p style="margin-bottom: 0">有新版本可用：<code>'.$ver['version'].'</code>' : '';
+	$installed = config('mod.installed');
 	$title = $update ? '更新' : ($uninstall ? '卸载' : '安装');
-	echo "<title>{$title} - ModPHP</title>";
+	echo "<title>{$title} ModPHP</title>";
 	?>
 	<script>
 	function $(id){
@@ -92,12 +96,13 @@
 	}
 	</script>
 	<style>
-	body{font-family: 'arial';background: #eee;margin: 0;padding: 10px;}
+	body{font-size: 14px;font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;background: #eee;margin: 0;padding: 10px;}
 	h2{text-align: center;margin: -5px -10px 0;padding: 15px 0;background: #7dc8da;}
 	h3{border-bottom: solid 1px #ccc;margin: 10px 0 5px;}
 	label{font-weight: bold;width: 70px;display: inline-block;}
 	input{margin: 5px 0;width: 190px;padding: 2px 5px;}
 	button{padding: 2px 10px;margin: 15px 0;}
+	code{padding: 2px 4px; font-size: 90%; color: #c7254e; background-color: #f9f2f4; border-radius: 4px;}
 	a{text-decoration: none;}
 	a:hover{text-decoration: underline;}
 	footer{font-size: 14px;color: #666;margin: 0 -10px -25px;padding: 10px;text-align: center;background: #ccc;}
@@ -124,71 +129,72 @@
 	<?php
 	$go_home = '<a href="'.site_url().'">点击此处返回首页</a>。';
 	if($update || $uninstall){
-		if(config('mod.installed')){
-			if(!is_logined()){
-				echo "<p>用户未登录，无法进行操作，{$go_home}</p>";
-			}elseif(!is_admin()){
-				echo "<p>当前用户不是管理员，无法进行操作，{$go_home}</p>";
-			}else{
-				if($update){ ?>
+		if(!is_logined() && $installed){
+			echo "<p>用户未登录，无法进行操作，{$go_home}</p>";
+		}elseif(!is_admin() && $installed){
+			echo "<p>当前用户不是管理员，无法进行操作，{$go_home}</p>";
+		}else{
+			if($update){ ?>
+				<?php if($installed){ ?>
 					<div class="options">
 						<h3>更新数据库结构</h3>
 						<button onclick="update()" id="update-button">更新</button>
 					</div>
-					<div class="options">
-						<h3>更新内核版本</h3>
-						<?php
-						if(function_exists('curl_version')){
-							$ver = @json_decode(file_get_contents($host.'version'), true) ?: @curl(array('url'=>$host.'version', 'parseJSON'=>true));
-							if($ver){
-								$gt = version_compare($ver['version'], MOD_VERSION);
-								if($gt > 0){
-									echo '<p style="margin-bottom: 0">有新版本可用：<code>'.$ver['version'].'</code>'.(!empty($ver['url']) ? '，<a href="'.$ver['url'].'" target="_blank">新版说明</a>' : '').'</p>';
-								}else{
-									echo '<p>暂无可用更新。</p>';
-								}
-								if($gt >= 0){
-									echo '<button onclick="update({upgrade: true, src: \''.$ver['src'].'\', md5: \''.$ver['md5'].'\'})" id="upgrade-button">'.($gt ? '更新' : '重新安装当前版本').'</button>';
-								}
+				<?php } ?>
+				<div class="options">
+					<h3>更新内核版本</h3>
+					<?php
+						if($ver){
+							if($gt > 0){
+								echo $newVerTip.(!empty($ver['url']) ? '，<a href="'.$ver['url'].'" target="_blank">查看新版说明</a>' : '').'。</p>';
+							}else{
+								echo '<p>暂无可用更新。</p>';
+							}
+							if($gt >= 0){
+								echo '<button onclick="update({upgrade: true, src: \''.$ver['src'].'\', md5: \''.$ver['md5'].'\'})" id="upgrade-button">'.($gt ? '更新' : '重新安装当前版本').'</button>';
 							}
 						}
-						?>
-					</div>
-					<p><small style="color: gray">注意：更新过程可能会导致网站暂时不可访问。</small></p>
-					<p>放弃更新并<?php echo $go_home ?></p>
-			<?php }else{ 
-					if(me_id() != 1){
-						echo "<p>当前用户不是超级管理员，无法进行操作，{$go_home}</p>";
-					}else{
-			?>
-					<form onsubmit="uninstall(); return false;">
-						<div class="options">
-							<h3>验证管理员身份</h3>
-							<div>
-								<label for="user-name">当前用户</label>
-								<div style="display: inline-block"><?php echo me_name() ?></div>
-							</div>
-							<div>
-								<label for="user-password">密码</label>
-								<input type="password" id="user-password" placeholder="管理员密码" required />
-							</div>
-							<button type="submit" id="uninstall-button">卸载</button>
-							<label class="checkbox-label">
-								<input type="checkbox" id="drop-database"> 清除数据库记录
-							</label>
-							<p>放弃卸载并<?php echo $go_home ?></p>
+					?>
+				</div>
+				<p><small style="color: gray">注意：更新过程可能会导致网站暂时不可访问。</small></p>
+				<p>放弃更新并<?php echo $go_home ?></p>
+		<?php 
+			}else{
+				if(!$installed){
+					echo '<p>系统未安装，<a href="'.site_url('install.php').'">点击此处进行安装</a>。</p>';
+				}elseif(me_id() != 1){
+					echo "<p>当前用户不是超级管理员，无法进行操作，{$go_home}</p>";
+				}else{
+		?>
+				<form onsubmit="uninstall(); return false;">
+					<div class="options">
+						<h3>验证管理员身份</h3>
+						<div>
+							<label for="user-name">当前用户</label>
+							<div style="display: inline-block"><?php echo me_name() ?></div>
 						</div>
-					</form>
-			<?php }
-				}
+						<div>
+							<label for="user-password">密码</label>
+							<input type="password" id="user-password" placeholder="管理员密码" required />
+						</div>
+						<button type="submit" id="uninstall-button">卸载</button>
+						<label class="checkbox-label">
+							<input type="checkbox" id="drop-database"> 清除数据库记录
+						</label>
+						<p>放弃卸载并<?php echo $go_home ?></p>
+					</div>
+				</form>
+		<?php }
 			}
-		}else{
-			echo '<p>系统未安装，<a href="'.site_url('install.php').'">点击此处进行安装</a>。</p>';
 		}
 	}else{
-		if(config('mod.installed')){
+		if($installed){
 			echo "<p>系统已安装，{$go_home}</p>";
-		}else{ ?>
+		}else{ 
+			if($ver && $gt > 0){
+				echo $newVerTip.'，<a href="?update">点击此处进行更新</a>。';
+			}
+	?>
 			<form onsubmit="install(); return false;">
 				<div class="options">
 					<h3>数据库设置</h3>

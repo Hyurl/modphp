@@ -1,8 +1,9 @@
 <?php
 /** 自动修复程序 */
 /** 恢复目录 */
-if(!is_dir($tmp = session_save_path())) mkdir($tmp, 0777, true);
-if(!is_dir($tpl = __ROOT__.config('mod.template.savePath'))) mkdir($tpl, 0777, true);
+$tmp = session_save_path();
+if(config("mod.session.savePath") && !is_dir($tmp)) mkdir($tmp, 0777, true);
+if(!is_dir($tpl = template_path())) mkdir($tpl, 0777, true);
 if(!is_dir($upl = __ROOT__.config('file.upload.savePath'))) mkdir($upl, 0777, true);
 if(!is_dir($dir = __ROOT__.'user/')) mkdir($dir);
 if(!is_dir($dir = __ROOT__.'user/classes/')) mkdir($dir);
@@ -22,7 +23,7 @@ RewriteRule . index.php
 order deny,allow";
 	file_put_contents($file, $data);
 }
-if(!file_exists($file = $tmp.'.htaccess')){
+if(strapos($tmp, __ROOT__) === 0 && !file_exists($file = $tmp.'.htaccess')){
 	file_put_contents($file, "order deny,allow\ndeny from all");
 }
 $req = 'require("mod/common/init.php");';
@@ -60,12 +61,12 @@ if(!file_exists($file = $tpl.config('site.home.template'))){
 	file_put_contents($file, "<p>Welcome to ModPHP, you're now able to explore the functionality it carries.<p>");
 }
 /** 恢复用户配置文件 */
-$lang = strtolower(config('mod.language'));
-foreach (array('config', 'database', 'staticurl', $lang) as $conf) {
+$lang = str_replace('_', '-', strtolower(config('mod.language')));
+foreach (array('config', 'database', 'static-uri', $lang) as $conf) {
 	$file = ($conf == $lang ? $ldir : $cdir).$conf.'.php';
-	$conf = $conf == $lang ? 'lang' : $conf;
+	$func = $conf == $lang ? 'lang' : str_replace('-', '', $conf);
 	if(!file_exists($file)){
-		export($conf(), $file);
+		export($func(), $file);
 	}
 }
 /** 恢复自定义模块类文件 */

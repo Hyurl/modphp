@@ -6,7 +6,7 @@ final class template{
 	public static $stripComment = false; //删除注释
 	public static $extensions = array('php', 'html', 'htm'); //后缀列表
 	public static $extraTags = array(); //额外的标签
-	private static $tags =  array('include', 'else', 'elseif', 'break', 'continue', 'goto', 'case', 'default');
+	private static $tags =  array('include', 'else', 'elseif', 'break', 'continue', 'goto', 'case', 'default', 'layout');
 	private static $endTags = array('if', 'switch', 'for', 'foreach', 'while');
 	private static $currentDir = '';
 	/**
@@ -38,26 +38,67 @@ final class template{
 		if(!$html) return '';
 		$html = self::handleExpression(self::handleEndTag(self::stripWhiteSpace($html)));
 		$tags = self::getPHPTags($html);
+		$layoutTags = array();
 		if($tags){
 			foreach ($tags as $tag) {
-				$html = str_replace($tag['element'], self::handleStartTag($tag), $html);
+				if($tag['tagName'] == 'layout'){
+					$layoutTags[] = $tag;
+				}else{
+					$html = self::handleStartTag($tag, $html);
+				}
+			}
+		}
+		if($layoutTags){
+			foreach(array_reverse($layoutTags) as $tag) {
+				$html = self::handleLayout($tag, $html);
 			}
 		}
 		if(self::$stripComment) $html = self::stripComment($html);
 		return str_replace(array("\r\n", "\n\n"), "\n", $html);
 	}
 	/**
-	 * handleStartTag() 处理开始标签
-	 * @param  array  $tag 标签内容
-	 * @return string      处理后的内容
+	 * handleLayout() 处理布局
+	 * @param  array  $tag  标签内容
+	 * @param  string $html HTML
+	 * @return string       处理后的内容
 	 */
-	private static function handleStartTag($tag){
+	private static function handleLayout($tag, $html){
+		$index = strpos($html, $tag['element']);
+		if($index === false) return $html;
+		$html = str_replace($tag['element'], '', $html);
+		$files = array_reverse(explode(',', $tag['attributes']['data']));
+		foreach($files as $file){
+			$file = trim($file);
+			if($file[0] != '/' && $file[1] != ':'){
+				$file = self::$currentDir.$file;
+			}
+			if(strpos($file, self::$rootDir) === 0){
+				$file = self::compile($file, false);
+			}
+			if($file){
+				$layout = explode('__CONTENT__', file_get_contents($file));
+				$html = substr($html, 0, $index).$layout[0].substr($html, $index).$layout[1];
+			}
+		}
+		return $html;
+	}
+	/**
+	 * handleStartTag() 处理开始标签
+	 * @param  array  $tag  标签内容
+	 * @param  string $html HTML
+	 * @return string       处理后的内容
+	 */
+	private static function handleStartTag($tag, $html){
 		$tagName = $tag['tagName'];
 		$attrs = $tag['attributes'];
 		$noDataTags = array('else', 'default', 'break', 'continue');
-		if(empty($attrs['data']) && !in_array($tagName, array_merge($noDataTags, self::$extraTags))) return '';
+		if(empty($attrs['data']) && !in_array($tagName, array_merge($noDataTags, self::$extraTags))){
+			return str_replace($tag['element'], '', $html);
+		}
 		foreach ($attrs as $k => $v) {
-			$attrs[$k] = preg_replace('/<\?php echo(.*)[;]*\?>/Ue', "eval('return $1;')", $v);
+			$attrs[$k] = preg_replace_callback('/<\?php echo(.*)[;]*\?>/U', function($match){
+				return eval("return {$match[1]};");
+			}, $v);
 		}
 		if($tagName == 'include'){
 			$code = array();
@@ -90,7 +131,7 @@ final class template{
 			}else $args = '';
 			$code = "$tagName($args);";
 		}
-		return $code ? "<?php $code ?>" : '';
+		return str_replace($tag['element'], $code ? "<?php $code ?>" : '', $html);
 	}
 	/**
 	 * handleEndTag() 处理结束标签

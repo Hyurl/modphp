@@ -15,7 +15,9 @@ function camelcase2underline($str){
  * @return string            驼峰命名字符串
  */
 function underline2camelcase($str, $ucfirst = false){
-	$str = preg_replace('/_([a-zA-Z0-9])/e', "strtoupper('$1')", $str);
+	$str = preg_replace_callback('/_([a-zA-Z0-9])/', function($match){
+		return strtoupper(ltrim($match[0], '_'));
+	}, $str);
 	return $ucfirst ? ucfirst($str) : $str;
 }
 /** 
@@ -539,17 +541,14 @@ function url(){
 	$requestUri = '';
 	if(isset($_SERVER['REQUEST_URI'])) {
 		$requestUri = $_SERVER['REQUEST_URI'];
-	}else{
-		if(isset($_SERVER['argv'])) {
-			$requestUri = $_SERVER['PHP_SELF'].'?'.$_SERVER['argv'][0];
-		}elseif(isset($_SERVER['QUERY_STRING'])) {
-			$requestUri = $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'];
-		}
+	}elseif(!empty($_SERVER['QUERY_STRING'])){
+		$requestUri = $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'];
+	}elseif(!empty($_SERVER['argv'])){
+		$requestUri = $_SERVER['PHP_SELF'].'?'.$_SERVER['argv'][0];
 	}
 	$scheme = empty($_SERVER['HTTPS']) ? '' : ($_SERVER['HTTPS'] == 'on' ? 's' : '');
 	$protocol = strstr(strtolower($_SERVER['SERVER_PROTOCOL']), '/', true).$scheme;
-	$port = $_SERVER['SERVER_PORT'] == 80 ? '' : ':'.$_SERVER['SERVER_PORT'];
-	return $url = $protocol.'://'.$_SERVER['SERVER_NAME'].$port.$requestUri;
+	return $url = $protocol.'://'.$_SERVER['HTTP_HOST'].$requestUri;
 }
 /**
  * get_client_ip() 获取客户端 IP 地址
@@ -622,7 +621,8 @@ function curl($options = array()){
 		'username'=>'', //HTTP 访问认证用户名;
 		'password'=>'', //HTTP 访问认证密码;
 		'charset'=>'', //目标页面编码
-		'parseJSON'=>false, //解析 JSON
+		'convert'=>'', //转换为指定的编码
+		'parseJSON'=>'', //解析 JSON
 		'success'=>null, //请求成功时的回调函数
 		'error'=>null, //请求失败时的回调函数
 		'extra'=>array() //其他 CURL 选项参数
@@ -682,27 +682,28 @@ function curl($options = array()){
 	}
 	curl_close($ch);
 	if(!$charset){
-		if(preg_match('/.*charset=(.*)/i', curl_info('content_type'), $match)){
+		if(preg_match('/.*charset=(.+)/i', $curlInfo['content_type'], $match)){
 			$charset = $match[1];
 		}else{
 			$_data = str_replace(array('\'', '"', '/'), '', $data);
-			if(preg_match('/<meta.*charset=(.*)>/iU', $_data, $match)){
+			if(preg_match('/<meta.*charset=(.+)>/iU', $_data, $match)){
 				$charset = strstr($match[1], ' ', true) ?: $match[1];
-			}else if(preg_match('/<\?xml.*encoding=(.*)?>/iU', $_data, $match)){
+			}else if(preg_match('/<\?xml.*encoding=(.+)?>/iU', $_data, $match)){
 				$charset = strstr($match[1], ' ', true) ?: $match[1];
 			}else{
-				$charset = substr(strstr($curlInfo['content_type'], 'charset='), 8) ?: 'UTF-8';
+				$charset = 'UTF-8';
 			}
 		}
 	}
 	if(strtolower(str_replace('-', '', $charset)) != 'utf8') $data = iconv($charset, 'UTF-8', $data);
+	if($convert) $data = iconv('UTF-8', $convert, $data);
 	$curlInfo['response_headers'] = parse_header(substr($data, 0, $curlInfo['header_size']));
 	$data = unicode_decode(substr($data, $curlInfo['header_size']));
 	if($curlInfo['http_code'] >= 400){
 		$curlInfo['error'] = $data;
 		goto returnError;
 	}
-	if(stripos($curlInfo['content_type'], 'application/json') !== false || $parseJSON) $data = json_decode($data, true);
+	if($parseJSON || ($parseJSON === '' && stripos($curlInfo['content_type'], 'application/json') !== false)) $data = json_decode($data, true);
 	curl_info($curlInfo);
 	if(is_callable($success)){
 		$_data = $success($data);
@@ -846,3 +847,48 @@ function hex2bin($hex){
 	return join('', $bin);
 }
 endif;
+/** 
+ * parse_cli_param() 解析 PHP 运行于 CLI 模式时传入的参数，支持的格式包括 --key=value，-k value 以及 valve
+ * @param  array  $argv 通常为 $_SERVER['agrv']
+ * @return array        包含键值对 file=>当前运行文件, args=>(array)参数列表
+ */
+function parse_cli_param($argv = array(), $i = 0, $isArg = false){
+	if(!$argv) return false;
+	static $args = array();
+	$_i = 1;
+	if(!$args){
+		$args = array('file'=>$argv[0], 'param'=>array());
+		$argv = array_splice($argv, 1);
+	}
+	if(!$argv) return $args;
+	if($argv[0][0] == '-'){
+		if(isset($argv[0][1]) && $argv[0][1] != '-' && !isset($argv[0][2])){
+			$key = ltrim($argv[0], '-');
+		}elseif(isset($argv[0][1]) && $argv[0][1] == '-' && isset($argv[0][2]) && $argv[0][2] != '-'){
+			$key = ltrim($argv[0], '-');
+		}else $value = $argv[0];
+	}elseif($argv[0] != ';') $value = $argv[0];
+	if(isset($key)){
+		if(isset($argv[1]) && $argv[1][0] != '-' && $key[strlen($key)-1] != ';'){
+			$value = $argv[1];
+			$_i = 2;
+		}else $value = '';
+	}
+	if(!$isArg){
+		$args['param'][$i] = array('cmd'=>$value, 'args'=>array());
+	}else{
+		if(isset($key)) $args['param'][$i]['args'][rtrim($key, ';')] = rtrim($value, ';');
+		elseif($argv[0] != ';') $args['param'][$i]['args'][] = rtrim($value, ';');
+	}
+	if($argv[$_i-1][strlen($argv[$_i-1])-1] == ';'){
+		$i += 1;
+		$isArg = false;
+	}else{
+		$isArg = true;
+	}
+	$argv = array_splice($argv, $_i);
+	if($argv){
+		parse_cli_param($argv, $i, $isArg);
+	}
+	return $args;
+}

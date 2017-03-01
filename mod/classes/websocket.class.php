@@ -16,13 +16,16 @@ final class WebSocket{
 	static function listen($port, $callback = null){
 		$socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 		if(socket_set_nonblock($socket) && socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) && socket_bind($socket, '0.0.0.0', $port) && socket_listen($socket, 2)){
+			session_write_close();
+			session_unset();
+			session_id('');
 			$_SERVER['WEBSOCKET'] = 'on';
 			$_SERVER['SERVER_PORT'] = $port;
 			self::$sockets = array($socket);
 			if(is_callable($callback)){
 				$callback($socket);
 			}
-			while (true) {
+			while(true){
 				$read = self::$sockets;
 				if(socket_select($read, $write, $except, null) < 1){
 					continue;
@@ -46,7 +49,7 @@ final class WebSocket{
 							}else{
 								$msg = self::decode($buffer);
 								if($msg['dataType'] != 'close' && is_callable($callback)){
-									self::run('message', array_merge(array('client'=>$client), $msg));
+									self::run('message', array_merge(array('client'=>&$client), $msg));
 								}elseif($msg['dataType'] == 'close'){
 									self::close($msg['code'], $msg['reason']);
 								}
@@ -99,7 +102,7 @@ final class WebSocket{
 	static function close($code = 1000, $reason = 'Normal closure.'){
 		$sockets = &self::$sockets;
 		$client = &self::$client;
-		self::run('close', array('client'=>$client, 'code'=>$code, 'reason'=>$reason));
+		self::run('close', array('client'=>&$client, 'code'=>$code, 'reason'=>$reason));
 		$msg = str_split(sprintf('%016b', $code), 8);
 		$msg[0] = chr(bindec($msg[0]));
 		$msg[1] = chr(bindec($msg[1]));
@@ -169,10 +172,10 @@ final class WebSocket{
 			$client = self::$client;
 			if($len = socket_write($client, $resHr, strlen($resHr))){
 				self::$handshaked[(int)$client] = true;
-				self::run('open', array('client'=>$client, 'request_headers'=>$reqHr));
+				self::run('open', array('client'=>&$client, 'request_headers'=>$reqHr));
 				return $len;
 			}else{
-				self::handleError(self::$client);
+				self::handleError($client);
 			}
 		}
 		return false;

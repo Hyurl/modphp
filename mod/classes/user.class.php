@@ -71,6 +71,8 @@ final class user extends mod{
 		do_hooks('user.logout');
 		if(error()) return error();
 		if(session_status() == PHP_SESSION_ACTIVE && get_me()){
+			_user('me_id', false);
+			_user('me_level', false);
 			session_unset();
 			session_destroy();
 			self::sessCookie('', time()-60);

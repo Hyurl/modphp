@@ -78,7 +78,7 @@ final class file extends mod{
 	 * @param  array  $arg 请求参数
 	 * @return array       刚上传的文件或者错误信息(错误信息为包含原始文件信息的数组)
 	 */
-	static function upload($arg = array()){
+	static function upload(array $arg = array()){
 		if(isset($arg['file']) && is_string($arg['file']) && stripos($arg['file'], 'data') === 0){ //处理 Data URI scheme
 			$file = explode(',', $arg['file']);
 			if(strpos($file[0], ';')){
@@ -111,7 +111,7 @@ final class file extends mod{
 				if(!$file[$i]['error']){
 					if($savepath = self::saveUpload($file[$i])){
 						$arg['file_name'] = $file[$i]['name'];
-						if(stripos($savepath, __ROOT__) === 0){
+						if(strapos($savepath, __ROOT__) === 0){
 							$savepath = substr($savepath, strlen(__ROOT__));
 						}
 						$arg['file_src'] = $savepath;
@@ -138,7 +138,7 @@ final class file extends mod{
 		return error($data);
 	}
 	/** add() 方法为 upload 方法的别名 */
-	static function add($arg = array()){
+	static function add(array $arg = array()){
 		return self::upload($arg);
 	}
 	/**
@@ -146,13 +146,13 @@ final class file extends mod{
 	 * @param  array  $arg 请求参数
 	 * @return array       操作结果
 	 */
-	static function delete($arg = array()){
+	static function delete(array $arg = array()){
 		if(empty($arg['file_id'])) return error(lang('mod.missingArguments'));
 		if(get_file((int)$arg['file_id'])) {
 			$result = parent::delete($arg);
 			if(error()) return error();
 			$src = file_src();
-			if(stripos($src, site_url()) === 0) $src = __ROOT__.substr($src, strlen(site_url()));
+			if(strapos($src, site_url()) === 0) $src = __ROOT__.substr($src, strlen(site_url()));
 			$dir = pathinfo($src, PATHINFO_DIRNAME);
 			if(@unlink($src)){
 				self::deleteMoreImage($src);

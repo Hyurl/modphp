@@ -137,7 +137,10 @@ class mod{
 		$link = static::TABLE.'_link';
 		$primkey = static::PRIMKEY;
 		if(!empty($arg[$link])){
+			$hasRoot = strapos($arg[$link], site_url()) === 0;
 			if($act != 'get'){
+				if($hasRoot) $arg[$link] = substr($arg[$link], strlen(site_url()));
+				if(file_exists($arg[$link])) return error(lang('mod.linkUnavailable'));
 				$tables = array();
 				foreach(database() as $k => $v){
 					if(array_key_exists($k.'_link', $v)) $tables[] = $k;
@@ -149,13 +152,8 @@ class mod{
 						if(static::TABLE != $table || (!empty($arg[$primkey]) && $arg[$primkey] != $the_table($primkey))) return error(lang('mod.linkUnavailable'));
 					}
 				}
-				if(stripos($arg[$link], site_url()) === 0){
-					$arg[$link] = substr($arg[$link], strlen(site_url()));
-				}
-			}else{
-				if(stripos($arg[$link], site_url()) !== 0){
-					$arg[$link] = site_url().$arg[$link];
-				}
+			}else if(!$hasRoot){
+				$arg[$link] = site_url().$arg[$link];
 			}
 		}
 	}
@@ -227,7 +225,7 @@ class mod{
 	 * @param  array  $arg 请求参数
 	 * @return array       请求结果
 	 */
-	final static function install($arg = array()){
+	final static function install(array $arg = array()){
 		if(static::TABLE) return error(lang('mod.methodDenied', __method__, 'mod'));
 		if(config('mod.installed')) return error(lang('mod.installed'));
 		if(is_writable(__ROOT__.'user/config')){
@@ -246,8 +244,6 @@ class mod{
 				'user_level'    => config('user.level.admin'),
 				);
 			mysql::open(0)->insert('user', $user);
-			$user['user_password'] = $password;
-			user::login($user);
 			return success(lang('mod.installed'));
 		}else{
 			return error(lang('mod.directoryUnwritable', $path));
@@ -258,7 +254,7 @@ class mod{
 	 * @param  array  $arg 请求参数
 	 * @return array       请求结果
 	 */
-	final static function uninstall($arg = array()){
+	final static function uninstall(array $arg = array()){
 		if(static::TABLE) return error(lang('mod.methodDenied', __method__));
 		if(!config('mod.installed')) return error(lang('mod.notInstalled'));
 		if(is_writable(__ROOT__.'user/config')){
@@ -285,7 +281,7 @@ class mod{
 	 * @param  array  $arg 请求参数
 	 * @return array       请求结果
 	 */
-	final static function config($arg = array()){
+	final static function config(array $arg = array()){
 		if(static::TABLE) return error(lang('mod.methodDenied', __method__));
 		if(!config('mod.installed')) return error(lang('mod.notInstalled')); 
 		if(is_writable(__ROOT__.'user/config')){
@@ -311,7 +307,7 @@ class mod{
 	 * @param  array  $arg 请求参数
 	 * @return array       刚添加的记录
 	 */
-	static function add($arg = array()){
+	static function add(array $arg = array()){
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
 		do_hooks($tb.'.add', $arg);
@@ -331,12 +327,11 @@ class mod{
 	 * @param  array  $arg 请求参数
 	 * @return array       更新后的记录
 	 */
-	static function update($arg = array()){
+	static function update(array $arg = array()){
 		$tb = static::TABLE;
 		$primkey = static::PRIMKEY;
 		if(!$tb){
 			$ok = false;
-			if(!config('mod.installed')) return error(lang('mod.notInstalled'));
 			do_hooks('mod.update', $arg);
 			if(error()) return error();
 			if(!empty($arg['upgrade'])){
@@ -374,7 +369,7 @@ class mod{
 	 * @param  array  $arg  请求参数
 	 * @return array        操作结果
 	 */
-	static function delete($arg = array()){
+	static function delete(array $arg = array()){
 		$tb = static::TABLE;
 		$primkey = static::PRIMKEY;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
@@ -397,7 +392,7 @@ class mod{
 	 * @param  array  $arg 请求参数
 	 * @return array       请求的记录或错误
 	 */
-	final static function get($arg = array()){
+	final static function get(array $arg = array()){
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
 		foreach($arg as $k => $v){
@@ -413,7 +408,7 @@ class mod{
 	 * @param  array  $arg  请求参数
 	 * @return array        符合条件的记录或错误
 	 */
-	final static function getMulti($arg = array()){
+	final static function getMulti(array $arg = array()){
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
 		$default = array(
@@ -422,7 +417,7 @@ class mod{
 			'limit'=>10, //单页获取上限
 			'page'=>1 //当前页码
 			);
-		$arg = is_array($arg) ? array_merge($default, $arg) : $default;
+		$arg = array_merge($default, $arg);
 		do_hooks($tb.'.get.before', $arg);
 		if(strtolower($arg['sequence']) == 'rand') $orderby = 'rand()';
 		else $orderby = $arg['orderby'].' '.$arg['sequence'];
@@ -444,7 +439,7 @@ class mod{
 	 * @param  array  $arg       请求参数
 	 * @return array             请求结果或错误
 	 */
-	final static function search($arg = array()){
+	final static function search(array $arg = array()){
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
 		$default = array(
@@ -454,7 +449,7 @@ class mod{
 			'limit'=>10, //单页获取上限
 			'page'=>1 //当前页码
 			);
-		$arg = is_array($arg) ? array_merge($default, $arg) : $default;
+		$arg = array_merge($default, $arg);
 		if(config($tb.'.keys.search')){
 			if(!$arg['keyword']) return error(lang('mod.missingArguments'));
 			else $arg['keyword'] = urldecode($arg['keyword']);
@@ -518,7 +513,7 @@ class mod{
 	 * @param  string $sequence 排序方式，asc 或 desc
 	 * @return array            请求的记录或错误
 	 */
-	final static function getPrev($arg = array(), $sign = '>=', $sequence = 'desc'){
+	final static function getPrev(array $arg = array(), $sign = '>=', $sequence = 'desc'){
 		$tb = static::TABLE;
 		$primkey = static::PRIMKEY;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
@@ -546,7 +541,7 @@ class mod{
 	 * @param  array  $arg  请求参数
 	 * @return array        请求的记录或错误
 	 */
-	final static function getNext($arg = array()){
+	final static function getNext(array $arg = array()){
 		if(!static::TABLE) return error(lang('mod.methodDenied', __method__));
 		return static::getPrev($arg, '<=', 'asc');
 	}
@@ -577,7 +572,7 @@ class mod{
 							if(error()) return error();
 							$data[] = $single;
 						}elseif($action == 'delete'){
-							do_hooks($tb.'.clearTrash', $single);
+							do_hooks($tb.'.cleanTrash', $single);
 							if(error()) return error();
 							mysql::open(0)->delete($tb, $primkey.' = '.$single[$primkey]);
 							$count++;
@@ -598,8 +593,8 @@ class mod{
 		if(!static::TABLE) return error(lang('mod.methodDenied', __method__));
 		return static::trash('get');
 	}
-	/** clearTrash() 删除无效数据库记录 */
-	final static function clearTrash(){
+	/** cleanTrash() 清除无效数据库记录 */
+	final static function cleanTrash(){
 		if(!static::TABLE) return error(lang('mod.methodDenied', __method__));
 		return static::trash('delete');
 	}

@@ -9,7 +9,7 @@ add_hook(array(
 }, false);
 /** 获取文件路径为绝对路径 */
 add_hook('file.get.absolute_src', function($input){
-	if(stripos($input['file_src'], site_url()) !== 0){
+	if(strapos($input['file_src'], site_url()) !== 0){
 		$input['file_src'] = site_url().$input['file_src'];
 	}
 	return $input;

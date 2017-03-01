@@ -9,6 +9,7 @@ function get_me($key = ''){
 	static $sid = '';
 	if(!$result || $sid != session_id()){
 		$sid = session_id();
+		$result = array();
 		$_result = user::getMe();
 		error(null);
 		if(!$_result['success']) return null;
@@ -16,7 +17,7 @@ function get_me($key = ''){
 	}
 	if(!$key) return $result;
 	else if(isset($result[$key])) return $result[$key];
-	else if(stripos($key, 'user_') !== 0){
+	else if(strpos($key, 'user_') !== 0){
 		$key = 'user_'.$key;
 		return isset($result[$key]) ? $result[$key] : null;
 	}else return null;
@@ -31,7 +32,7 @@ foreach (database('user') as $key) {
 		else if(!$key) return $result;
 		else if(isset($result[$key])) return $result[$key];
 		else{
-			if(stripos($key, "user_") !== 0) $key = "user_".$key;
+			if(strpos($key, "user_") !== 0) $key = "user_".$key;
 			return isset($result[$key]) ? $result[$key] : null;
 		}
 	}';

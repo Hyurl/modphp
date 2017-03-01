@@ -5,7 +5,7 @@ add_hook('mod.install', function($input){
 });
 /** 在系统配置、更新、卸载时检查管理员权限 */
 add_hook(array('mod.config', 'mod.update', 'mod.uninstall'), function(){
-	if(is_client_call()){
+	if(is_client_call() && config('mod.installed')){
 		if(!is_logined()) return error(lang('user.notLoggedIn'));
 		if(!is_admin()) return error(lang('mod.permissionDenied'));
 	}

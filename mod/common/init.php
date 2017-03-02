@@ -348,9 +348,9 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 				ob_start();
 				$STDIN = trim($STDIN);
 				eval($STDIN && $STDIN[strlen($STDIN)-1] == ';' ? $STDIN : $STDIN.';');
-				${'STDOUT'.__TIME__} = ob_get_clean();
+				${'STDOUT'.__TIME__} = trim(ob_get_clean(), "\r\n");
 				if($CHARSET && strcasecmp($CHARSET, 'UTF-8')) ${'STDOUT'.__TIME__} = iconv('UTF-8', $CHARSET, ${'STDOUT'.__TIME__});
-				fwrite(STDOUT, ($STDIN ? trim(${'STDOUT'.__TIME__}, "\r\n").PHP_EOL : '')."modphp>");
+				fwrite(STDOUT, ($STDIN && ${'STDOUT'.__TIME__} ? ${'STDOUT'.__TIME__}.PHP_EOL : '')."modphp>");
 				unset($php_errormsg, ${'STDOUT'.__TIME__});
 			}
 		}

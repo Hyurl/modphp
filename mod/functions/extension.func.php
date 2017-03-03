@@ -29,7 +29,7 @@ function str2bin($str){
 	$arr = preg_split('/(?<!^)(?!$)/u', $str);
 	foreach($arr as &$v){
 		$v = unpack('H*', $v);
-		$v = base_convert(array_shift($v), 16, 2);
+		$v = base_convert($v[1], 16, 2);
 	}
 	return join(' ', $arr);
 }

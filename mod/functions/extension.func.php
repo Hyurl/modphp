@@ -41,7 +41,9 @@ function str2bin($str){
 function bin2str($str){
 	$arr = explode(' ', $str);
 	foreach($arr as &$v){
-		$v = pack('H*', base_convert($v, 2, 16));
+		$v = base_convert($v, 2, 16);
+		if(strlen($v) % 2) $v = '0'.$v;
+		$v = pack('H*', $v);
 	}
 	return join('', $arr);
 }

@@ -972,6 +972,7 @@ function report_http_error($code, $msg = ''){
 	$file = $file ? template_path($file) : false;
 	Header('HTTP/1.1 '.$code.' '.$status[$code]);
 	if(ob_get_length()) ob_end_clean();  //清除输出缓冲区
+	do_hooks('mod.template.load.'.$code, $msg);
 	if($file && file_exists($file) && !$msg){
 		${$_SERVER['REQUEST_TIME'].'_file'} = $file;
 		unset($code, $msg, $file, $uri, $status, $html);
@@ -994,7 +995,6 @@ function report_http_error($code, $msg = ''){
 foreach (array(403, 404, 500) as $code) {
 	eval('
 	function report_'.$code.'($msg = ""){
-		do_hooks("mod.template.load.'.$code.'", $msg);
 		report_http_error('.$code.', $msg);
 	}
 	function is_'.$code.'(){

@@ -28,7 +28,8 @@ function underline2camelcase($str, $ucfirst = false){
 function str2bin($str){
 	$arr = preg_split('/(?<!^)(?!$)/u', $str);
 	foreach($arr as &$v){
-		$v = base_convert(array_shift(unpack('H*', $v)), 16, 2);
+		$v = unpack('H*', $v);
+		$v = base_convert(array_shift($v), 16, 2);
 	}
 	return join(' ', $arr);
 }

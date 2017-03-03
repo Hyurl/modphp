@@ -812,7 +812,7 @@ if(!function_exists('session_status')):
 function session_status(){
 	if(!extension_loaded('session')){
 		return 0;
-	}elseif(!file_exists(session_save_path().'/sess_'.session_id())){
+	}elseif(!file_exists(rtrim(session_save_path(), '/').'/sess_'.session_id())){
 		return 1;
 	}else{
 		return 2;
@@ -828,7 +828,7 @@ endif;
  * @return bool
  */
 function session_retrieve($id){
-	if(!file_exists(session_save_path().'/sess_'.$id)) return false;
+	if(!file_exists(rtrim(session_save_path(), '/').'/sess_'.$id)) return false;
 	session_id($id);
 	@session_start();
 	return true;

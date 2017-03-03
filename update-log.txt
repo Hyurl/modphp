@@ -1,4 +1,19 @@
-﻿【ModPHP 更新日志】
+【ModPHP 更新日志】
+版本 1.7.2 (2017-3-3 17:05)【重要】
+1. 修复 WebSocket 在 PHP 5.4 之后无法连接的问题。
+2. 为多线程进行优化，新增 WebSocket::start() 方法，WebSocket::listen() 方法添加
+   第三个参数 $autoStart，默认 true。
+   如果 PHP 使用了多线程扩展，可以将 $autoStart 设置为 false,
+   然后在 Threaded::run() 中调用 WebSocket::start() 方法。
+3. 新增 WebSocket::$maxInput 和 WebSocket::$cliCharset 属性分别用来设置最大传入字节数
+   和操作系统命令行所支持的字符集。
+4. 新增配置项 config("mod.WebSocket.port") 用来替代 config("mod.websocketPort"),
+   以及 config("mod.WebSocket.maxThreads") 用来设置默认 WebSocket 模式的最大线程数。
+5. 新增保留类名 WebSocketThread 用来实现默认 WebSocket 模式的多线程支持。
+6. 注意不要在 WebSocket 模式下进行任何直接输出，否则 Session 将会重启失败，
+   如果通过命令行启动，可以使用 fwrite(STDOUT, "string") 的方式向控制台输出内容。
+   你需要自己为 PHP 添加多线程扩展才能实现多线程能力。
+
 版本 1.7.1 (2017-3-1 12:35)
 1. 修复在 PHP 5.5 之后报不再支持 /e 标记的正则表达式的问题。
 2. 类继承时不再忽略严格性检查。

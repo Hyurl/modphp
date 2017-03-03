@@ -14,7 +14,7 @@ final class user extends mod{
 	 * @return array  当前登录的用户或错误
 	 */
 	static function getMe(){
-		if(session_status() == PHP_SESSION_ACTIVE && isset($_SESSION['ME_ID'])){
+		if(session_status() == PHP_SESSION_ACTIVE && !empty($_SESSION['ME_ID'])){
 			$me = mysql::open(0)->select('user', '*', "`user_id` = ".$_SESSION['ME_ID'])->fetch_assoc();
 			_user('me_id', (int)$me['user_id']);
 			_user('me_level', (int)$me['user_level']);
@@ -49,6 +49,7 @@ final class user extends mod{
 		if($result && $result->num_rows >= 1){
 			while($user = $result->fetch_assoc()){
 				if(hash_verify($user['user_password'], $arg['user_password'])){
+					if(!session_id()) session_id(strtolower(rand_str(26)));
 					if(session_status() != PHP_SESSION_ACTIVE) @session_start();
 					$_SESSION['ME_ID'] = (int)$user['user_id'];
 					_user('me_id', (int)$user['user_id']);

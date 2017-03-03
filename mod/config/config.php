@@ -15,7 +15,6 @@ return array(
 		'language' => 'zh-CN', //语言
 		'timezone' => 'Asia/Shanghai', //时区
 		'outputBuffering' => 0, //输出缓冲区大小，可设置为 1-4096(4 KB) 的值，0 则不限制，在 PHP 5.4.0 之前，1 等于 4096
-		'websocketPort' => 8080, //WebSocket 监听端口
 		'escapeTags' => '<script><style><iframe>', //过滤 HTML 标签
 		'pathinfoMode' => false, //如果开启, create_url() 创建的路径将包含模板入口文件
 		'cliCharset'=>'', //设置运行于命令行模式时操作系统所支持的编码
@@ -41,7 +40,11 @@ return array(
 				'savePath' => 'tmp/', //编译文件保存路径
 				'stripComment' => false, //移除注释
 				)
-			)
+			),
+		'WebSocket'=>array( //WebSocket 设置
+			'port' => 8080, //端口
+			'maxThreads' => 1, //最大线程数
+			),
 		),
 	'site' => array( //网站设置
 		'name' => 'ModPHP', //名称

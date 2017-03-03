@@ -6,7 +6,7 @@ if(version_compare(PHP_VERSION, '5.3.0') < 0) exit('PHP version lower 5.3.0, una
 set_time_limit(0); //设置脚本不超时
 // error_reporting(E_ALL & ~E_STRICT); //关闭严格性检查
 /** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '1.7.1');
+define('MOD_VERSION', '1.7.2');
 define('__TIME__', time(), true);
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true);
 define('__SCRIPT__', substr($_SERVER['SCRIPT_FILENAME'], strlen(__ROOT__)) ?: $_SERVER['SCRIPT_FILENAME'], true);
@@ -220,15 +220,20 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 	if(ob_get_length()) ob_end_flush(); //刷出并关闭缓冲区
 	do_hooks('mod.template.load.complete'); //在模板加载后执行挂钩回调函数
 }elseif(__SCRIPT__ == 'ws.php'){ //WebSocket
+	/** 设置 WS 全局变量 */
+	WebSocket::$cliCharset = config('mod.cliCharset');
+	$WS_INFO = $WS_USER = array();
+	${'STDOUT'.__TIME__} = lang('mod.websocketOnTip');
+	if(WebSocket::$cliCharset && strcasecmp(WebSocket::$cliCharset, 'UTF-8')) ${'STDOUT'.__TIME__} = @iconv('UTF-8', WebSocket::$cliCharset, ${'STDOUT'.__TIME__}) ?: ${'STDOUT'.__TIME__};
 	if(is_agent()){
 		if(php_sapi_name() == 'cgi-fcgi') report_500(lang('mod.websocketFastCGIWarning'));
 		if(!is_admin()) report_403();
 	}
 	if(!file_exists($file = __ROOT__.'.websocket')) file_put_contents($file, 'on');
 	$file = fopen($file, 'r');
-	if(!flock($file, LOCK_EX | LOCK_NB)) report_500(lang('mod.websocketOnTip'));
-	/** 设置 WS 全局变量 */
-	$WS_INFO = $WS_USER = array();
+	if(!flock($file, LOCK_EX | LOCK_NB)){
+		is_agent() ? report_500(${'STDOUT'.__TIME__}) : exit(${'STDOUT'.__TIME__});
+	}
 	WebSocket::on('open', function($event){ //绑定连接事件
 		global $WS_INFO, $WS_USER;
 		do_hooks('WebSocket.open', $event);
@@ -326,19 +331,30 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 		global $WS_INFO, $WS_USER;
 		do_hooks('WebSocket.close', $event);
 		$srcId = (int)$event['client'];
-		if($WS_INFO[$srcId]['user_id']){
+		if(!empty($WS_INFO[$srcId]['user_id'])){
 			$uid = me_id() ?: $WS_INFO[$srcId]['user_id'];
 			$i = array_search($event['client'], $WS_USER[$uid]);
 			if($i !== false) unset($WS_USER[$uid][$i]);
 			if(!$WS_USER[$uid]) unset($WS_USER[$uid]);
 		}
 		unset($WS_INFO[$srcId]);
-	})->listen(config('mod.websocketPort'), function($socket){
-		$CHARSET = config('mod.cliCharset');
-		$lang = lang('mod.websocketOnTip');
-		if($CHARSET && strcasecmp($CHARSET, 'UTF-8')) $lang = iconv('UTF-8', $CHARSET, $lang);
-		echo $lang."\n";
 	});
+	WebSocket::listen(config('mod.WebSocket.port'), function($socket){
+		global ${'STDOUT'.__TIME__};
+		if(!is_agent()) fwrite(STDOUT, ${'STDOUT'.__TIME__}."\n");
+	}, !(class_exists('Thread') && config('mod.WebSocket.maxThreads') > 1));
+	if(class_exists('Thread') && config('mod.WebSocket.maxThreads') > 1){
+		class WebSocketThread extends Thread{
+			function run(){
+				WebSocket::start();
+			}
+		}
+		${'THREAD'.__TIME__} = array();
+		for($i=0; $i<config('mod.WebSocket.maxThreads'); $i++){
+			${'THREAD'.__TIME__}[$i] = new WebSocketThread();
+			${'THREAD'.__TIME__}[$i]->start();
+		}
+	}
 }elseif(__SCRIPT__ == 'mod.php'){
 	$CHARSET = config('mod.cliCharset');
 	if(!isset($_SERVER['argv'][1])){

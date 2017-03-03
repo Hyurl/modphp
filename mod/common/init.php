@@ -350,7 +350,7 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 			}
 		}
 		${'THREAD'.__TIME__} = array();
-		for($i=0; $i<config('mod.WebSocket.maxThreads'); $i++){
+		for($i=1; $i<config('mod.WebSocket.maxThreads'); $i++){
 			${'THREAD'.__TIME__}[$i] = new WebSocketThread();
 			${'THREAD'.__TIME__}[$i]->start();
 		}

@@ -4,67 +4,32 @@ final class WebSocket{
 	static $onmessage = null; //接收数据时触发回调函数
 	static $onerror = null; //发生错误时触发回调函数
 	static $onclose = null; //关闭连接时触发回调函数
-	private static $sockets = array(); //所有连接
+	static $maxInput = 8388608; //最大传入字节数
+	static $cliCharset = ""; //命令行字符编码
+	private static $server = null; //服务器资源
 	private static $client = null; //当前客户端
+	private static $sockets = array(); //所有连接
 	private static $handshaked = array(); //已握手的连接
 	/**
 	 * listen() 监听连接
-	 * @param  int      $port    监听端口
-	 * @param  callable $calback 监听成功回调函数
+	 * @param  int      $port      监听端口
+	 * @param  callable $calback   监听成功回调函数
+	 * @param  bool     $autoStart 自动启动
 	 * @return null
 	 */
-	static function listen($port, $callback = null){
+	static function listen($port, $callback = null, $autoStart = true){
 		$socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 		if(socket_set_nonblock($socket) && socket_set_option($socket, SOL_SOCKET, SO_REUSEADDR, 1) && socket_bind($socket, '0.0.0.0', $port) && socket_listen($socket, 2)){
+			/** 必需关闭 Session 才能启动 Socket */
 			session_write_close();
 			session_unset();
 			session_id('');
 			$_SERVER['WEBSOCKET'] = 'on';
 			$_SERVER['SERVER_PORT'] = $port;
+			self::$server = $socket;
 			self::$sockets = array($socket);
-			if(is_callable($callback)){
-				$callback($socket);
-			}
-			while(true){
-				$read = self::$sockets;
-				if(socket_select($read, $write, $except, null) < 1){
-					continue;
-				}
-				if(in_array($socket, $read)){
-					if($client = socket_accept($socket)){
-						array_push(self::$sockets, $client);
-						self::$handshaked[(int)$client] = false;
-					}else{
-						self::handleError($socket);
-					}
-					unset($read[array_search($socket, $read)]);
-				}
-				foreach ($read as $client) {
-					self::$client = $client;
-					$status = @socket_recv($client, $buffer, 8388608, MSG_WAITALL);
-					if($status !== 0){
-						if($status !== false){
-							if(!self::$handshaked[(int)$client]){
-								self::shakeHands($buffer);
-							}else{
-								$msg = self::decode($buffer);
-								if($msg['dataType'] != 'close' && is_callable($callback)){
-									self::run('message', array_merge(array('client'=>&$client), $msg));
-								}elseif($msg['dataType'] == 'close'){
-									self::close($msg['code'], $msg['reason']);
-								}
-							}
-						}else continue;
-					}else{
-						self::close(1001, 'Client has gone away.');
-					}
-					session_write_close();
-					session_unset();
-					session_id('');
-					if(function_exists('error')) error(null);
-				}
-			}
-			socket_close($socket);
+			if(is_callable($callback)) $callback($socket);
+			if($autoStart) self::start();
 		}else{
 			self::handleError($socket);
 		}
@@ -107,10 +72,8 @@ final class WebSocket{
 		$msg[0] = chr(bindec($msg[0]));
 		$msg[1] = chr(bindec($msg[1]));
 		$msg = implode('', $msg).$reason;
-		socket_write($client, self::encode($msg, 'close'), 127);
-		self::handleError($client);
-		unset(self::$handshaked[(int)$client]);
-		unset($sockets[array_search($client, $sockets)]);
+		@socket_write($client, self::encode($msg, 'close'), 127);
+		unset(self::$handshaked[(int)$client], $sockets[array_search($client, $sockets)]);
 		socket_close($client);
 	}
 	/**
@@ -135,6 +98,55 @@ final class WebSocket{
 		}
 		return new self;
 	}
+	/** start() 启动服务 */
+	static function start(){
+		$socket = self::$server;
+		while(true){
+			$read = self::$sockets;
+			$status = socket_select($read, $write, $except, null);
+			if($status < 1){
+				if($status === false) self::handleError(self::$sockets[0]);
+				continue;
+			}
+			if(in_array($socket, $read)){
+				if($client = socket_accept($socket)){
+					array_push(self::$sockets, $client);
+					self::$handshaked[(int)$client] = false;
+				}else{
+					self::handleError($socket);
+				}
+				unset($read[array_search($socket, $read)]);
+			}
+			foreach ($read as $client) {
+				self::$client = $client;
+				$buffer = socket_read($client, self::$maxInput);
+				if($buffer !== false){
+					if($buffer !== ''){
+						if(!self::$handshaked[(int)$client]){
+							self::shakeHands($buffer); //握手
+						}else{
+							$msg = self::decode($buffer);
+							if($msg['dataType'] != 'close'){
+								self::run('message', array_merge(array('client'=>&$client), $msg));
+							}else{
+								self::close($msg['code'], $msg['reason']);
+							}
+						}
+					}else{
+						self::close(1001, 'Client has gone away.');
+					}
+				}else{
+					self::handleError($client);
+				}
+				/** 为每一个连接重置 Session */
+				session_write_close();
+				session_unset();
+				session_id('');
+				if(defined('MOD_VERSION') && function_exists('error')) error(null);
+			}
+		}
+		socket_close($socket);
+	}
 	/** run() 执行事件处理程序 */
 	private static function run($event, $data){
 		$callback = self::${'on'.$event};
@@ -150,9 +162,11 @@ final class WebSocket{
 	private static function handleError($socket){
 		$errno = socket_last_error($socket);
 		$error = socket_strerror($errno);
-		$error = @iconv('GBK', 'UTF-8', $error) ?: $error;
+		if(self::$cliCharset && strcasecmp(self::$cliCharset, 'UTF-8')){
+			$error = @iconv(self::$cliCharset, 'UTF-8', $error) ?: $error;
+		}
 		if($errno){
-			$event = array('client'=>$socket, 'errno'=>$errno, 'error'=>$error);
+			$event = array('client'=>&$socket, 'errno'=>$errno, 'error'=>$error);
 			if($event['client'] == self::$sockets[0]){
 				$event['client'] = null;
 			}

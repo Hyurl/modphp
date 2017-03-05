@@ -206,11 +206,12 @@ function xchmod($path, $mode){
  * @param  array $array 数组结构数据
  * @return array        结构数据路径
  */
-function array2path(array $array, $dir = ''){
+function array2path(array $array, $dir = '', $new = true){
 	static $paths = array();
+	if($new) $paths = array();
 	foreach ($array as $k => $v) {
 		if(is_array($v)){
-			array2path($v, $dir.'/'.$k);
+			array2path($v, $dir.'/'.$k, false);
 		}else{
 			$paths[] = trim($dir.'/'.$v, '/');
 		}
@@ -855,9 +856,8 @@ endif;
  * @param  array  $argv 通常为 $_SERVER['agrv']
  * @return array        包含键值对 file=>当前运行文件, args=>(array)参数列表
  */
-function parse_cli_param($argv = array(), $i = 0, $isArg = false){
+function parse_cli_param($argv = array(), $i = 0, $isArg = false, $args = array()){
 	if(!$argv) return false;
-	static $args = array();
 	$_i = 1;
 	if(!$args){
 		$args = array('file'=>$argv[0], 'param'=>array());
@@ -891,7 +891,18 @@ function parse_cli_param($argv = array(), $i = 0, $isArg = false){
 	}
 	$argv = array_splice($argv, $_i);
 	if($argv){
-		parse_cli_param($argv, $i, $isArg);
+		return parse_cli_param($argv, $i, $isArg, $args);
 	}
 	return $args;
+}
+/**
+ * parse_cli_str() 解析命令行格式的字符串为数组
+ * @param  string $str 输入字符串
+ * @return array       解析后的字符串
+ */
+function parse_cli_str($str){
+	if(preg_match_all('/(["].+["])[\s]|(.+)[\s]|([\'].+)\b[\']/U', $str." ", $matches)){
+		return array_map(function($v){ return trim(trim($v), '"'); }, $matches[0]);
+	}
+	return false;
 }

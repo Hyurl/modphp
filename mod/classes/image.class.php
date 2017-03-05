@@ -52,8 +52,20 @@ final class image{
 		}
 		return $color;
 	}
-	/** imagecopymergealpha() 实现保存 alpha 通道的图像合并 */
-	private static function imagecopymergealpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct){ 
+	/**
+	 * imagecopymergealpha() 合并图像并保留透明度
+	 * @param  resource $dst_im 目标图像资源
+	 * @param  resource $src_im 原图像资源
+	 * @param  int      $dst_x  目标图像 X 轴坐标
+	 * @param  int      $dst_y  目标图像 Y 轴坐标
+	 * @param  int      $src_x  原图像 X 轴坐标
+	 * @param  int      $src_y  原图像 Y 轴坐标
+	 * @param  int      $src_w  原图像裁剪宽度
+	 * @param  int      $src_h  原图像裁剪高度
+	 * @param  int      $pct    合并百分比，1 - 100
+	 * @return bool
+	 */
+	static function imagecopymergealpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct){ 
 		if(!$pct) return true;
 		elseif($pct == 100){
 			imagecopy($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h);
@@ -89,8 +101,12 @@ final class image{
 			imagecopy($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h);
 		}
 	}
-	/** imagecreatefrombmp() 从 BMP 文件创建图像 */
-	private static function imagecreatefrombmp($filename){
+	/** 
+	 * imagecreatefrombmp() 从 BMP 文件创建图像
+	 * @param  string $filename 文件名
+	 * @return source           文件资源
+	 */
+	static function imagecreatefrombmp($filename){
 		if(!$f1 = fopen($filename, "rb")) return FALSE;
 		$FILE = unpack("vfile_type/Vfile_size/Vreserved/Vbitmap_offset", fread($f1, 14));
 		if($FILE['file_type'] != 19778) return FALSE;
@@ -219,11 +235,14 @@ final class image{
 				$src = $func($file);
 			}elseif($src['mime'] == 'image/x-ms-bmp'){
 				$src = self::imagecreatefrombmp($file);
-			}else return false;
+			}else{
+				goto make;
+			}
 			imagesavealpha($src, true);
 			imagealphablending($src, false);
 			self::resize($w, $h);
 		}else{
+			make:
 			$src = self::canvas(self::$width, self::$height);
 			if(self::$bgcolor){
 				list($x, $y) = self::getxy();
@@ -545,5 +564,27 @@ final class image{
 	/**  close() 关闭图像 */
 	static function close(){
 		return self::$src && imagedestroy(self::$src);
+	}
+	/**
+	 * getBinary() 获取二值化文本
+	 * @param  boolean $reverse 反转 0 和 1
+	 * @return string           二值化文本
+	 */
+	static function getBinary($reverse = false){
+		$data = array();
+		for($i=0; $i < self::$height; ++$i){
+			for($j=0; $j < self::$width; ++$j){
+				$rgb = imagecolorsforindex(self::$src, imagecolorat(self::$src, $j, $i));
+				if(!isset($data[$i])) $data[$i] = "";
+				if(!$rgb['red'] && !$rgb['green'] && !$rgb['blue'] && !self::$bgcolor){
+					$data[$i] .= (int)$reverse;
+				}elseif($rgb['red'] < 125 || $rgb['green'] < 125 || $rgb['blue'] < 125){
+					$data[$i] .= (int)!$reverse;
+				}else{
+					$data[$i] .= (int)$reverse;
+				}
+			}
+		}
+		return implode("\n", $data);
 	}
 }

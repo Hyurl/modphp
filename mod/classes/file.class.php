@@ -2,9 +2,9 @@
 final class file extends mod{
 	const TABLE = 'file';
 	const PRIMKEY = 'file_id';
-	private   static $file = array(); //文件内容
-	private   static $filename = ''; //文件名
-	private   static $info = array(); //文件信息
+	private static $file = array(); //文件内容
+	private static $filename = ''; //文件名
+	private static $info = array(); //文件信息
 	/** checkFileType() 检查文件类型 */
 	private static function checkFileType(&$input = array()){
 		$fileType = explode('|', config('file.upload.acceptTypes'));
@@ -171,6 +171,7 @@ final class file extends mod{
 		self::$filename = $filename;
 		if(file_exists($filename)){
 			$file = file($filename);
+			self::$file = array();
 			foreach ($file as $v) {
 				self::$file[] = rtrim($v, "\r\n");
 			}

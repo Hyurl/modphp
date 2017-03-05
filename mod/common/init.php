@@ -6,7 +6,7 @@ if(version_compare(PHP_VERSION, '5.3.0') < 0) exit('PHP version lower 5.3.0, una
 set_time_limit(0); //设置脚本不超时
 // error_reporting(E_ALL & ~E_STRICT); //关闭严格性检查
 /** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '1.7.2');
+define('MOD_VERSION', '1.7.4');
 define('__TIME__', time(), true);
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true);
 define('__SCRIPT__', substr($_SERVER['SCRIPT_FILENAME'], strlen(__ROOT__)) ?: $_SERVER['SCRIPT_FILENAME'], true);
@@ -81,10 +81,10 @@ function pre_init(){
 			$_GET['obj'] = $arg[0][0];
 			$_GET['act'] = $arg[0][1];
 			$arg = array_splice($arg, 1);
-			foreach ($arg as $param) {
-				$sep = strpos($param, ':') ? ':' : '=';
-				$param = explode($sep, $param);
-				$_GET = array_merge($_GET, array($param[0] => @$param[1]));
+			foreach ($arg as $PARAM) {
+				$sep = strpos($PARAM, ':') ? ':' : '=';
+				$PARAM = explode($sep, $PARAM);
+				$_GET = array_merge($_GET, array($PARAM[0] => @$PARAM[1]));
 			}
 		}elseif(preg_match('/mod.php\/(.+)\/(.+)/i', $url['path'])) {
 			$url['path'] = substr(url(), strlen(site_url())+8);
@@ -356,42 +356,57 @@ if(is_agent() && __SCRIPT__ == 'mod.php'){ /** 通过 url 传参的方式执行�
 		}
 	}
 }elseif(__SCRIPT__ == 'mod.php'){
-	$CHARSET = config('mod.cliCharset');
-	if(!isset($_SERVER['argv'][1])){
-		fwrite(STDOUT, 'modphp>');
-		while(true){
-			if($STDIN = fgets(STDIN)){
-				ob_start();
+	/** 实时控制台模式，兼容 shell 命令 */
+	if(!isset($_SERVER['argv'][1])) fwrite(STDOUT, 'modphp>');
+	while(true){
+		if(isset($_SERVER['argv'][1]) || $STDIN = fgets(STDIN)){
+			$CHARSET = config('mod.cliCharset');
+			if(isset($_SERVER['argv'][1])){
+				$STDIN = null;
+				$argv = parse_cli_param($_SERVER['argv']);
+			}else{
 				$STDIN = trim($STDIN);
-				eval($STDIN && $STDIN[strlen($STDIN)-1] == ';' ? $STDIN : $STDIN.';');
+				$argv = parse_cli_param(parse_cli_str($_SERVER['argv'][0].' '.$STDIN));
+			}
+			ob_start();
+			if(!$argv['param']){
+				fwrite(STDOUT, "modphp>");
+				continue;
+			}
+			foreach($argv['param'] as $PARAM){
+				if(!strpos($PARAM['cmd'], '(') && (is_callable($PARAM['cmd']) || strpos($PARAM['cmd'], '::'))) {
+					array_walk($PARAM['args'], function(&$v){
+						if($v === 'true') $v = true;
+						elseif($v === 'false') $v = false;
+						elseif($v === 'undefined' || $v === 'null') $v = null;
+						elseif(is_numeric($v) && (int)$v < PHP_INT_MAX) $v = (int)$v;
+					});
+					if(is_assoc($PARAM['args'])){
+						print_r(call_user_func($PARAM['cmd'], $PARAM['args']));
+					}elseif(is_array($PARAM['args'])){
+						print_r(call_user_func_array($PARAM['cmd'], $PARAM['args']));
+					}
+				}elseif($STDIN !== null){
+					eval($STDIN && $STDIN[strlen($STDIN)-1] == ';' ? $STDIN : $STDIN.';');
+					${'BREAK'.__TIME__} = true;
+				}else{
+					print_r(eval('return '.rtrim($PARAM['cmd'], ';').';'));
+				}
 				${'STDOUT'.__TIME__} = trim(ob_get_clean(), "\r\n");
 				if($CHARSET && strcasecmp($CHARSET, 'UTF-8')) ${'STDOUT'.__TIME__} = iconv('UTF-8', $CHARSET, ${'STDOUT'.__TIME__});
-				fwrite(STDOUT, ($STDIN && ${'STDOUT'.__TIME__} ? ${'STDOUT'.__TIME__}.PHP_EOL : '')."modphp>");
+				if($STDIN === null){
+					echo ${'STDOUT'.__TIME__}.($PARAM != end($argv['param']) ? PHP_EOL : '');
+				}else{
+					fwrite(STDOUT, $STDIN && ${'STDOUT'.__TIME__} ? ${'STDOUT'.__TIME__}.PHP_EOL : '');
+					if(!empty(${'BREAK'.__TIME__})){
+						unset(${'BREAK'.__TIME__});
+						break;
+					}
+				}
 				unset($php_errormsg, ${'STDOUT'.__TIME__});
 			}
+			if($STDIN === null) break;
+			else fwrite(STDOUT, "modphp>");
 		}
-	}
-	$argv = parse_cli_param($_SERVER['argv']);
-	foreach($argv['param'] as $param){
-		ob_start();
-		$args = $param['args'];
-		if(!strpos($param['cmd'], '(') && (function_exists($param['cmd']) || strpos($param['cmd'], '::') || !empty($args))){
-			foreach ($args as $k => $v) {
-				if($v === 'true') $args[$k] = true;
-				elseif($v === 'false') $args[$k] = false;
-				elseif($v === 'undefined' || $v === 'null') $args[$k] = null;
-				elseif(is_numeric($v) && (int)$v < PHP_INT_MAX) $args[$k] = (int)$v;
-			}
-			if(is_assoc($args)){
-				print_r(call_user_func($param['cmd'], $args));
-			}elseif(is_array($args)){
-				print_r(call_user_func_array($param['cmd'], $args));
-			}
-		}else{
-			print_r(eval('return '.$param['cmd'].';'));
-		}
-		$content = ob_get_clean();
-		if($CHARSET && strcasecmp($CHARSET, 'UTF-8')) $content = iconv('UTF-8', $CHARSET, $content);
-		echo $content && $content[strlen($content)-1] != "\n" ? $content."\n" : $content;
 	}
 }

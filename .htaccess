@@ -1,5 +1,5 @@
 #.htaccess for ModPHP
-<Files ~ '^.(htaccess|htpasswd)$'>
+<Files ~ '^.(htaccess|htpasswd)$|.db$'>
 deny from all
 </Files>
 Options -Indexes

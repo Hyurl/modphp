@@ -11,7 +11,7 @@
 	$update = url() == site_url('install.php?update');
 	$uninstall = url() == site_url('install.php?uninstall');
 	$ver = @json_decode(file_get_contents($host.'version'), true) ?: @curl(array('url'=>$host.'version', 'parseJSON'=>true));
-	$gt = $ver ? version_compare($ver['version'], MOD_VERSION) : -1;
+	$gt = $ver && !curl_info('error') ? version_compare($ver['version'], MOD_VERSION) : -1;
 	$newVerTip = $gt > 0 ? '<p style="margin-bottom: 0">有新版本可用：<code>'.$ver['version'].'</code>' : '';
 	$installed = config('mod.installed');
 	$title = $update ? '更新' : ($uninstall ? '卸载' : '安装');
@@ -45,6 +45,7 @@
 		xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 		xhr.onreadystatechange = function(){
 			var result = xhr.responseText;
+			console.log(result);
 			if(xhr.readyState == 4){
 				if(xhr.status == 200){
 					result = JSON.parse(result);
@@ -70,6 +71,7 @@
 	function install(){
 		if(!confirm('即将安装 ModPHP，确定？')) return false;
 		send_ajax('install', {
+			'mod.database.type': $('db-type').value,
 			'mod.database.host': $('db-host').value,
 			'mod.database.name': $('db-name').value,
 			'mod.database.port': $('db-port').value,
@@ -115,6 +117,7 @@
 	header a{color: inherit;}
 	header a:hover{text-decoration: none;color: #fff;}
 	header li:hover{border-bottom: 2px solid #fff;margin-bottom: -2px;}
+	#db-desc{margin: 5px 0;}
 	</style>
 </head>
 <body>
@@ -198,16 +201,28 @@
 			<form onsubmit="install(); return false;">
 				<div class="options">
 					<h3>数据库设置</h3>
+					<div>
+						<label for="db-type">数据库类型</label>
+						<select id="db-type">
+							<option value="mysql">MySQL(默认)</option>
+							<option value="sqlite">SQLite</option>
+						</select>
+					</div>
 					<?php
 					$conf = array(
-						'db-host' => array('主机', '数据库主机地址，默认 localhost'),
 						'db-name' => array('数据库名', '数据库名称，默认 modphp'),
-						'db-port' => array('端口', '数据库连接端口，默认 3306'),
-						'db-user' => array('用户名', '数据库登录用户名称，默认 root'),
-						'db-pass' => array('密码', '数据库登录密码，默认为空'),
-						'db-prefix' => array('表前缀', '数据表前缀，默认 mod_')
+						'db-prefix' => array('表前缀', '数据表前缀，默认 mod_'),
+						'db-desc' => array('以下设置仅试用于 MySQL 数据库：'),
+						'db-host' => array('主机', '数据库地址，默认 localhost'),
+						'db-port' => array('端口', '连接端口，默认 3306'),
+						'db-user' => array('用户名', '登录用户名称，默认 root'),
+						'db-pass' => array('密码', '登录密码，默认为空'),
 						);
 					foreach($conf as $k => $v){
+						if(!isset($v[1])){
+							echo '<p id="'.$k.'">'.$v[0].'</p>';
+							continue;
+						}
 						echo '<div>
 								<label for="'.$k.'">'.$v[0].'</label>
 								<input type="'.($k == 'db-pass' ? 'password' : 'text').'" id="'.$k.'" placeholder="'.$v[1].'" />

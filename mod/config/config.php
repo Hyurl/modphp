@@ -17,8 +17,9 @@ return array(
 		'outputBuffering' => 0, //输出缓冲区大小，可设置为 1-4096(4 KB) 的值，0 则不限制，在 PHP 5.4.0 之前，1 等于 4096
 		'escapeTags' => '<script><style><iframe>', //过滤 HTML 标签
 		'pathinfoMode' => false, //如果开启, create_url() 创建的路径将包含模板入口文件
-		'cliCharset'=>'', //设置运行于命令行模式时操作系统所支持的编码
+		'jsonSerialize' => false, //使用 JSON 序列化数据
 		'database' => array( //数据库设置
+			'type' => 'mysql', //数据库类型
 			'host' => 'localhost', //主机地址
 			'name' => 'modphp', //数据库名称
 			'port' => 3306, //连接端口
@@ -28,22 +29,21 @@ return array(
 			),
 		'session' => array( //Session 设置
 			'name' => 'MODID', //名称
-			'maxLifeTime' => 60*60*24*7, //生存期(分钟)
+			'maxLifeTime' => 60*24*7, //生存期(分钟)
 			'savePath' => '', //保存路径，不设置则为默认
 			),
 		'template' => array( //模板设置
 			'appPath'=>'', //应用目录
 			'savePath' => 'template/', //保存目录，相对于 appPath(如果有)
 			'compiler' => array(
-				'enable' => false, //启用编译器，false/0 不启用, true/1 调试模式，每次运行都重新编译，2 产品模式，使用已有的编译结果
+				'enable' => false, //启用编译器
 				'extraTags' => array('import', 'redirect'), //额外的 HTML 语义标签
 				'savePath' => 'tmp/', //编译文件保存路径
-				'stripComment' => false, //移除注释
 				)
 			),
-		'WebSocket'=>array( //WebSocket 设置
-			'port' => 8080, //端口
-			'maxThreads' => 1, //最大线程数
+		'SocketServer'=>array( //Socket 服务器设置
+			'port' => 8080, //监听端口
+			'maxInput' => 1024*1024*8, //最大传入字节数
 			),
 		),
 	'site' => array( //网站设置

@@ -10,11 +10,12 @@ function category_tree($arg = array()){
 	if(is_numeric($arg)) $arg = array('category_id'=>$arg);
 	if(!$tree || $arg || $sid != session_id()){
 		$sid = session_id();
-		$tree = Category::getTree($arg);
+		$tree = Category::getTree($arg); //获取目录树
 		error(null);
 	}
 	return $tree['success'] ? $tree['data'] : false;
 }
+
 /** 
  * is_category() 判断当前页面是否为分类目录页面
  * @param  mixed   $key 如果为整数，则判断是否为 ID 是否是 $key 的分类目录页
@@ -31,12 +32,14 @@ function is_category($key = 0){
 				return category_name() == $key;
 		}elseif(is_array($key)){
 			foreach($key as $k => $v) {
-				if(the_category($k) != $v) return false;
+				if(the_category($k) != $v) return false; //逐一判断
 			}
-			return true;
-		}else return true;
-	}else return false;
+		}
+		return true;
+	}
+	return false;
 }
+
 /** 在添加、更新、删除分类目录时检查编辑或管理员权限 */
 add_hook(array(
 	'category.add.check_permission', 
@@ -46,39 +49,56 @@ add_hook(array(
 	if(!is_logined()) return error(lang('user.notLoggedIn'));
 	if(!is_editor() && !is_admin()) return error(lang('mod.permissionDenied'));
 }, false);
+
 /** 在添加分类目录时检查名称可用性 */
 add_hook('category.add.check_name', function($arg){
 	if(!empty($arg['category_name']) && get_category(array('category_name'=>$arg['category_name']))){
 		return error(lang('category.invalidName'));
 	}
 }, false);
+
 /** 在更新分类目录时检查名称可用性 */
 add_hook('category.update.check_name', function($arg){
-	if(!empty($arg['category_id']) && !empty($arg['category_name']) && get_category(array('category_name'=>$arg['category_name']))){
-		if(category_id() != $arg['category_id']) return error(lang('category.invalidName'));
+	$_arg = array('category_name'=>$arg['category_name']);
+	if(!empty($arg['category_id']) && !empty($arg['category_name']) && get_category($_arg)){
+		if(category_id() != $arg['category_id'])
+			return error(lang('category.invalidName'));
 	}
 }, false);
+
 /** 自动设置子目录数量 */
-add_hook('category.get.set_children_counts', function($arg){
-	$count = mysql::open(0)->select('category', 'COUNT(*) AS count', "`category_parent` = {$arg['category_id']}")->fetch_object()->count;
-	if(is_array($arg['category_children'])) $_count = count($arg['category_children']);
-	else $_count = $arg['category_children'];
+add_hook('category.get.set_children_counts', function($data){
+	$count = database::open(0)
+		   ->select('category', 'COUNT(*) AS count', "`category_parent` = {$data['category_id']}")
+		   ->fetchObject()
+		   ->count; //获取子目录实际数量
+	if(is_array($data['category_children']))
+		$_count = count($data['category_children']);
+	else
+		$_count = $data['category_children'];
 	if($count != $_count){
-		if(!is_array($arg['category_children'])) $arg['category_children'] = $count;
-		mysql::update('category', "`category_children` = $count", "`category_id` = {$arg['category_id']}");
+		if(!is_array($data['category_children'])) $data['category_children'] = $count;
+		//更新数据库记录
+		database::update('category', "`category_children` = $count", "`category_id` = {$data['category_id']}");
 	}
-	return $arg;
+	return $data;
 }, false);
+
 /** 自动设置分类目录所属文章数量 */
-add_hook('category.get.set_post_counts', function($arg){
-	$count = mysql::open(0)->select('post', 'COUNT(*) AS count', "`category_id` = {$arg['category_id']}")->fetch_object()->count;
-	if($count != $arg['category_posts']){
-		$arg['category_posts'] = $count;
-		mysql::update('category', "`category_posts` = $count", "`category_id` = {$arg['category_id']}");
+add_hook('category.get.set_post_counts', function($data){
+	$count = database::open(0)
+		   ->select('post', 'COUNT(*) AS count', "`category_id` = {$data['category_id']}")
+		   ->fetchObject()
+		   ->count; //获取文章实际数量
+	if($count != $data['category_posts']){
+		$data['category_posts'] = $count;
+		//更新数据库记录
+		database::update('category', "`category_posts` = $count", "`category_id` = {$data['category_id']}");
 	}
-	return $arg;
+	return $data;
 }, false);
+
 /** 删除分类目录后将子分类目录设置为顶级分类目录 */
 add_hook('category.delete.complete.set_children_as_top', function($arg){
-	mysql::open(0)->update('category', '`category_parent` = 0', "`category_parent` = {$arg['category_id']}");
+	database::open(0)->update('category', '`category_parent` = 0', "`category_parent` = {$arg['category_id']}");
 }, false);

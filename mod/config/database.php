@@ -43,55 +43,55 @@
  */
 return array(
 	'user' => array( //用户表
-		'user_id' => 'INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY', //用户 ID
-		'user_name' => 'VARCHAR(255) NOT NULL', //用户名
-		'user_nickname' => 'VARCHAR(255) NOT NULL', //昵称
-		'user_realname' => 'VARCHAR(255) NOT NULL', //真实姓名
-		'user_password' => 'VARCHAR(255) NOT NULL', //密码
-		'user_gender' => 'VARCHAR(255) NOT NULL', //性别
-		'user_avatar' => 'VARCHAR(255) NOT NULL', //头像
-		'user_identity' => 'VARCHAR(255) NOT NULL', //身份
-		'user_company' => 'VARCHAR(255) NOT NULL', //所在单位
-		'user_number' => 'VARCHAR(255) NOT NULL', //编号
-		'user_email' => 'VARCHAR(255) NOT NULL', //电子邮箱，用于登录、显示和找回密码
-		'user_tel' => 'VARCHAR(255) NOT NULL', //手机号码，用于登录和显示
-		'user_desc' => 'VARCHAR(255) NOT NULL', //简介
-		'user_protect' => 'VARCHAR(255) NOT NULL', //自定义保护字段，非当前用户或管理员获取用户信息时将被过滤
-		'user_level' => 'INT(11) UNSIGNED DEFAULT 1', //用户等级，默认 1
+		'user_id' => 'INTEGER PRIMARY KEY AUTO_INCREMENT', //用户 ID
+		'user_name' => 'VARCHAR(255) DEFAULT NULL', //用户名
+		'user_nickname' => 'VARCHAR(255) DEFAULT NULL', //昵称
+		'user_realname' => 'VARCHAR(255) DEFAULT NULL', //真实姓名
+		'user_password' => 'VARCHAR(255) DEFAULT NULL', //密码
+		'user_gender' => 'VARCHAR(255) DEFAULT NULL', //性别
+		'user_avatar' => 'VARCHAR(255) DEFAULT NULL', //头像
+		'user_identity' => 'VARCHAR(255) DEFAULT NULL', //身份
+		'user_company' => 'VARCHAR(255) DEFAULT NULL', //所在单位
+		'user_number' => 'VARCHAR(255) DEFAULT NULL', //编号
+		'user_email' => 'VARCHAR(255) DEFAULT NULL', //电子邮箱，用于登录、显示和找回密码
+		'user_tel' => 'VARCHAR(255) DEFAULT NULL', //手机号码，用于登录和显示
+		'user_desc' => 'VARCHAR(255) DEFAULT NULL', //简介
+		'user_protect' => 'VARCHAR(255) DEFAULT NULL', //自定义保护字段，非当前用户或管理员获取用户信息时将被过滤
+		'user_level' => 'INTEGER DEFAULT 1', //用户等级，默认 1
 		),
 	'file' => array( //文件表
-		'file_id' => 'INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY', //文件 ID
-		'file_name' => 'VARCHAR(255) NOT NULL', //文件名
-		'file_src' => 'VARCHAR(255) NOT NULL', //源地址
-		'file_desc' => 'VARCHAR(255) NOT NULL', //描述
+		'file_id' => 'INTEGER PRIMARY KEY AUTO_INCREMENT', //文件 ID
+		'file_name' => 'VARCHAR(255) DEFAULT NULL', //文件名
+		'file_src' => 'VARCHAR(255) DEFAULT NULL', //源地址
+		'file_desc' => 'VARCHAR(255) DEFAULT NULL', //描述
 		),
 	'category' => array( //分类目录表
-		'category_id' => 'INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY', //目录 ID
-		'category_name' => 'VARCHAR(255) NOT NULL', //名称
-		'category_alias' => 'VARCHAR(255) NOT NULL', //别名
-		'category_desc' => 'VARCHAR(255) NOT NULL', //描述
-		'category_parent' => 'INT(11) UNSIGNED DEFAULT 0', //父目录 ID
-	    'category_posts' => 'INT(11) UNSIGNED DEFAULT 0', //文章数量，系统自动设置
-		'category_children' => 'INT(11) UNSIGNED DEFAULT 0', //子目录数量，当调用 Category::getTree() 方法时，将填充为一个多维数组
+		'category_id' => 'INTEGER PRIMARY KEY AUTO_INCREMENT', //目录 ID
+		'category_name' => 'VARCHAR(255) DEFAULT NULL', //名称
+		'category_alias' => 'VARCHAR(255) DEFAULT NULL', //别名
+		'category_desc' => 'VARCHAR(255) DEFAULT NULL', //描述
+		'category_parent' => 'INTEGER DEFAULT 0', //父目录 ID
+	    'category_posts' => 'INTEGER DEFAULT 0', //文章数量，系统自动设置
+		'category_children' => 'INTEGER DEFAULT 0', //子目录数量，当调用 Category::getTree() 方法时，将填充为一个多维数组
 		),
 	'post' => array( //文章表
-		'post_id' => 'INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY', //文章 ID
-		'post_title' => 'VARCHAR(255) NOT NULL', //标题
-		'post_content' => 'VARCHAR(10239) NOT NULL', //内容
-		'post_thumbnail' => 'VARCHAR(255) NOT NULL', //特色图
-	    'post_comments' => 'INT(11) UNSIGNED DEFAULT 0', //评论数，系统自动设置
-		'post_time' => 'INT(11) UNSIGNED DEFAULT 0', //发表时间
-		'post_link' => 'VARCHAR(255) NOT NULL', //自定义链接
-		'category_id' => 'INT(11) UNSIGNED NOT NULL', //分类目录 ID
-		'user_id' => 'INT(11) UNSIGNED NOT NULL', //用户 ID
+		'post_id' => 'INTEGER PRIMARY KEY AUTO_INCREMENT', //文章 ID
+		'post_title' => 'VARCHAR(255) DEFAULT NULL', //标题
+		'post_content' => 'VARCHAR(16383) DEFAULT NULL', //内容
+		'post_thumbnail' => 'VARCHAR(255) DEFAULT NULL', //特色图
+	    'post_comments' => 'INTEGER DEFAULT 0', //评论数，系统自动设置
+		'post_time' => 'INTEGER DEFAULT 0', //发表时间
+		'post_link' => 'VARCHAR(255) DEFAULT NULL', //自定义链接
+		'category_id' => 'INTEGER DEFAULT NULL', //分类目录 ID
+		'user_id' => 'INTEGER DEFAULT NULL', //用户 ID
 		),
 	'comment' => array( //评论表
-		'comment_id' => 'INT(11) UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY', //评论 ID
-		'comment_content' => 'VARCHAR(1023) NOT NULL', //评论内容
-		'comment_time' => 'INT(11) UNSIGNED DEFAULT 0', //发表时间
-		'comment_parent' => 'INT(11) UNSIGNED DEFAULT 0', //父评论 ID
-	    'comment_replies' => 'INT(11) UNSIGNED DEFAULT 0', //回复数，系统自动设置
-		'post_id' => 'INT(11) UNSIGNED NOT NULL', //文章 ID
-		'user_id' => 'INT(11) UNSIGNED NOT NULL', //用户 ID
+		'comment_id' => 'INTEGER PRIMARY KEY AUTO_INCREMENT', //评论 ID
+		'comment_content' => 'VARCHAR(1023) DEFAULT NULL', //评论内容
+		'comment_time' => 'INTEGER DEFAULT 0', //发表时间
+		'comment_parent' => 'INTEGER DEFAULT 0', //父评论 ID
+	    'comment_replies' => 'INTEGER DEFAULT 0', //回复数，系统自动设置
+		'post_id' => 'INTEGER DEFAULT NULL', //文章 ID
+		'user_id' => 'INTEGER DEFAULT NULL', //用户 ID
 		),
 	);

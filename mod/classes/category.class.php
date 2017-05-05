@@ -1,11 +1,13 @@
 <?php
+/** 分类目录模块 */
 final class category extends mod{
-	const TABLE = 'category';
-	const PRIMKEY = 'category_id';
+	const TABLE = 'category'; //表名
+	const PRIMKEY = 'category_id'; //主键
+
 	/**
 	 * getTree() 获取分类目录树形结构数据
 	 * @param  array  $arg  请求参数
-	 * @return array  	    分类目录结构
+	 * @return array        分类目录结构
 	 */
 	static function getTree($arg = array()){
 		$default = array(
@@ -15,21 +17,20 @@ final class category extends mod{
 		$arg = is_array($arg) ? array_merge($default, $arg) : $default;
 		if($arg['category_id']) $where['category_id'] = $arg['category_id'];
 		else $where['category_parent'] = $arg['category_parent'];
-		$result = mysql::open(0)->select('category', '*', $where, 0);
-		if($result && $result->num_rows >= 1){
-			while ($category = $result->fetch_assoc()) {
-				self::handler($category, 'get');
-				do_hooks('category.get', $category);
-				if(error()) return error();
-				unset($arg['category_id']);
-				$arg['category_parent'] = $category['category_id'];
-				$categoryChildren = self::getTree($arg);
-				if($categoryChildren['success']) $category['category_children'] = $categoryChildren['data'];
-				$categories[] = $category;
-				error(null);
-			}
-			return success($categories);
+		$categories = array();
+		$result = database::open(0)->select('category', '*', $where, 0); //从数据库获取数据
+		while ($result && $category = $result->fetch()) { //迭代获取数据
+			self::handler($category, 'get');
+			do_hooks('category.get', $category); //执行挂钩函数
+			if(error()) return error();
+			unset($arg['category_id']);
+			$arg['category_parent'] = $category['category_id'];
+			$categoryChildren = self::getTree($arg); //递归获取子目录
+			if($categoryChildren['success'])
+				$category['category_children'] = $categoryChildren['data']; //应用子目录数据
+			$categories[] = $category;
+			error(null); //递归中需要将错误信息置空
 		}
-		return error(lang('mod.noData', lang('category.label')));
+		return $categories ? success($categories) : error(lang('mod.noData', lang('category.label')));
 	}
 }

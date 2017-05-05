@@ -1,10 +1,14 @@
 <?php
 /** 自动设置评论回复数量 */
-add_hook('comment.get.set_reply_counts', function($input){
-	$count = mysql::open(0)->select('comment', 'COUNT(*) AS count', "`comment_parent` = {$input['comment_id']}")->fetch_object()->count;
-	if($count != $input['comment_replies']){
-		$input['comment_replies'] = $count;
-		mysql::update('comment', "`comment_replies` = $count", "`comment_id` = {$input['comment_id']}");
+add_hook('comment.get.set_reply_counts', function($data){
+	$count = database::open(0)
+		   ->select('comment', 'COUNT(*) AS count', "`comment_parent` = {$data['comment_id']}")
+		   ->fetchObject()
+		   ->count; //实际回复数量
+	if($count != $data['comment_replies']){
+		$data['comment_replies'] = $count;
+		//更新数据库记录
+		database::update('comment', "`comment_replies` = $count", "`comment_id` = {$data['comment_id']}");
 	}
-	return $input;
+	return $data;
 }, false);

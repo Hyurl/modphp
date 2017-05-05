@@ -23,8 +23,8 @@ return array(
 		'updateFailed'=>'{module}更新失败。',
 		'deleteFailed'=>'{module}删除失败。',
 		'deleted'=>'{module}已删除。',
-		'websocketOnTip'=>'WebSocket 正在运行中...',
-		'websocketFastCGIWarning'=>'WebSocket 不能运行于 Fast-CGI 模式。',
+		'socketOnTip'=>'Socket 服务器正在运行中...',
+		'socketFastCGIWarning'=>'Socket 服务器不能运行于 Fast-CGI 模式。',
 		),
 	'user'=>array(
 		'label'=>'用户',

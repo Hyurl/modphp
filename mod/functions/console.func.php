@@ -9,7 +9,7 @@ function update($ver = null){
 		$result = mod::update($version); //执行升级操作
 		if($result['success']){
 			echo "Update succeeded, restart ModPHP to get everything done.\n\n";
-			update_log('update-log.txt', true);
+			update_log('update-log.txt', true); //输出更新日志
 		}else{
 			echo $result['data'];
 		}

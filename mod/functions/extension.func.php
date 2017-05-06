@@ -948,25 +948,27 @@ function parse_cli_param($argv = array(), $i = 0, $isArg = false, $args = array(
 	}
 	if(!$argv) return $args;
 	if($argv[0][0] == '-'){
-		if(isset($argv[0][1]) && $argv[0][1] != '-' && !isset($argv[0][2])){ //--key 长参数
-			$key = ltrim($argv[0], '-');
-		}elseif(isset($argv[0][1]) && $argv[0][1] == '-' && isset($argv[0][2]) && $argv[0][2] != '-'){ //-k 短参数
+		if(isset($argv[0][1]) && $argv[0][1] != '-' && !isset($argv[0][2])){ //-k 短键名参数
+			$key = $argv[0][1];
+		}elseif(isset($argv[0][1]) && $argv[0][1] == '-' && isset($argv[0][2]) && $argv[0][2] != '-'){ //--key 长键名参数
 			$key = ltrim($argv[0], '-');
 		}else{ //无键名参数
 			$value = $argv[0];
 		}
-	}elseif($argv[0] != ';'){
+	}elseif($argv[0] != ';'){ //无键名参数
 		$value = $argv[0];
 	}
 	if(isset($key)){
 		if(isset($argv[1]) && $argv[1][0] != '-' && $key[strlen($key)-1] != ';'){
-			$value = $argv[1]; //命令参数值
+			$value = $argv[1]; //参数值
 			$_i = 2;
-		}else $value = '';
+		}else{
+			$value = '';
+		}
 	}
 	if(!$isArg){
 		$args['param'][$i] = array(
-			'cmd'=>$value, //命令
+			'cmd'=>rtrim($value, ';'), //命令
 			'args'=>array() //参数
 			);
 	}else{

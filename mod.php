@@ -32,48 +32,46 @@ while(true){
 	if(!is_console() || $STDIN = fgets(STDIN)){
 		if($STDIN){ //交互式控制台
 			$STDIN = trim($STDIN);
+			if($ENCODING && strcasecmp($ENCODING, 'UTF-8')) //转换编码
+				$STDIN = iconv($ENCODING, 'UTF-8', $STDIN) ?: $STDIN;
 			$argv = parse_cli_param(parse_cli_str('"'.$_SERVER['argv'][0].'" '.$STDIN));
 		}else{ //命令行直接调用
 			$argv = parse_cli_param($_SERVER['argv']);
 		}
-		ob_start();
 		if(!$argv['param']){
 			fwrite(STDOUT, $PROMPT);
 			continue;
 		}
 		foreach($argv['param'] as $PARAM){
+			ob_start();
 			if(!strpos($PARAM['cmd'], '(') && (is_callable($PARAM['cmd']) || strpos($PARAM['cmd'], '::'))) {
 				//将输入按 shell 命令来运行
+				${'SHELL'.__TIME__} = true;
 				array_walk($PARAM['args'], function(&$v){ //转换参数
 					if($v === 'true') $v = true;
 					elseif($v === 'false') $v = false;
 					elseif($v === 'undefined' || $v === 'null') $v = null;
 					elseif(is_numeric($v) && (int)$v < 2147483647) $v = (int)$v;
 				});
-				if(is_assoc($PARAM['args'])){ //长参数
+				if(is_assoc($PARAM['args'])){ //关联数组参数
 					print_r(call_user_func($PARAM['cmd'], $PARAM['args']));
-				}elseif(is_array($PARAM['args'])){ //短参数
+				}elseif(is_array($PARAM['args'])){ //索引数组参数
 					print_r(call_user_func_array($PARAM['cmd'], $PARAM['args']));
 				}
 			}elseif($STDIN !== null){ //变量或者其他
-				if($ENCODING && strcasecmp($ENCODING, 'UTF-8')) //转换编码
-					$STDIN = iconv($ENCODING, 'UTF-8', $STDIN) ?: $STDIN;
-				eval($STDIN && $STDIN[strlen($STDIN)-1] == ';' ? $STDIN : $STDIN.';');
-				${'BREAK'.__TIME__} = true;
+				eval($STDIN ? rtrim($STDIN, ';').';' : '');
 			}else{ //命令行直接调用
 				print_r(eval('return '.rtrim($PARAM['cmd'], ';').';'));
 			}
 			$STDOUT = trim(ob_get_clean(), PHP_EOL); //获取输出缓存
-			if($ENCODING && strcasecmp($ENCODING, 'UTF-8')) //转换编码
+			if($STDOUT && $ENCODING && strcasecmp($ENCODING, 'UTF-8')) //转换编码
 				$STDOUT = iconv('UTF-8', $ENCODING, $STDOUT) ?: $STDOUT;
 			if($STDIN === null){ //命令行直接调用
-				echo $STDOUT.($PARAM != end($argv['param']) ? PHP_EOL : ''); //输出代命令行
+				echo $STDOUT.PHP_EOL; //输出代命令行
 			}else{ //交互式控制台
-				fwrite(STDOUT, $STDIN && $STDOUT ? $STDOUT.PHP_EOL : ''); //输出到交互式控制台
-				if(!empty(${'BREAK'.__TIME__})){
-					unset(${'BREAK'.__TIME__});
-					break;
-				}
+				if($STDIN && $STDOUT) fwrite(STDOUT, $STDOUT.PHP_EOL); //输出到交互式控制台
+				if(!isset(${'SHELL'.__TIME__})) break;
+				unset(${'SHELL'.__TIME__});
 			}
 		}
 		if($STDIN === null) break;

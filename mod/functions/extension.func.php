@@ -52,7 +52,7 @@ function bin2str($str){
 }
 
 /**
- * md5_crypt() 生成一个随机的 MD5 哈希密文
+ * md5_crypt() 生成一个随机的 MD5 哈希秘钥
  * @param  string $str 字符串
  * @return string      哈希值
  */
@@ -61,14 +61,27 @@ function md5_crypt($str){
 }
 
 /** 
- * hash_verify() 验证一个哈希密文是否与字符串相等
+ * hash_verify() 验证一个哈希秘钥是否与字符串相等
  * @param  string $hash 哈希值
  * @param  string $str  字符串
  * @return bool
  */
 function hash_verify($hash, $str){
+	trigger_error("This function is deprecated, it may be removed in the future.", E_USER_WARNING);
 	return $hash == crypt($str, $hash);
 }
+
+if(!function_exists('password_verify')):
+/**
+ * password_verify() 验证一个密码是否与哈希密钥相等
+ * @param  string $password 原始密码
+ * @param  string $hash     哈希密钥
+ * @return boolean          相等返回 true，否则返回 false
+ */
+function password_verify($password, $hash){
+	return $hash == crypt($password, $hash);
+}
+endif;
 
 /**
  * get_uploaded_files() 获取上传文件的数组，与 $_FILES 不同，当同一个键名包含多个文件时，

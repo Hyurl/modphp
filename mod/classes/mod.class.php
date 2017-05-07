@@ -461,8 +461,12 @@ class mod{
 			);
 		$arg = array_merge($default, $arg);
 		do_hooks($tb.'.get.before', $arg); //执行记录获取前挂钩函数
-		if(strtolower($arg['sequence']) == 'rand') $orderby = 'rand()';
-		else $orderby = $arg['orderby'].' '.$arg['sequence'];
+		if(error()) return error();
+		$sqlite = database::open(0)->set('type') == 'sqlite';
+		if(strtolower($arg['sequence']) == 'rand')
+			$orderby = $sqlite ? 'random()' : 'rand()';
+		else
+			$orderby = $arg['orderby'].' '.$arg['sequence'];
 		foreach($arg as $k => $v){
 			if(in_array($k, database($tb)) && $v !== null){
 				$where[$tb.'.'.$k] = $extra[$k] = $v; //组合 where 查询条件
@@ -499,8 +503,11 @@ class mod{
 			$extra['keyword'] = $arg['keyword'];
 			do_hooks($tb.'.get.before', $arg); //执行记录获取前挂钩函数
 			if(error()) return error();
-			if(strtolower($arg['sequence']) == 'rand') $orderby = 'rand()';
-			else $orderby = $arg['orderby'].' ' . $arg['sequence'];
+			$sqlite = database::open(0)->set('type') == 'sqlite';
+			if(strtolower($arg['sequence']) == 'rand')
+				$orderby = $sqlite ? 'random()' : 'rand()';
+			else
+				$orderby = $arg['orderby'].' ' . $arg['sequence'];
 			$keyword = $arg['keyword'];
 			if(is_string($keyword)) $keyword = array($keyword);
 			foreach($keyword as $k => $v){

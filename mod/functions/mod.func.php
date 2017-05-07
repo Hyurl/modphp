@@ -637,7 +637,7 @@ function display_file($url = '', $set = false){
 			$mime = @$cts[$ext] ?: 'text/plain';
 		}
 		if($isIndex) set_content_type($mime); //设置响应头中的 Mime 类型
-		if(staticuri($file) && $args = analyze_url(staticuri($file), $uri)){ //尝试解析 URL
+		if(staticuri($tpl) && $args = analyze_url(staticuri($tpl), $uri)){ //尝试解析 URL
 			if($isIndex) $_GET = array_merge($_GET, $args);
 		}
 		return $file = $tpl;

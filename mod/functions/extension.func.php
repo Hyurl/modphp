@@ -779,9 +779,9 @@ function curl($options = array()){
 			$charset = $match[1];
 		}else{
 			$_data = str_replace(array('\'', '"', '/'), '', $data);
-			if(preg_match('/<meta.*charset=(.+)>/iU', $_data, $match)){
-				$charset = strstr($match[1], ' ', true) ?: $match[1];
-			}else if(preg_match('/<\?xml.*encoding=(.+)?>/iU', $_data, $match)){
+			$htmlRegex = '/<meta.*charset=(.+)>/iU';
+			$xmlRegex = '/<\?xml.*encoding=(.+)\?>/iU';
+			if(preg_match($htmlRegex, $_data, $match) || preg_match($xmlRegex, $_data, $match)){
 				$charset = strstr($match[1], ' ', true) ?: $match[1];
 			}else{
 				$charset = 'UTF-8';

@@ -53,7 +53,7 @@ final class user extends mod{
 		$hasUser = false;
 		while($result && $user = $result->fetch()){
 			$hasUser = true;
-			if(hash_verify($user['user_password'], $arg['user_password'])){ //验证密码
+			if(password_verify($arg['user_password'], $user['user_password'])){ //验证密码
 				if(!session_id()) session_id(strtolower(rand_str(26))); //生成随机 Session ID
 				if(session_status() != PHP_SESSION_ACTIVE) @session_start();
 				$_SESSION['ME_ID'] = (int)$user['user_id']; //保存用户 ID 到 Session 中

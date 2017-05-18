@@ -60,17 +60,6 @@ function md5_crypt($str){
 	return crypt($str, '$1$'.rand_str(8).'$');
 }
 
-/** 
- * hash_verify() 验证一个哈希秘钥是否与字符串相等
- * @param  string $hash 哈希值
- * @param  string $str  字符串
- * @return bool
- */
-function hash_verify($hash, $str){
-	trigger_error("This function is deprecated, it may be removed in the future.", E_USER_WARNING);
-	return $hash == crypt($str, $hash);
-}
-
 if(!function_exists('password_verify')):
 /**
  * password_verify() 验证一个密码是否与哈希密钥相等
@@ -623,38 +612,6 @@ function get_client_ip($strict = false){
 	return $ip;
 }
 function_alias('get_client_ip', 'get_agent_ip');
-
-/**
- * rand_ip() 获取一个随机的 IP 地址
- * @return string IP 地址
- */
-function rand_ip(){
-	trigger_error("This function is deprecated, it may be removed in the future.", E_USER_WARNING);
-	$ip = rand(1, 255).'.'.rand(0, 255).'.'.rand(0, 255).'.'.rand(0, 255);
-	return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) ?: rand_ip();
-}
-
-/**
- * cn_rand_ip() 获取一个随机的中国大陆 IP 地址
- * @return string IP 地址
- */
-function cn_rand_ip(){
-	trigger_error("This function is deprecated, it may be removed in the future.", E_USER_WARNING);
-	$long = array(
-		array(607649792, 608174079),
-		array(1038614528, 1039007743),
-		array(1783627776, 1784676351),
-		array(2035023872, 2035154943),
-		array(2078801920, 2079064063),
-		array(-1950089216, -1948778497),
-		array(-1425539072, -1425014785),
-		array(-1236271104, -1235419137),
-		array(-770113536, -768606209),
-		array(-569376768, -564133889),
-		);
-	$i = mt_rand(0, 9);
-	return long2ip(mt_rand($long[$i][0], $long[$i][1]));
-}
 
 /**
  * array2xml() 将数组转换为 XML 结构数据

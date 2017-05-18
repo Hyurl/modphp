@@ -41,8 +41,7 @@
 			str = data;
 		}
 		xhr.open('POST', 'mod.php?mod::'+act, true);
-		xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
-		xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+		xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
 		xhr.onreadystatechange = function(){
 			var result = xhr.responseText;
 			console.log(result);
@@ -212,7 +211,7 @@
 					$conf = array(
 						'db-name' => array('数据库名', '数据库名称，默认 modphp'),
 						'db-prefix' => array('表前缀', '数据表前缀，默认 mod_'),
-						'db-desc' => array('以下设置仅试用于 MySQL 数据库：'),
+						'db-desc' => array('以下设置仅适用于 MySQL 数据库：'),
 						'db-host' => array('主机', '数据库地址，默认 localhost'),
 						'db-port' => array('端口', '连接端口，默认 3306'),
 						'db-user' => array('用户名', '登录用户名称，默认 root'),

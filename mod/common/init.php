@@ -8,7 +8,7 @@ if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 
 $file = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 
 /** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '2.0.9'); //ModPHP 版本
+define('MOD_VERSION', '2.1.0'); //ModPHP 版本
 define('__TIME__', time(), true); //开始运行时间
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true); //网站根目录
 define('__SCRIPT__', substr($file, strlen(__ROOT__)) ?: $file, true); //执行脚本
@@ -24,8 +24,14 @@ include_once __ROOT__.'mod/functions/extension.func.php';
 include_once __ROOT__.'mod/functions/mod.func.php';
 include_once __ROOT__.'mod/classes/mod.class.php';
 
+$installed = config('mod.installed');
+$database = database();
+
 /** 加载默认模块类文件和其他类库文件 */
 foreach (glob(__ROOT__.'mod/classes/*.php') as $file) {
+	$basename = strstr(basename($file), '.', true);
+	if(!$installed && isset($database[$basename]) && $basename != 'file')
+		continue; //模块类文件仅在系统安装后引入
 	include_once $file;
 }
 
@@ -33,10 +39,14 @@ foreach (glob(__ROOT__.'mod/classes/*.php') as $file) {
 foreach (glob(__ROOT__.'mod/functions/*.php') as $file) {
 	if($file == __ROOT__.'mod/functions/console.func.php' && !is_console())
 		continue; //console.func.php 仅在交互式控制台中引入
+	$basename = strstr(basename($file), '.', true);
+	if(!$installed && isset($database[$basename]))
+		continue; //模块函数文件仅在系统安装后引入
 	include_once $file;
 }
+unset($installed, $database, $basename, $file);
 
-register_module_functions(); //注册模块函数
+if(config('mod.installed')) register_module_functions(); //注册模块函数
 
 pre_init(); //执行预初始化操作
 function pre_init(){

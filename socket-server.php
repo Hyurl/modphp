@@ -14,8 +14,6 @@ require_once('mod/common/init.php');
 
 /** 具体逻辑 */
 $SOCKET_INFO = $SOCKET_USER = array(); //保存连接信息的全局变量
-$WS_INFO = &$SOCKET_INFO;
-$WS_USER = &$SOCKET_USER;
 SocketServer::$maxInput = config('mod.SocketServer.maxInput'); //设置最大传入字节数
 if(is_agent()){
 	if(php_sapi_name() == 'cgi-fcgi') //Socket 服务器不能通过 FastCGI 开启

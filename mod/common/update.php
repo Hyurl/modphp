@@ -3,7 +3,8 @@
 $config = config();
 $database = database();
 $dbconf = $config['mod']['database'];
-if(!$dbconf['prefix']) return error(lang('mod.noDatabasePrefix'));
+$sqlite = $dbconf['type'] == 'sqlite'; //是否为 SQLite 数据库
+if(!$dbconf['prefix'] && !$sqlite) return error(lang('mod.noDatabasePrefix'));
 if(!$config['mod']['installed']){
 	database::open(0) //连接数据库
 			->set('type', $dbconf['type'])
@@ -14,8 +15,6 @@ if(!$config['mod']['installed']){
 			->login($dbconf['username'], $dbconf['password']);
 	if($err = database::$error) return error($err);
 }
-
-$sqlite = $dbconf['type'] == 'sqlite'; //是否为 SQLite 数据库
 
 //获取数据表
 $tables = array();

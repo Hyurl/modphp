@@ -166,7 +166,8 @@ class mod{
 					$get_module = 'get_'.$module;
 					$the_module = 'the_'.$module;
 					if($get_module(array($module.'_link'=>$arg[$link]))){ //判断链接是否已被其他记录使用
-						if(static::TABLE != $module || (!empty($arg[$primkey]) && $arg[$primkey] != $the_module($primkey))) return error(lang('mod.linkUnavailable'));
+						if(static::TABLE != $module || (!empty($arg[$primkey]) && $arg[$primkey] != $the_module($primkey)))
+							return error(lang('mod.linkUnavailable'));
 					}
 				}
 			}else if(!$hasRoot){
@@ -348,8 +349,7 @@ class mod{
 		if($arg && database::open(0)->insert($tb, $arg, $insertId)){ //插入数据库记录
 			$result = static::get(array(static::PRIMKEY=>$insertId)); //获取刚插入的记录
 			do_hooks($tb.'.add.complete', $result['data']); //执行添加完成挂钩函数
-			if(error()) return error();
-			return $result; //将新纪录返回
+			return error() ?: $result; //将新纪录返回
 		}else{
 			return error(lang('mod.addFailed', lang($tb.'.label')));
 		}
@@ -368,7 +368,8 @@ class mod{
 			do_hooks('mod.update', $arg); //执行系统更新前挂钩函数
 			if(error()) return error();
 			if(!empty($arg['upgrade'])){ //升级 ModPHP 版本
-				if(empty($arg['src']) || empty($arg['md5'])) return error(lang('mod.missingArguments'));
+				if(empty($arg['src']) || empty($arg['md5']))
+					return error(lang('mod.missingArguments'));
 				$file = 'modphp_'.__TIME__.'.zip';
 				//尝试获取安装包
 				$tmp = @file_get_contents($arg['src']) ?: @curl(array('url'=>$arg['src'], 'followLocation'=>1));
@@ -392,8 +393,7 @@ class mod{
 			if($arg && database::open(0)->update($tb, $arg, $primkey.' = '.$id)){ //更新数据库记录
 				$result = static::get(array($primkey=>$id)); //获取更新后的记录
 				do_hooks($tb.'.update.complete', $result['data']); //执行模块更新后挂钩函数
-				if(error()) return error();
-				return $result;
+				return error() ?: $result;
 			}else{
 				return error(lang('mod.updateFailed', lang($tb.'.label')));
 			}
@@ -420,8 +420,7 @@ class mod{
 				return error(lang('mod.deleteFailed', lang($tb.'.label')));
 		}
 		do_hooks($tb.'.delete.complete', $arg); //执行模块删除记录完成后挂钩函数
-		if(error()) return error();
-		return success(lang('mod.deleted', lang($tb.'.label')));
+		return error() ?: success(lang('mod.deleted', lang($tb.'.label')));
 	}
 
 	/**
@@ -588,8 +587,7 @@ class mod{
 			return error(lang('mod.noData', lang($tb.'.label')));
 		static::handler($result, 'get');
 		do_hooks($tb.'.get', $result); //执行记录获取时挂钩函数
-		if(error()) return error();
-		return success($result);
+		return error() ?: success($result);
 	}
 
 	/**

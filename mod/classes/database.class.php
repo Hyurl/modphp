@@ -374,36 +374,35 @@ final class database{
 
 	/**
 	 * parseWhere() 解析 where 条件数组
-	 * @param  array  $input where 关联数组，有以下规则(a,b,d 表示字段名，c 表示值，e 表示表名)：
-	 *                       ['a'] == 'c'   表示 `a` = 'c'
-	 *                       ['a|b'] == 'c' 表示 `a` = 'c' OR `b` = 'c'
-	 *                       ['a&b'] == 'c' 表示 `a` = 'c' AND `b` = 'c'
-	 *                       ['a'] == '{e.d}' 表示 `a` = e.d，AND 和 OR 向上参考
-	 * @return string        where 字符串
+	 * @param  array  $input where 关联数组，有以下规则(a,b,d 表示字段名，c 表示值，e,f 表示表名)：
+	 *                       [a] == c   表示 `a` = 'c'
+	 *                       [a|b] == c 表示 `a` = 'c' OR `b` = 'c'
+	 *                       [a&b] == c 表示 `a` = 'c' AND `b` = 'c'
+	 *                       [a] == {e.d} 表示 `a` = e.d，AND 和 OR 向上参考
+	 *                       [{f.a}] == {e.d} 表示 f.a = e.d
+	 * @return string        where 条件语句
 	 */
 	static function parseWhere($input){
 		if(!is_array($input)) return $input;
 		if(!$input) return 1;
 		$where = '';
-		$regex = array('/\*|\.|`|^-?[1-9]\d*$/', '/\{[_a-zA-Z0-9]+\.[_a-zA-Z0-9]+\}/');
+		$regex = '/\*|\.|`|^-?[1-9]\d*$/';
 		$keys = array_keys($input);
 		foreach ($input as $k => $v) {
-			if(strpos($k, '|')){ //OR 语句，多键共用值
-				$ks = explode('|', $k);
+			$k = str_replace(array('{', '}'), '', $k); //取出键中的 {}
+			$and = strpos($k, '&'); //AND 语句
+			$or = strpos($k, '|'); //OR 语句
+			$field = strpos($v, '{') == 0 && strpos($v, '.');
+			$v = $field ? trim($v, '{}') : self::quote($v);
+			if($and || $or){ //OR 语句，多键共用值
+				$ks = explode(($and ? '&' : '|'), $k);
 				$aWhere = array();
 				for($i=0; $i < count($ks); $i++){
-					$aWhere[] = (preg_match($regex[0], $ks[$i]) ? $ks[$i] : "`{$ks[$i]}`") . " = " . (preg_match($regex[1], $v) ? trim($v, '{}') : self::quote($v));
+					$aWhere[] = (preg_match($regex, $ks[$i]) ? $ks[$i] : "`{$ks[$i]}`")." = ".$v;
 				}
-				$where .= '('.implode(' OR ', $aWhere).') AND ';
-			}elseif(strpos($k, '&')){ //AND 语句，多键共用值
-				$ks = explode('&', $k);
-				$aWhere = array();
-				for($i=0; $i < count($ks); $i++){
-					$aWhere[] = (preg_match($regex[0], $ks[$i]) ? $ks[$i] : "`{$ks[$i]}`") . " = " . (preg_match($regex[1], $v) ? trim($v, '{}') : self::quote($v));
-				}
-				$where .= '('.implode(' AND ', $aWhere).') AND ';
+				$where .= '('.implode(($and ? ' AND ' : ' OR '), $aWhere).') AND '; //组合条件
 			}else{
-				$where .= (preg_match($regex[0], $k) ? $k : "`$k`") . " = " . (preg_match($regex[1], $v) ? trim($v, '{}') : self::quote($v)).' AND ';
+				$where .= (preg_match($regex, $k) ? $k : "`$k`")." = ".$v.' AND ';
 			}
 		}
 		return substr($where, 0, strlen($where)-5);

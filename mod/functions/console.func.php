@@ -37,7 +37,10 @@ function install($user, $pass){
 		"user_password"=>$pass,
 		);
 	$result = mod::install($arg);
-	echo $result['data'];
+	if($result['success'])
+		echo "Install succeeded, restart ModPHP to get everything done.\n\n";
+	else
+		echo $result['data'];
 }
 
 /** update_log() 查看更新日志 */

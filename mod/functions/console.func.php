@@ -47,8 +47,8 @@ function install($user, $pass){
 function update_log($file = 'update-log.txt', $first = false){
 	if(php_sapi_name() != 'cli') return;
 	if(PHP_OS == 'WINNT' && !$first)
-		return exec("start notepad $file"); //使用记事本打开更新日志
-	$logs = str_replace("\r\n", "\n", file_get_contents($file));
+		return exec('start notepad "'.__ROOT__.$file.'"'); //使用记事本打开更新日志
+	$logs = str_replace("\r\n", "\n", file_get_contents(__ROOT__.$file));
 	$logs = explode("\n\n", $logs);
 	if($first){
 		echo $logs[0];

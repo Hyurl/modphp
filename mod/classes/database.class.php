@@ -392,7 +392,7 @@ final class database{
 			$k = str_replace(array('{', '}'), '', $k); //取出键中的 {}
 			$and = strpos($k, '&'); //AND 语句
 			$or = strpos($k, '|'); //OR 语句
-			$field = strpos($v, '{') == 0 && strpos($v, '.');
+			$field = strpos($v, '{') === 0 && strpos($v, '.');
 			$v = $field ? trim($v, '{}') : self::quote($v);
 			if($and || $or){ //OR 语句，多键共用值
 				$ks = explode(($and ? '&' : '|'), $k);

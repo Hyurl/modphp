@@ -970,7 +970,7 @@ function report_http_error($code, $msg = ''){
 		);
 	if(!is_agent() && !$msg) $msg = "$code {$status[$code]}";
 	if(is_socket()){
-		websocket::send(json_encode(error($msg, array(
+		SocketServer::send(json_encode(error($msg, array(
 			'status'=>$code, //状态码
 			'statusText'=>$status[$code], //错误信息
 			'obj'=>$_GET['obj'],

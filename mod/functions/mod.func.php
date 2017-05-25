@@ -133,11 +133,12 @@ function_alias('remove_hook', 'delete_action');
 function do_hooks($api, &$input = null){
 	$hooks = hooks($api);
 	if(!error() && $hooks){
-		$hooks = is_array($hooks) ? $hooks : array($hooks);
+		$isSet = is_array($hooks);
+		$hooks = $isSet ? $hooks : array($hooks);
 		foreach ($hooks as $hook) {
 			if(is_callable($hook)){
 				$result = $hook($input);
-				if(error()) break; //出现错误则不再执行后面的回调函数
+				if(error() && $isSet) break; //出现错误则不再执行后面的回调函数
 				if($result !== null) $input = $result; //如果回调函数有返回值，则将其填充到传入参数中
 			}
 		}

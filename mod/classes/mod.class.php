@@ -155,8 +155,9 @@ class mod{
 		$primkey = static::PRIMKEY;
 		if(!empty($arg[$link])){
 			$hasRoot = strapos($arg[$link], site_url()) === 0; //判断链接是否为绝对 URL 地址
+			$index = config('mod.pathinfoMode') ? 'index.php/' : ''; //pathinfo 模式
 			if($act != 'get'){
-				if($hasRoot) $arg[$link] = substr($arg[$link], strlen(site_url())); //获取相对链接
+				if($hasRoot) $arg[$link] = substr($arg[$link], strlen(site_url($index))); //获取相对链接
 				if(file_exists($arg[$link])) return error(lang('mod.linkUnavailable')); //链接不能与文件名冲突
 				$modules = array();
 				foreach(database() as $k => $v){
@@ -171,7 +172,7 @@ class mod{
 					}
 				}
 			}else if(!$hasRoot){
-				$arg[$link] = site_url().$arg[$link]; //在获取记录时将相对 URL 地址转为绝对地址
+				$arg[$link] = site_url($index).$arg[$link]; //在获取记录时将相对 URL 地址转为绝对地址
 			}
 		}
 	}

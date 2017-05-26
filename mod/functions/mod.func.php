@@ -621,6 +621,7 @@ function display_file($url = '', $set = false){
 		$uri = site_url().substr($uri, strlen(site_url())+10); //10 表示可能截掉 index.php? 或 index.php/
 	$tplPath = template_path('', false);
 	$appPath = config('mod.template.appPath') ?: $tplPath;
+	$index = config('mod.pathinfoMode') ? 'index.php/' : '';
 	$home = config('site.home.template');
 	if($uri == site_url() || $uri == site_url($home)){ //首页
 		return $file = $tplPath.$home;
@@ -680,7 +681,7 @@ function display_file($url = '', $set = false){
 		}
 		foreach(database() as $key => $value){
 			if(isset($value[$key.'_link'])){ //尝试根据自定义永久链接获取记录
-				$link = substr($url, strlen(site_url()));
+				$link = substr($url, strlen(site_url($index)));
 				$get = 'get_'.$key;
 				$result = database::open(0)->select($key, "{$key}_id", "`{$key}_link` = '{$link}'"); //检查记录是否存在
 				if($result && $result->fetchObject()){

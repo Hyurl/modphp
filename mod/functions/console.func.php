@@ -71,15 +71,14 @@ function readme(){
 	return update_log('README.md');
 }
 
-add_action('console.open', function(){
+add_action('console.open.show_tip', function(){
 	$tip = 'Type "doc", "update_log", "license" or "readme" for more information.';
 	fwrite(STDOUT, $tip.PHP_EOL);
-});
+}, false);
 
 /** 控制台检查更新 */
-add_action('console.open', function(){
-	$host = 'modphp.hyurl.com';
-	$url = 'http://'.$host.'/version';
+add_action('console.open.check_update', function(){
+	$url = 'http://modphp.hyurl.com/version';
 	$arg = array('url'=>$url, 'parseJSON'=>true);
 	if(ping('hyurl.com')){
 		$ver = @json_decode(file_get_contents($url), true) ?: @curl($arg); //访问远程链接并获取响应
@@ -90,12 +89,12 @@ add_action('console.open', function(){
 			fwrite(STDOUT, $tip.PHP_EOL); //输出更新提示
 		}
 	}
-});
+}, false);
 
 /** 检查安装状态 */
-add_action('console.open', function(){
+add_action('console.open.check_install', function(){
 	if(!config('mod.installed')){
 		$tip = 'Please use syntax "install <username> <password>" to install ModPHP before you can fully operate it.';
 		fwrite(STDOUT, $tip.PHP_EOL); //输出安装提示
 	}
-});
+}, false);

@@ -359,6 +359,11 @@ function detect_site_url($header = '', $host = ''){
 	}else{ //客户端请求
 		$docRoot = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'])); //获取 Document Root
 		if($docRoot) $docRoot = $docRoot.'/';
+		if(strapos(__ROOT__, $docRoot) !== 0){ //ModPHP 运行在虚拟目录中
+			$scriptFile = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
+			$i = strrpos($scriptFile, $script);
+			$docRoot = substr($scriptFile, 0, $i+1);
+		}
 		extract(parse_url(url()));
 	}
 	if(strapos(__ROOT__, $docRoot) === 0){

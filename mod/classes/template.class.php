@@ -274,7 +274,8 @@ final class template{
 			$str = trim($html);
 			$_i = strpos($str, '<'.$tagName); //标签位置
 			$html = substr($str, $_i);
-			if(preg_match('/[a-zA-Z]/', $html[strlen('<'.$tagName)])){ //略过开头相同的标签，如 iframe，它与 if 开头相同
+			$b = $html[strlen('<'.$tagName)];
+			if($b != ' ' && $b != '/' && $b != '>'){ //略过开头相同的标签，如 iframe，它与 if 开头相同
 				$_i = strpos($html, '>');
 				$html = substr($html, $_i+1);
 				self::getPHPTags($html, $isFirst);

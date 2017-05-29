@@ -272,16 +272,23 @@ final class template{
 		}
 		if(self::hasPHPTag($html, $tagName)){
 			$str = trim($html);
-			$tags[$i]['element'] = '';
-			$tags[$i]['tagName'] = strtolower($tagName);
 			$_i = strpos($str, '<'.$tagName); //标签位置
-			$tags[$i]['attributes'] = self::getAttr(substr($str, $_i), $left, $len, $tagName);
-			if($left){
-				$tags[$i]['element'] = trim(substr($str, $_i, $len));
-				$i++;
-				self::getPHPTags($left, false); //递归运算
+			$html = substr($str, $_i);
+			if(preg_match('/[a-zA-Z]/', $html[strlen('<'.$tagName)])){ //略过开头相同的标签，如 iframe，它与 if 开头相同
+				$_i = strpos($html, '>');
+				$html = substr($html, $_i+1);
+				self::getPHPTags($html, $isFirst);
 			}else{
-				$tags[$i]['element'] = trim(substr($str, $_i));
+				$tags[$i]['element'] = '';
+				$tags[$i]['tagName'] = strtolower($tagName);
+				$tags[$i]['attributes'] = self::getAttr($html, $left, $len, $tagName);
+				if($left){
+					$tags[$i]['element'] = trim(substr($str, $_i, $len));
+					$i++;
+					self::getPHPTags($left, false); //递归运算
+				}else{
+					$tags[$i]['element'] = trim(substr($str, $_i));
+				}
 			}
 		}
 		return $tags;

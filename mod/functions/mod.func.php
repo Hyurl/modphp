@@ -539,7 +539,7 @@ function import($file, $tag = '', $attr = ''){
 		echo '<script type="text/javascript" src="'.$url.'"'.$attr."></script>\n";
 	}elseif($ext == 'css'){ //css 文件
 		echo '<link type="text/css" rel="stylesheet" href="'.$url.'"'.$attr." />\n";
-	}elseif(in_array($ext, array('jpeg', 'jpg', 'bmp', 'png', 'gif', 'svg'))){ //图片文件
+	}elseif(in_array($ext, array('jpeg', 'jpg', 'bmp', 'png', 'gif'))){ //图片文件
 		echo '<img src="'.$url.'"'.$attr.' />';
 	}elseif($tag){ //其他通过 html 标签引入的文件，如 iframe 引入 html
 		echo '<'.$tag.' src="'.$url.'"'.$attr.($tag == 'img' || $tag == 'embed' ? ' />' : '></'.$tag.'>');

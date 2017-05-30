@@ -588,7 +588,7 @@ function url(){
 	if(!is_agent()) return false;
 	$protocol = strstr(strtolower($_SERVER['SERVER_PROTOCOL']), '/', true); //often be http
 	$protocol .= is_ssl() ? 's' : ''; //if is ssl, use https instead
-	return $protocol.'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
+	return $protocol.'://'.urldecode($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
 }
 
 /**

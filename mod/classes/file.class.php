@@ -138,6 +138,7 @@ final class file extends mod{
 							database::open(0)->insert('file', $arg, $id); //将文件信息存入数据库
 							$result = self::get(array('file_id'=>$id));
 						}
+						do_hooks('file.add.complete', $result['data']); //执行上传文件后的回调函数
 						$data[] = $result['data'];
 					}else{
 						$file[$i]['error'] = lang('file.uploadFailed');

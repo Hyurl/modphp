@@ -61,7 +61,10 @@ final class user extends mod{
 				_user('me_level', (int)$user['user_level']);
 				$expires = !empty($arg['remember_me']) ? time()+ini_get('session.gc_maxlifetime') : null; //Cookie 生存期
 				self::sessCookie(session_id(), $expires); //设置 Cookie
-				return self::getMe();
+				$user = self::getMe();
+				do_hooks('user.login.complete', $user['data']);
+				return $user;
+				
 			}
 		}
 		return error($hasUser ? lang('user.wrongPassword') : lang('mod.notExists', lang('user.label')));

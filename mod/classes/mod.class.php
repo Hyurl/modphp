@@ -385,6 +385,7 @@ class mod{
 				if(error()) return error();
 				$ok = true;
 			}
+			if($ok) do_hooks('mod.update.complete', $arg); //执行系统更新后挂钩函数
 			return $ok ? success(lang('mod.updated')) : error(lang('mod.updateFailed', ''));
 		}else{ //更新模块数据库记录
 			do_hooks($tb.'.update', $arg); //执行模块更新前挂钩函数

@@ -15,6 +15,7 @@ final class category extends mod{
 			'category_parent'=>0, //父目录 ID
 			);
 		$arg = is_array($arg) ? array_merge($default, $arg) : $default;
+		do_hooks('category.get.before', $arg); //执行回调函数
 		if($arg['category_id']) $where['category_id'] = $arg['category_id'];
 		else $where['category_parent'] = $arg['category_parent'];
 		$categories = array();

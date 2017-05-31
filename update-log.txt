@@ -1,7 +1,7 @@
 【ModPHP 更新日志】
 版本 2.1.6 (2017-5-31 23:16)
 1. 采用新的方式检测版本更新。
-2. 新增 API user.login.complete, file.add.complate, mod.update.compete；修复调用
+2. 新增 API user.login.complete, file.add.complete, mod.update.compete；修复调用
    category::getTree() 方法时 category.get.before API 无效的问题。
 
 版本 2.1.5 (2017-5-31 0:34)

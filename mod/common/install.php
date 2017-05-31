@@ -8,11 +8,16 @@
 	<meta name="generator" content="ModPHP"/>
 	<?php
 	$host = 'http://modphp.hyurl.com/';
+	$file = __ROOT__.'modphp.zip';
 	$update = url() == site_url('install.php?update');
 	$uninstall = url() == site_url('install.php?uninstall');
 	$ver = @json_decode(file_get_contents($host.'version'), true) ?: @curl(array('url'=>$host.'version', 'parseJSON'=>true));
 	$gt = $ver && !curl_info('error') ? version_compare($ver['version'], MOD_VERSION) : -1;
-	$newVerTip = $gt > 0 ? '<p style="margin-bottom: 0">有新版本可用：<code>'.$ver['version'].'</code>' : '';
+	if($gt > 0 || (!$gt && file_exists($file) && $ver['md5'] != md5_file($file))){
+		$newVerTip = '<p style="margin-bottom: 0">'.($gt > 0 ? '有新版本可用：' : '版本').'<code>'.$ver['version'].'</code>'.($gt > 0 ? '' : '存在更新');
+	}else{
+		$newVerTip = '';
+	}
 	$installed = config('mod.installed');
 	$title = $update ? '更新' : ($uninstall ? '卸载' : '安装');
 	echo "<title>{$title} ModPHP</title>";
@@ -112,7 +117,7 @@
 	input[type=checkbox]{width: auto;}
 	header ul{margin: -5px -10px;padding: 10px 10px 5px;background-color: #2894ff;}
 	header li{display: inline-block;width: 40px;overflow: hidden;white-space: nowrap;position: relative;margin-right: 20px;font-size: 20px;}
-	header li.active{width: 150px;font-size:24px;color: white;border-bottom: 2px solid #fff;margin-bottom: -2px;}
+	header li.active{width: 150px;color: white;border-bottom: 2px solid #fff;margin-bottom: -2px;}
 	header a{color: inherit;}
 	header a:hover{text-decoration: none;color: #fff;}
 	header li:hover{border-bottom: 2px solid #fff;margin-bottom: -2px;}
@@ -131,9 +136,9 @@
 	<?php
 	$go_home = '<a href="'.site_url().'">点击此处返回首页</a>。';
 	if($update || $uninstall){
-		if(!is_logined() && $installed){
+		if($installed && !is_logined()){
 			echo "<p>用户未登录，无法进行操作，{$go_home}</p>";
-		}elseif(!is_admin() && $installed){
+		}elseif($installed && !is_admin()){
 			echo "<p>当前用户不是管理员，无法进行操作，{$go_home}</p>";
 		}else{
 			if($update){ ?>
@@ -147,13 +152,13 @@
 					<h3>更新内核版本</h3>
 					<?php
 						if($ver){
-							if($gt > 0){
+							if($newVerTip){
 								echo $newVerTip.(!empty($ver['url']) ? '，<a href="'.$ver['url'].'" target="_blank">查看新版说明</a>' : '').'。</p>';
 							}else{
 								echo '<p>暂无可用更新。</p>';
 							}
 							if($gt >= 0){
-								echo '<button onclick="update({upgrade: true, src: \''.$ver['src'].'\', md5: \''.$ver['md5'].'\'})" id="upgrade-button">'.($gt ? '更新' : '重新安装当前版本').'</button>';
+								echo '<button onclick="update({upgrade: true, src: \''.$ver['src'].'\', md5: \''.$ver['md5'].'\'})" id="upgrade-button">'.($newVerTip ? '更新' : '重新安装当前版本').'</button>';
 							}
 						}
 					?>

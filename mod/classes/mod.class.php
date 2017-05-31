@@ -371,7 +371,7 @@ class mod{
 			if(!empty($arg['upgrade'])){ //升级 ModPHP 版本
 				if(empty($arg['src']) || empty($arg['md5']))
 					return error(lang('mod.missingArguments'));
-				$file = 'modphp_'.__TIME__.'.zip';
+				$file = 'modphp.zip';
 				//尝试获取安装包
 				$tmp = @file_get_contents($arg['src']) ?: @curl(array('url'=>$arg['src'], 'followLocation'=>1));
 				$len = file_put_contents($file, $tmp);
@@ -379,7 +379,7 @@ class mod{
 					$ok = zip_extract($file, __ROOT__); //解压安装包
 					export(load_config_file('config.php'), __ROOT__.'user/config/config.php'); //更新配置
 				}
-				unlink($file);
+				// unlink($file);
 			}else{ //更新数据库
 				include __ROOT__.'mod/common/update.php'; //调用执行数据库更新程序
 				if(error()) return error();

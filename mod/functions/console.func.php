@@ -81,11 +81,12 @@ add_action('console.open.check_update', function(){
 	$url = 'http://modphp.hyurl.com/version';
 	$arg = array('url'=>$url, 'parseJSON'=>true);
 	if(ping('hyurl.com')){
+		$file = __ROOT__.'modphp.zip';
 		$ver = @json_decode(file_get_contents($url), true) ?: @curl($arg); //访问远程链接并获取响应
 		$gt = $ver && !curl_info('error') ? version_compare($ver['version'], MOD_VERSION) : -1;
-		if($gt >= 0) update($ver); //保存新版本信息
-		if($gt > 0){
-			$tip = "ModPHP {$ver['version']} is now availible, use \"update\" to get the new version.";
+		if($gt > 0 || (!$gt && file_exists($file) && $ver['md5'] != md5_file($file))){
+			update($ver); //保存新版本信息
+			$tip = "ModPHP {$ver['version']} ".($gt > 0 ? 'is now availible' : 'has updates').", use \"update\" to get the new version.";
 			fwrite(STDOUT, $tip.PHP_EOL); //输出更新提示
 		}
 	}

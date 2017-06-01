@@ -39,6 +39,18 @@ foreach($tables as $table){
 	}
 }
 
+// 创建数据表
+$createTable = function($table, $fields) use($sqlite){
+	$sql = "CREATE TABLE `{$table}` (\n";
+	foreach ($fields as $field => $attr) {
+		if($sqlite) $attr = str_ireplace(' AUTO_INCREMENT', '', $attr);
+		$sql .= "`{$field}` {$attr},\n";
+	}
+	$sql .= ")";
+	if(!$sqlite) $sql .= ' ENGINE=InnoDB DEFAULT CHARSET=utf8';
+	database::query(str_replace(",\n)", "\n)", $sql));
+};
+
 /** 新建或修改表 */
 foreach($database as $table => $fields){
 	if(!isset($config[$table])) $config[$table] = array();
@@ -46,33 +58,25 @@ foreach($database as $table => $fields){
 	if(in_array($table, $tables)){ //当数据表存在时更改数据表
 		$cols = array();
 		$sql = $sqlite ? "pragma table_info(`{$table}`)" : "SHOW COLUMNS FROM `{$table}`";
-		$result = database::query("SHOW COLUMNS FROM `{$table}`");
+		$result = database::query($sql);
 		while($result && $col = $result->fetchObject()){
 			$cols[] = $sqlite ? $col->name : $col->Field; //获取表字段
 		}
-		foreach($cols as $col){
-			if(!array_key_exists($col, $fields)){
-				database::query("ALTER TABLE `{$table}` DROP `{$col}`"); //删除多余字段
+		database::query("ALTER TABLE `{$table}` RENAME TO `{$table}_old`"); //重命名旧表
+		$createTable($table, $fields); //创建新表
+		$sql = "INSERT INTO `{$table}` (";
+		$_fields = '';
+		foreach ($cols as $name) {
+			if(array_key_exists($name, $fields)){
+				$_fields .= "`{$name}`, ";
 			}
 		}
-		foreach($fields as $field => $attr){
-			if($sqlite) $attr = str_ireplace(' AUTO_INCREMENT', '', $attr);
-			if(in_array($field, $cols)){ //修改字段属性
-				$attr = str_ireplace(' PRIMARY KEY', '', $attr);
-				database::query("ALTER TABLE `{$table}` CHANGE `{$field}` `{$field}` {$attr}");
-			}else{ //添加字段
-				database::query("ALTER TABLE `{$table}` ADD `{$field}` {$attr}");
-			}
-		}
+		$_fields = rtrim($_fields, ', ');
+		$sql .= $_fields.') SELECT '.$_fields.' FROM '.$table.'_old';
+		database::query($sql); //导入数据
+		database::query("DROP TABLE `{$table}_old`"); //删除旧表
 	}else{ //当数据表不存在时创建数据表
-		$sql = "CREATE TABLE `{$table}` (\n";
-		foreach ($fields as $field => $attr) {
-			if($sqlite) $attr = str_ireplace(' AUTO_INCREMENT', '', $attr);
-			$sql .= "`{$field}` {$attr},\n";
-		}
-		$sql .= ")";
-		if(!$sqlite) $sql .= ' ENGINE=InnoDB DEFAULT CHARSET=utf8';
-		database::query(str_replace(",\n)", "\n)", $sql));
+		$createTable($table, $fields);
 	}
 }
 $config['mod']['installed'] = true;

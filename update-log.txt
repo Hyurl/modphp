@@ -1,9 +1,10 @@
 【ModPHP 更新日志】
-版本 2.1.6 (2017-5-31 23:16)
+版本 2.1.6 (2017-6-1 19：33)
 1. 采用新的方式检测版本更新。
 2. 新增 API user.login.complete, file.add.complete, mod.update.compete；修复调用
    category::getTree() 方法时 category.get.before API 无效的问题。
 3. 修复在 SQLite 数据库中无法通过 mod::update() 方法更新数据表结构的问题。
+4. 修复 is_ajax() 函数在 Firefox 和 Safari 浏览器上判断错误的问题。
 
 版本 2.1.5 (2017-5-31 0:34)
 1. 修复网址中存在非拉丁字符时 url() 函数无法正确获取 URL 地址的问题。

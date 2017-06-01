@@ -483,14 +483,11 @@ function is_mobile($agent = ''){
 }
 
 /**
- * is_ajax() 判断当前是否为 AJAX 请求
+ * is_ajax() 判断当前是否为 AJAX 请求，需要客户端发送 X-Requested-With: XMLHttpRequest 请求头
  * @return boolean
  */
 function is_ajax(){
-	if(is_browser()){
-		return $_SERVER['HTTP_ACCEPT'] == '*/*' || !strcasecmp(@$_SERVER["HTTP_X_REQUESTED_WITH"], 'XMLHttpRequest');
-	}
-	return false;
+	return is_browser() && !strcasecmp(@$_SERVER["HTTP_X_REQUESTED_WITH"], 'XMLHttpRequest');
 }
 
 /**

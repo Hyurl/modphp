@@ -132,7 +132,7 @@ function pre_init(){
 			$_SERVER['HTTP_REFERER'] = $_REQUEST['HTTP_REFERER'];
 		}
 	}
-	conv_request_vars(); //转换表单请求参数
+	// conv_request_vars(); //转换表单请求参数
 }
 
 /** 加载自定义模块类文件 */
@@ -159,6 +159,8 @@ function init(){
 
 	/** 加载自动恢复程序 */
 	include_once __ROOT__.'mod/common/recover.php';
+
+	conv_request_vars(); //转换表单请求参数
 
 	/** 系统初始化接口 */
 	$init = array(

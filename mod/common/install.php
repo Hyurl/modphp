@@ -49,15 +49,21 @@
 		xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
 		xhr.onreadystatechange = function(){
 			var result = xhr.responseText;
-			console.log(result);
 			if(xhr.readyState == 4){
+				console.log(result);
 				if(xhr.status == 200){
-					result = JSON.parse(result);
-					alert(result.data);
-					if(result.success){
-						btn.innerText = text+'成功！';
-						go_home();
-					}else{
+					try{
+						result = result.match(/\{.*\}/)[0];
+						result = JSON.parse(result);
+						alert(result.data);
+						if(result.success){
+							btn.innerText = text+'成功！';
+							go_home();
+						}else{
+							btn.innerText = text+'失败！';
+						}
+					}catch(e){
+						alert(result);
 						btn.innerText = text+'失败！';
 					}
 				}else{

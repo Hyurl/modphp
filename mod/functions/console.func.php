@@ -80,7 +80,7 @@ add_action('console.open.show_tip', function(){
 add_action('console.open.check_update', function(){
 	$url = 'http://modphp.hyurl.com/version';
 	$arg = array('url'=>$url, 'parseJSON'=>true);
-	if(ping('hyurl.com')){
+	try{
 		$file = __ROOT__.'modphp.zip';
 		$ver = @json_decode(file_get_contents($url), true) ?: @curl($arg); //访问远程链接并获取响应
 		$gt = $ver && !curl_info('error') ? version_compare($ver['version'], MOD_VERSION) : -1;
@@ -89,7 +89,7 @@ add_action('console.open.check_update', function(){
 			$tip = "ModPHP {$ver['version']} ".($gt > 0 ? 'is now availible' : 'has updates').", use \"update\" to get the new version.";
 			fwrite(STDOUT, $tip.PHP_EOL); //输出更新提示
 		}
-	}
+	}catch(Exception $e){}
 }, false);
 
 /** 检查安装状态 */

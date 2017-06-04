@@ -25,10 +25,8 @@ function is_single($key = 0){
 
 /** 自动设置文章评论数量 */
 add_hook('post.get.set_comment_counts', function($data){
-	$count = database::open(0)
-		   ->select('comment', 'COUNT(*) AS count', "`post_id` = {$data['post_id']}")
-		   ->fetchObject()
-		   ->count; //获取实际评论数
+	$comment = database::open(0)->select('comment', 'COUNT(*) AS count', "`post_id` = {$data['post_id']}");
+	$count = $comment ? $comment->fetchObject()->count : 0; //获取实际评论数
 	if($count != $data['post_comments']){
 		$data['post_comments'] = $count;
 		database::update('post', array('post_comments'=>$count), "`post_id` = {$data['post_id']}"); //更新记录

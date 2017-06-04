@@ -68,10 +68,8 @@ add_hook('category.update.check_name', function($arg){
 
 /** 自动设置子目录数量 */
 add_hook('category.get.set_children_counts', function($data){
-	$count = database::open(0)
-		   ->select('category', 'COUNT(*) AS count', "`category_parent` = {$data['category_id']}")
-		   ->fetchObject()
-		   ->count; //获取子目录实际数量
+	$category = database::open(0)->select('category', 'COUNT(*) AS count', "`category_parent` = {$data['category_id']}");
+	$count = $category ? $category->fetchObject()->count : 0; //获取子目录实际数量
 	if(is_array($data['category_children']))
 		$_count = count($data['category_children']);
 	else
@@ -86,10 +84,8 @@ add_hook('category.get.set_children_counts', function($data){
 
 /** 自动设置分类目录所属文章数量 */
 add_hook('category.get.set_post_counts', function($data){
-	$count = database::open(0)
-		   ->select('post', 'COUNT(*) AS count', "`category_id` = {$data['category_id']}")
-		   ->fetchObject()
-		   ->count; //获取文章实际数量
+	$post = database::open(0)->select('post', 'COUNT(*) AS count', "`category_id` = {$data['category_id']}");
+	$count = $post ? $post->fetchObject()->count : 0; //获取文章实际数量
 	if($count != $data['category_posts']){
 		$data['category_posts'] = $count;
 		//更新数据库记录

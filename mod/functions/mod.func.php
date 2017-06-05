@@ -201,8 +201,13 @@ function staticuri($file = '', $format = ''){
 	static $uri = array();
 	if(!$uri) $uri = load_config_file('static-uri.php');
 	if(!$file) return $uri;
+	if(is_string($file) && strapos($file, __ROOT__) === 0) //替换为相对于 __ROOT__ 的路径
+		$file = substr($file, strlen(__ROOT__));
 	if(is_assoc($file)){ //同时设置多个伪静态规则
-		$uri = array_merge($uri, $file);
+		foreach ($file as $k => $v) {
+			if(strapos($k, __ROOT__) === 0) $k = substr($k, strlen(__ROOT__));
+			$uri[$k] = $v;
+		}
 		return true;
 	}elseif($format){
 		return $uri[$file] = $format;

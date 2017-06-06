@@ -10,8 +10,9 @@ final class file extends mod{
 	/** checkFileType() 检查文件类型 */
 	private static function checkFileType(&$input = array()){
 		$fileType = explode('|', config('file.upload.acceptTypes')); //获取配置
+		$name = !empty($input['file_name']) ? $input['file_name'] : $input['name'];
 		for ($i=0; $i < count($fileType); $i++) { 
-			if(!in_array(strtolower(pathinfo($input["name"], PATHINFO_EXTENSION)), $fileType)) {
+			if(!in_array(strtolower(pathinfo($name, PATHINFO_EXTENSION)), $fileType)) {
 				$input['error'] = lang('file.invalidType'); //不可用的类型作为错误处理并反馈给客户端
 			}
 		}
@@ -26,26 +27,45 @@ final class file extends mod{
 
 	/** uploadChecker() 上传前检查 */
 	private static function uploadChecker(&$input = array()){
-		self::permissionChecker($input, 'add'); //检查添加记录的权限
-		if(error()) return error();
+		if(config('mod.installed')){
+			self::permissionChecker($input, 'add'); //检查添加记录的权限
+			if(error()) return error();
+		}
 		self::checkFileType($input);
 		self::checkFileSize($input);
 	}
 
 	/** saveUpload() 保存上传的文件 */
 	private static function saveUpload($input = array()){
-		$dir = __ROOT__.config('file.upload.savePath').date('Y-m-d').'/'; //文件保存目录(按日期)
-		if(!is_dir($dir)) mkdir($dir);
-		//获取文件 MD5 名称
-		$md5name = isset($input['tmp_data']) ? $input['name'] : md5_file($input['tmp_name']).'.'.pathinfo($input['name'], PATHINFO_EXTENSION);
-		$savepath = $dir.$md5name; //保存路径为 目录 + MD5 名称
-		if(!file_exists($savepath)){ //文件不存在则保存，已存在相同文件则不再保存
-			do_hooks('file.save', $input); //执行挂钩函数
+		$src = '';
+		$uploadPath = config('file.upload.savePath');
+		if(!empty($input['file_src'])){
+			$savepath = $src = $input['file_src'];
+		}else{
+			$dir = $uploadPath.date('Y-m-d').'/'; //文件保存目录(按日期)
+			if(!is_dir($dir)) mkdir($dir);
+			//获取文件 MD5 名称
+			$name = empty($input['file_name']) ? $input['name'] : $input['file_name'];
+			$md5name = isset($input['tmp_data']) ? $name : md5_file($input['tmp_name']).'.'.pathinfo($name, PATHINFO_EXTENSION);
+			$savepath = $dir.$md5name; //保存路径为 目录 + MD5 名称
+		}
+		$path = __ROOT__.$savepath;
+		if(!file_exists($path) || $src || !empty($input['file_name'])){
+			if(strapos($path, __ROOT__.$uploadPath) !== 0)
+				error(lang('mod.permissionDenied'));
+			if(config('mod.installed') && !error()) do_hooks('file.save', $input); //执行挂钩函数
 			if(error()) return false; //如果遇到错误，则不再继续
-			if(isset($input['tmp_data'])){
-				$result = file_put_contents($savepath, $input['tmp_data']); //保存 Data URI scheme 文件
+			if($src){ //追加数据
+				if(isset($input['tmp_data']))
+					$result = file_put_contents($path, $input['tmp_data'], FILE_APPEND);
+				else
+					$result = file_put_contents($path, file_get_contents($input['tmp_name']), FILE_APPEND);
 			}else{
-				$result = move_uploaded_file($input['tmp_name'], $savepath); //保存常规文件
+				if(isset($input['tmp_data'])){
+					$result = file_put_contents($path, $input['tmp_data']); //保存 Data URI scheme 文件
+				}else{
+					$result = move_uploaded_file($input['tmp_name'], $path); //保存常规文件
+				}
 			}
 			if($result === false) return false;
 		}
@@ -64,7 +84,8 @@ final class file extends mod{
 					if($action == 'copy'){ //创建
 						Image::open($src)->resize((int)trim($pxes[$i]))->save($filename.'_'.$pxes[$i].$ext);
 					}elseif($action == 'delete'){ //删除
-						if(file_exists($filename.'_'.trim($pxes[$i]).$ext)) unlink($filename.'_'.trim($pxes[$i]).$ext);
+						if(file_exists($filename.'_'.trim($pxes[$i]).$ext))
+							unlink($filename.'_'.trim($pxes[$i]).$ext);
 					}
 				}
 			}
@@ -116,39 +137,53 @@ final class file extends mod{
 			$_FILES = get_uploaded_files(); //获得普通方式上传的文件
 		}
 		if(!$_FILES) return error(lang('mod.missingArguments'));
+		$installed = config('mod.installed');
+		$name = !empty($arg['file_name']) ? $arg['file_name'] : ''; //分片上传时设置文件名
+		$src = !empty($arg['file_src']) ? $arg['file_src'] : ''; //分片上传时的源文件地址
+		// 获取相对路径
+		if($src && strapos($src, site_url()) === 0)
+			$src = substr($src, strlen(site_url()));
+		if($src && strapos($src, __ROOT__) === 0)
+			$src = substr($src, strlen(__ROOT__));
 		$data = array();
 		foreach ($_FILES as $key => $file) { //遍历 $_FILES 并执行文件保存操作
 			if(is_assoc($file)) $file = array($file);
-			for ($i=0; $i < count($file); $i++) { 
+			for ($i=0; $i < count($file); $i++) {
+				if($name) $file[$i]['file_name'] = $name;
+				if($src) $file[$i]['file_src'] = $src;
 				self::uploadChecker($file[$i]);
 				if(error()) return error(); //遇到错误则停止上传操作
 				if(!$file[$i]['error']){
 					if($savepath = self::saveUpload($file[$i])){
-						$arg['file_name'] = $file[$i]['name'];
-						if(strapos($savepath, __ROOT__) === 0){
-							$savepath = substr($savepath, strlen(__ROOT__)); //获取相对路径
-						}
+						if(empty($arg['file_name']))
+							$arg['file_name'] = $file[$i]['name'];
 						$arg['file_src'] = $savepath;
-						$result = self::get(array('file_src'=>$arg['file_src'])); //检查文件记录是否已存在
-						if(!$result['success']){
-							error(null);
-							do_hooks('file.add', $arg); //执行挂钩函数
-							self::copyMoreImage($savepath)->handler($arg, 'add');
-							if(error()) return error();
-							database::open(0)->insert('file', $arg, $id); //将文件信息存入数据库
-							$result = self::get(array('file_id'=>$id));
+						if($installed && !$src){
+							$result = self::get(array('file_src'=>$arg['file_src'])); //检查文件记录是否已存在
+							if(!$result['success']){
+								error(null);
+								do_hooks('file.add', $arg); //执行挂钩函数
+								self::copyMoreImage($savepath)->handler($arg, 'add');
+								if(error()) return error();
+								database::open(0)->insert('file', $arg, $id); //将文件信息存入数据库
+								$result = self::get(array('file_id'=>$id));
+							}
+							do_hooks('file.add.complete', $result['data']); //执行上传文件后的回调函数
+							$data[] = $result['data'];
+						}else{
+							$data[] = array_merge($arg, $file[$i]);
 						}
-						do_hooks('file.add.complete', $result['data']); //执行上传文件后的回调函数
-						$data[] = $result['data'];
 					}else{
-						$file[$i]['error'] = lang('file.uploadFailed');
+						$error = error();
+						$file[$i]['error'] = $error ? $error['data'] : lang('file.uploadFailed');
 					}
 				}
 				if($file[$i]['error']) $data[] = $file[$i];
 			}
 		}
 		for ($i=0; $i < count($data); $i++) { 
-			if(isset($data[$i]['file_id'])) return success($data); //只要有一个文件上传成功则返回成功
+			if(($installed && (isset($data[$i]['file_id']) || ($src && empty($data[$i]['error'])))) || (!$installed && empty($data[$i]['error'])))
+				return success($data); //只要有一个文件上传成功则返回成功
 		}
 		return error($data);
 	}
@@ -163,20 +198,44 @@ final class file extends mod{
 	 * @param  array  $arg 请求参数
 	 * @return array       操作结果
 	 */
-	static function delete(array $arg = array()){
-		if(empty($arg['file_id'])) return error(lang('mod.missingArguments'));
-		if(get_file((int)$arg['file_id'])) { //判断文件记录是否存在
-			$result = parent::delete($arg); //删除记录
-			if(error()) return error();
-			$src = file_src();
+	static function delete($arg = array()){
+		if(is_string($arg) && !is_numeric($arg))
+			$arg = array('file_src' => $arg);
+		if(empty($arg['file_id']) && empty($arg['file_src']))
+			return error(lang('mod.missingArguments'));
+		$installed = config('mod.installed');
+		$_arg = array();
+		if(!empty($arg['file_id'])) $_arg['file_id'] = $arg['file_id'];
+		if(!empty($arg['file_src'])){
+			if(strapos($arg['file_src'], __ROOT__) === 0) //获取相对路径
+				$arg['file_src'] = substr($arg['file_src'], strlen(__ROOT__));
+			$_arg['file_src'] = $arg['file_src'];
+		}
+		if(($installed && get_file($_arg)) || (!$installed && file_exists(__ROOT__.$arg['file_src']))){ //判断文件记录是否存在
+			if($installed){
+				$arg['file_id'] = file_id();
+				$result = parent::delete($arg); //删除数据库记录
+				if(error()) return error();
+				$src = file_src();
+			}else{
+				$src = $arg['file_src'];
+			}
 			if(strapos($src, site_url()) === 0)
 				$src = __ROOT__.substr($src, strlen(site_url())); //将绝对 URL 地址转换为绝对磁盘地址
 			$dir = pathinfo($src, PATHINFO_DIRNAME);
-			if(@unlink($src)){ //移除文件
-				self::deleteMoreImage($src); //移除图片副本
+			if($installed)
+				$deleted = $result['success'] ? @unlink($src) : false; //删除文件
+			else
+				$deleted = @unlink($src);
+			if($deleted){ //删除更多副本
+				self::deleteMoreImage($src); //删除图片副本
 				if(is_empty_dir($dir)) rmdir($dir); //移除空目录
 			}
-			return success($result['data']);
+			if($installed){
+				return $result;
+			}else{
+				return $deleted ? success(lang('mod.deleted', lang('file.label'))) : error(lang('mod.deleteFailed', lang('file.label')));
+			}
 		}
 		return error(lang('mod.notExists', lang('file.label')));
 	}

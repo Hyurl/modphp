@@ -11,6 +11,14 @@ add_hook(array('file.update.check_permission', 'file.delete.check_permission'), 
 add_hook('file.get.absolute_src', function($data){
 	if(strapos($data['file_src'], site_url()) !== 0){
 		$data['file_src'] = site_url().$data['file_src'];
+		return $data;
 	}
-	return $data;
+}, false);
+
+/** 永远使用相对路径获取文件（如果存在） */
+add_hook('file.get.before.relative_src', function($arg){
+	if(!empty($arg['file_src']) && strapos($arg['file_src'], site_url()) === 0){
+		$arg['file_src'] = substr($arg['file_src'], strlen(site_url()));
+		return $arg;
+	}
 }, false);

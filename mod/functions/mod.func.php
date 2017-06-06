@@ -659,7 +659,7 @@ function display_file($url = '', $set = false){
 			if($isIndex) $_GET = array_merge($_GET, $args);
 			return $file = $tpl;
 		}
-		if(!config('mod.installed')) return $file = $tpl;
+		if(!config('mod.installed')) goto err404;
 		$config = config();
 		foreach(database() as $key => $value){
 			$URI = @$config[$key]['staticURI'] ?: @$config[$key]['staticURL'];
@@ -700,8 +700,9 @@ function display_file($url = '', $set = false){
 				}
 			}
 		}
+		err404:
+		return $file = $tplPath.config('site.errorPage.404'); //如果没有匹配的模板，则报告 404 错误
 	}
-	return $file = $tplPath.config('site.errorPage.404'); //如果没有匹配的模板，则报告 404 错误
 }
 
 /**

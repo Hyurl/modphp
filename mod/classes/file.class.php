@@ -51,7 +51,7 @@ final class file extends mod{
 		}
 		$path = __ROOT__.$savepath;
 		if(!file_exists($path) || $src || !empty($input['file_name'])){
-			if(strapos($path, __ROOT__.$uploadPath) !== 0)
+			if($src && strapos(str_replace('\\', '/', realpath($path)), __ROOT__.$uploadPath) !== 0)
 				error(lang('mod.permissionDenied'));
 			if(config('mod.installed') && !error()) do_hooks('file.save', $input); //执行挂钩函数
 			if(error()) return false; //如果遇到错误，则不再继续
@@ -169,7 +169,7 @@ final class file extends mod{
 								$result = self::get(array('file_id'=>$id));
 							}
 							do_hooks('file.add.complete', $result['data']); //执行上传文件后的回调函数
-							$data[] = $result['data'];
+							$data[] = array_merge($arg, $result['data']);
 						}else{
 							$data[] = array_merge($arg, $file[$i]);
 						}

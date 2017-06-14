@@ -64,7 +64,6 @@ final class user extends mod{
 				$user = self::getMe();
 				do_hooks('user.login.complete', $user['data']);
 				return $user;
-				
 			}
 		}
 		return error($hasUser ? lang('user.wrongPassword') : lang('mod.notExists', lang('user.label')));

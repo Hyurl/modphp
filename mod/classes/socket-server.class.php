@@ -267,13 +267,13 @@ class SocketServer{
 		$head = array();
 		$len = strlen($data);
 		switch ($type) {
-			case 'text': //文本
+			case 'text': //文本 1
 				$head[0] = 129;
 				break;
-			case 'binary': //二进制
+			case 'binary': //二进制 2
 				$head[0] = 130;
 				break;
-			case 'close': //关闭帧
+			case 'close': //关闭帧 8
 				$head[0] = 136;
 				break;
 		}
@@ -309,19 +309,17 @@ class SocketServer{
 	 *                      [reason]=>关闭连接的原因
 	 */
 	private static function decode($data){
-		$_1bin = sprintf('%08b', ord($data[0]));
-		$_2bin = sprintf('%08b', ord($data[1]));
-		$opcode = bindec(substr($_1bin, 4, 4));
-		$len = ord($data[1]) & 127;
+		$opcode = ord($data[0]) & 127; //操作码
+		$len = ord($data[1]) & 127; //消息长度
 		$_data = array('dataType'=>'', 'data'=>'');
 		switch ($opcode) {
-			case 1: //文本
+			case 1: //文本 129
 				$_data['dataType'] = 'text';
 				break;
-			case 2: //二进制
+			case 2: //二进制 130
 				$_data['dataType'] = 'binary';
 				break;
-			case 8: //关闭帧
+			case 8: //关闭帧 136
 				$_data['dataType'] = 'close';
 				break;
 		}

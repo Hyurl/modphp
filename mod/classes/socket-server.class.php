@@ -4,8 +4,7 @@
  * 该类会自动判断客户端是否使用 WebSocket 协议，从而对其采取不同的响应策略。
  * 如果客户端使用 SebSocket 协议，则按照该协议进行数据的编码、解码等操作。
  * 如果客户端不使用 WebSocket 协议，则使用下面的简单协议进行数据传送：
- * 	 1. 在握手时，由客户端发送任意数据到服务器，服务器将其原样返回，来表示接受连接；
- * 	 2. 为兼容所有编程语言，传输的任何数据都需要显式转换为字符串或 byte，例如使用 base64 编码来发送文件。
+ *     在握手时，由客户端发送任意数据到服务器，服务器将其原样返回，来表示接受连接。
  * 注：大数据可以分片发送，但需要使用者自己来实现数据分割和重组，服务器会一次性接收每一次发送的数据。
  */
 class SocketServer{
@@ -13,11 +12,11 @@ class SocketServer{
 	static $onmessage = null; //接收数据时触发回调函数
 	static $onerror = null; //发生错误时触发回调函数
 	static $onclose = null; //关闭连接时触发回调函数
-	static $maxInput = 8388608; //最大传入字节数
 	private static $server = null; //服务器资源
 	private static $client = null; //当前客户端
 	private static $sockets = array(); //所有连接
 	private static $handshaked = array(); //已握手的连接
+	private static $temp = array(); //临时存储的客户端数据
 
 	/**
 	 * listen() 监听连接
@@ -38,7 +37,7 @@ class SocketServer{
 			self::$server = $server;
 			self::$sockets = array($server);
 			if(is_callable($callback)) $callback($server, $port);
-			if($autoStart) self::start();
+			if($autoStart) self::start(); //自动启动服务
 		}else{
 			self::handleError($server);
 		}
@@ -71,25 +70,12 @@ class SocketServer{
 		if(!is_array($client)) $client = array($client);
 		foreach ($client as $recv) {
 			if(!isset(self::$handshaked[(int)$recv])) continue; //跳过已关闭或未握手的连接
-			if(self::$handshaked[(int)$recv] == 2){ //发送 WebSocket 消息
-				$data = self::encode($msg, $type);
-				if($data !== false){
-					$len = strlen($data);
-					if($len <= 127){
-						socket_write($recv, $data);
-					}else{ //大数据分片发送
-						$data = str_split($data, 127);
-						for ($i=0; $i < count($data); $i++) { 
-							socket_write($recv, $data[$i]);
-						}
-					}
-				}else{
-					$error = self::handleError($recv, 1004, 'Frame too large.'); //数据太大
-					if(!$error && !$ok) $ok = true;
-					continue;
-				}
-			}else{ //发送普通 Socket 消息
-				socket_write($recv, $msg);
+			if(self::$handshaked[(int)$recv] == 2){ //WebSocket
+				$msg = self::encode($msg, $type); //编码数据
+			}
+			$data = str_split($msg, 1024); //分片发送
+			for ($i=0; $i < count($data); $i++) { 
+				socket_write($recv, $data[$i]);
 			}
 			$error = self::handleError($recv);
 			if(!$error && !$ok) $ok = true;
@@ -118,7 +104,7 @@ class SocketServer{
 		}
 		socket_close($client); //关闭连接
 		$i = array_search($client, $sockets);
-		unset($shaked[$id], $sockets[$i]); //清除握手和连接状态
+		unset($shaked[$id], $sockets[$i], self::$temp[$id]); //清除握手和连接状态
 	}
 
 	/**
@@ -168,18 +154,33 @@ class SocketServer{
 			}
 			foreach ($read as $client) {
 				self::$client = $client; //将 $client 设置为全局客户端
-				$buffer = @socket_read($client, self::$maxInput); //获取客户端消息
+				$cid = (int)$client; //客户端 ID
+				$buffer = socket_read($client, 1024*1024*8); //获取客户端消息
 				if($buffer !== false){
 					if($buffer !== ''){
-						$shacked = self::$handshaked[(int)$client];
+						$shacked = self::$handshaked[$cid];
 						if(!$shacked){
 							self::shakeHands($buffer); //握手
 						}else{
-							$msg = $shacked == 2 ? self::decode($buffer) : array('dataType'=>'text', 'data'=>$buffer);
-							if($msg['dataType'] == 'close'){
-								self::close($msg['code'], $msg['reason']);
-							}else{
-								self::run('message', array_merge(array('client'=>$client), $msg)); //执行事件处理函数
+							$msg = $shacked == 2 ? self::decode($buffer) : array('type'=>'text', 'data'=>$buffer, 'size'=>strlen($buffer));
+							$newData = !isset(self::$temp[$cid]);
+							$data = &self::$temp[$cid];
+							if($newData){ //新数据
+								$data = $msg;
+							}elseif(!$newData){ //追加数据
+								$data['data'] .= $msg['data'];
+							}
+							if(strlen($data['data']) >= $data['size']){
+								unset($data['mask']);
+								if($data['type'] == 'close'){ //处理关闭帧
+									unset($data['data']);
+									self::close($data['code'], $data['reason']);
+								}elseif($data['type'] == 'ping'){ //处理心跳帧
+									self::send('PONG', $client,'pong');
+								}elseif($data['type'] == 'text' || $data['type'] == 'binary'){ //处理文本/二进制
+									self::run('message', array_merge(array('client'=>$client), $data)); //执行事件处理函数
+								}
+								unset(self::$temp[$cid], $data);
 							}
 						}
 					}else{ //客户端离线
@@ -267,6 +268,9 @@ class SocketServer{
 		$head = array();
 		$len = strlen($data);
 		switch ($type) {
+			case 'continuation': //追加数据帧
+				$head[0] = 128;
+				break;
 			case 'text': //文本 1
 				$head[0] = 129;
 				break;
@@ -276,20 +280,25 @@ class SocketServer{
 			case 'close': //关闭帧 8
 				$head[0] = 136;
 				break;
+			case 'ping': //PING
+				$head[0] = 137;
+				break;
+			case 'pong': //PONG
+				$head[0] = 138;
+				break;
 		}
-		if ($len > 65535) { //大数据分片发送
+		if($len > 65535){ //7+64 bits
 			$lenBin = str_split(sprintf('%064b', $len), 8);
 			$head[1] = 127;
 			for($i = 0; $i < 8; $i++){
 				$head[$i + 2] = bindec($lenBin[$i]);
 			}
-			if($head[2] > 127) return false; //数据太大，编码失败
-		}elseif($len > 125) {
+		}elseif($len > 125){ //7+16 bits
 			$lenBin = str_split(sprintf('%016b', $len), 8);
 			$head[1] = 126;
 			$head[2] = bindec($lenBin[0]);
 			$head[3] = bindec($lenBin[1]);
-		}else{
+		}else{ //7 bits
 			$head[1] = $len;
 		}
 		foreach ($head as $k => $v) {
@@ -303,49 +312,68 @@ class SocketServer{
 	 * decode() 解码接收的消息
 	 * @param  binary $data 接收的数据
 	 * @return array        可能包含下面的内容：
-	 *                      [dataType]=>数据类型
+	 *                      [type]=>数据类型
 	 *                      [data]=>数据内容
+	 *                      [size]=>数据大小
 	 *                      [code]=>关闭连接的代码
 	 *                      [reason]=>关闭连接的原因
+	 *                      [mask]=>掩码(仅内部使用)
 	 */
 	private static function decode($data){
 		$opcode = ord($data[0]) & 127; //操作码
-		$len = ord($data[1]) & 127; //消息长度
-		$_data = array('dataType'=>'', 'data'=>'');
+		$plen = ord($data[1]) & 127; //负载长度
+		$dataLength = strlen($data); //数据长度
+		$_data = array('type'=>'', 'data'=>'', 'size'=>0, 'mask'=>null);
 		switch ($opcode) {
+			case 0: //追加数据帧 128
+				$_data['type'] = 'continuation';
+				break;
 			case 1: //文本 129
-				$_data['dataType'] = 'text';
+				$_data['type'] = 'text';
 				break;
 			case 2: //二进制 130
-				$_data['dataType'] = 'binary';
+				$_data['type'] = 'binary';
 				break;
 			case 8: //关闭帧 136
-				$_data['dataType'] = 'close';
+				$_data['type'] = 'close';
+				break;
+			case 9: //PING
+				$_data['type'] = 'ping';
+				break;
+			case 10: //PONG
+				$_data['type'] = 'pong';
 				break;
 		}
-		if($len == 126){
+		if($opcode == 10 && !$plen) return $_data; //Edge
+		if($plen == 126){
 			$mask = substr($data, 4, 4); //掩码
 			$offset = 8; //数据起始点
-			$dataLength = bindec(sprintf('%08b', ord($data[2])).sprintf('%08b', ord($data[3]))) + $offset;
-		}elseif($len == 127){
+			$_data['size'] = bindec(sprintf('%08b', ord($data[2])).sprintf('%08b', ord($data[3])));
+		}elseif($plen == 127){
 			$mask = substr($data, 10, 4);
 			$offset = 14;
 			for ($i=0, $tmp = ''; $i < 8; $i++) { 
 				$tmp .= sprintf('%08b', ord($data[$i+2]));
 			}
-			$dataLength = bindec($tmp) + $offset; //数据长度
+			$_data['size'] = bindec($tmp);
 		}else{
 			$mask = substr($data, 2, 4);
 			$offset = 6;
-			$dataLength = $len + $offset;
+			$_data['size'] = $plen;
 		}
-		for ($i=$offset; $i < $dataLength; $i++) { 
+		$_data['mask'] = $mask;
+		$cid = (int)self::$client;
+		if(!$_data['type']){ //Firefox
+			$mask = self::$temp[$cid]['mask'];
+			$offset = 0;
+		}
+		for($i=$offset; $i < $dataLength; $i++){ 
 			$j = $i - $offset;
 			if (isset($data[$i])) {
 				$_data['data'] .= $data[$i] ^ $mask[$j % 4]; //数据解码
 			}
 		}
-		if($opcode == 8){ //提取关闭帧
+		if($opcode == 8){ //获取关闭帧信息
 			if($_data['data']){
 				$code = str_split(substr($_data['data'], 0, 2));
 				$code[0] = decbin(ord($code[0]));
@@ -353,7 +381,6 @@ class SocketServer{
 			}
 			$_data['code'] = $_data['data'] ? bindec(join('', $code)) : 1000; //关闭代码
 			$_data['reason'] = $_data['data'] ? substr($_data['data'], 2) : ''; //关闭原因
-			unset($_data['data']);
 		}
 		return $_data;
 	}

@@ -14,7 +14,6 @@ require_once('mod/common/init.php');
 
 /** 具体逻辑 */
 $SOCKET_INFO = $SOCKET_USER = array(); //保存连接信息的全局变量
-SocketServer::$maxInput = config('mod.SocketServer.maxInput'); //设置最大传入字节数
 if(is_agent()){
 	if(php_sapi_name() == 'cgi-fcgi') //Socket 服务器不能通过 FastCGI 开启
 		report_500(lang('mod.socketFastCGIWarning'));
@@ -135,15 +134,15 @@ SocketServer::on('open', function($event){ //绑定连接事件
 });
 if(!file_exists($file = __ROOT__.'.socket-server')) file_put_contents($file, 'on');
 if(!SocketServer::server()){
+	$STDOUT = lang('mod.socketOnTip');
+	if($encoding = get_cmd_encoding())
+		$STDOUT = iconv('UTF-8', $encoding, $STDOUT) ?: $STDOUT;
 	$file = fopen($file, 'r');
 	if(!flock($file, LOCK_EX | LOCK_NB)){ //通过检测 .socket-server 文件是否被加锁来判断 Socket 服务器是否在运行
 		is_agent() ? report_500($STDOUT) : exit($STDOUT."\n");
 	}
 	//启动监听
-	SocketServer::listen(@$_SERVER['argv'][1] ?: config('mod.SocketServer.port'), function($socket){
-		$STDOUT = lang('mod.socketOnTip');
-		if($encoding = get_cmd_encoding())
-			$STDOUT = iconv('UTF-8', $encoding, $STDOUT) ?: $STDOUT;
+	SocketServer::listen(@$_SERVER['argv'][1] ?: config('mod.SocketServer.port'), function($socket) use($STDOUT){
 		if(!is_agent()) fwrite(STDOUT, $STDOUT."\n");
 	});
 }

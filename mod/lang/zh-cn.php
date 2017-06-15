@@ -1,5 +1,5 @@
 <?php
-/** 中文语言包 */
+/** 中文(简体)语言包 */
 return array(
 	'name'=>'中文(简体)',
 	'mod'=>array(

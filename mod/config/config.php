@@ -43,7 +43,6 @@ return array(
 			),
 		'SocketServer'=>array( //Socket 服务器设置
 			'port' => 8080, //监听端口
-			'maxInput' => 1024*1024*8, //最大传入字节数
 			),
 		),
 	'site' => array( //网站设置

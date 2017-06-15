@@ -9,7 +9,7 @@ if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 
 $file = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 
 /** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '2.1.8'); //ModPHP 版本
+define('MOD_VERSION', '2.1.9'); //ModPHP 版本
 define('__TIME__', time(), true); //开始运行时间
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true); //网站根目录
 define('__SCRIPT__', substr($file, strlen(__ROOT__)) ?: $file, true); //执行脚本

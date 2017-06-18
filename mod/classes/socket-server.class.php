@@ -134,6 +134,7 @@ class SocketServer{
 
 	/** start() 启动服务 */
 	static function start(){
+		$maxInput = intval(ini_get('memory_limit'))/4*1024*1024;
 		$server = self::$server; //服务器资源
 		while(true){
 			$read = self::$sockets;
@@ -155,7 +156,7 @@ class SocketServer{
 			foreach ($read as $client) {
 				self::$client = $client; //将 $client 设置为全局客户端
 				$cid = (int)$client; //客户端 ID
-				$buffer = socket_read($client, 1024*1024*8); //获取客户端消息
+				$buffer = socket_read($client, $maxInput); //获取客户端消息
 				if($buffer !== false){
 					if($buffer !== ''){
 						$shacked = self::$handshaked[$cid];

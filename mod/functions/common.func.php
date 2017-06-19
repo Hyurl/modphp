@@ -23,7 +23,7 @@ add_hook('mod.uninstall', function($arg){
 });
 
 //禁止访问模板函数文件
-add_action('mod.template.load', function(){
+add_hook('mod.template.load', function(){
 	if(!strcasecmp(__ROOT__.display_file(), template_path('functions.php')))
 		report_403();
 });

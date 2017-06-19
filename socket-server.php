@@ -40,8 +40,22 @@ SocketServer::on('open', function($event){ //绑定连接事件
 	$installed = config('mod.installed');
 	do_hooks('socket.message', $event);
 	if(error()) goto sendResult;
-	$data = json_decode($event['data'], true);
-	conv_request_vars($data); //转义参数
+	if($event['type'] == 'text'){ //文本消息
+		$data = json_decode($event['data'], true);
+		conv_request_vars($data); //转义参数
+	}else{ //二进制消息作为 Data URI Scheme 上传处理
+		if(class_exists('finfo')){
+			$finfo = new Finfo(FILEINFO_MIME_TYPE);
+			$type = $finfo->buffer($event['data']);
+		}else{
+			$type = 'text/plain';
+		}
+		$data = array(
+			'obj'=>'file',
+			'act'=>'upload',
+			'file'=>"data:{$type},{$event['data']}",
+			);
+	}
 	$_GET['obj'] = @$data['obj'];
 	$_GET['act'] = @$data['act'];
 	$obj = strtolower($_GET['obj']);
@@ -97,7 +111,7 @@ SocketServer::on('open', function($event){ //绑定连接事件
 		$result = error() ?: $obj::$act($data);
 		$result = array_merge($result, array('obj'=>$_GET['obj'], 'act'=>$_GET['act']));
 		//调用类方法并将结果发送给客户端
-		SocketServer::send(json_encode($result)); //发送 JSON 结果
+		SocketServer::send(@json_encode($result)); //发送 JSON 结果
 		if($installed && $obj == 'user' && $result['success']){
 			if(!strcasecmp('login', $act)){ //登录操作
 				$uid = $result['data']['user_id'];

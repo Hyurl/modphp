@@ -38,6 +38,7 @@ final class file extends mod{
 	/** saveUpload() 保存上传的文件 */
 	private static function saveUpload($input = array()){
 		$src = '';
+		$dataURIScheme = isset($input['tmp_data']); //是否为 Data URI Scheme 数据
 		$uploadPath = config('file.upload.savePath');
 		if(!empty($input['file_src'])){
 			$savepath = $src = $input['file_src'];
@@ -45,8 +46,11 @@ final class file extends mod{
 			$dir = $uploadPath.date('Y-m-d').'/'; //文件保存目录(按日期)
 			if(!is_dir($dir)) mkdir($dir);
 			//获取文件 MD5 名称
-			$name = empty($input['file_name']) ? $input['name'] : $input['file_name'];
-			$md5name = isset($input['tmp_data']) ? $name : md5_file($input['tmp_name']).'.'.pathinfo($name, PATHINFO_EXTENSION);
+			$ext = '.'.pathinfo($input['name'], PATHINFO_EXTENSION);
+			if($dataURIScheme)
+				$md5name = empty($input['file_name']) ? $input['name'] : md5($input['tmp_data']).$ext;
+			else
+				$md5name = md5_file($input['tmp_name']).$ext;
 			$savepath = $dir.$md5name; //保存路径为 目录 + MD5 名称
 		}
 		$path = __ROOT__.$savepath;
@@ -56,16 +60,15 @@ final class file extends mod{
 			if(config('mod.installed') && !error()) do_hooks('file.save', $input); //执行挂钩函数
 			if(error()) return false; //如果遇到错误，则不再继续
 			if($src){ //追加数据
-				if(isset($input['tmp_data']))
+				if($dataURIScheme)
 					$result = file_put_contents($path, $input['tmp_data'], FILE_APPEND);
 				else
 					$result = file_put_contents($path, file_get_contents($input['tmp_name']), FILE_APPEND);
 			}else{
-				if(isset($input['tmp_data'])){
+				if($dataURIScheme)
 					$result = file_put_contents($path, $input['tmp_data']); //保存 Data URI scheme 文件
-				}else{
+				else
 					$result = move_uploaded_file($input['tmp_name'], $path); //保存常规文件
-				}
 			}
 			if($result === false) return false;
 		}
@@ -110,22 +113,30 @@ final class file extends mod{
 	 * @return array       刚上传的文件或者错误信息(错误信息为包含原始文件信息的数组)
 	 */
 	static function upload(array $arg = array()){
-		if(isset($arg['file']) && (is_string($arg['file']) && stripos($arg['file'], 'data') === 0 || is_array($arg['file']))){
+		$fname = !empty($arg['file_name']) ? $arg['file_name'] : ''; //上传时设置文件名
+		if(isset($arg['file']) && (is_string($arg['file']) && stripos($arg['file'], 'data:') === 0 || is_array($arg['file']))){
 			//处理 Data URI scheme 数据
 			if(is_string($arg['file'])) $arg['file'] = array($arg['file']);
 			foreach($arg['file'] as $file){ //处理多文件
-				$file = explode(',', $file);
-				if(strpos($file[0], ';')){ //经过编码处理的文件
-					$file[0] = explode(';', $file[0]);
-					$type = substr($file[0][0], 5); //文件类型(mimetype)
-					$data = $file[0][1] == 'base64' ? @base64_decode($file[1]) : $file[1]; //文件数据
+				$start = stripos($file, 'data:') === 0 ? 5 : 0;
+				$i = strpos($file, ',');
+				$head = substr($file, 0, $i); //文件头
+				$body = substr($file, $i+1); //文件主体
+				if($j = strpos($head, ';')){ //经过编码处理的文件
+					$type = substr($head, $start, $j); //文件类型(mimetype)
+					$data = substr($head, $j+1) == 'base64' ? @base64_decode($body) : $body; //文件数据
 				}else{ //未经编码的文件
-					$type = substr($file[0], 5) ?: 'text/plain';
-					$data = $file[1];
+					$type = substr($head, $start) ?: 'text/plain';
+					$data = $body;
 				}
-				$ext = array_search($type, load_config_file('mime.ini')); //获取 mime 类型对应的后缀名
+				if($fname){
+					$name = $fname;
+				}else{
+					$ext = array_search($type, load_config_file('mime.ini')); //获取 mime 类型对应的后缀名
+					$name =  md5($data).$ext;
+				}
 				$_FILES['file'][] = array( //将文件保存在超全局变量 $_FILES 中
-					'name' => md5($data).$ext, //文件名
+					'name' => $name, //文件名
 					'type' => $type, //mime 类型
 					'error' => '', //错误信息
 					'tmp_name' => '', //缓存文件名
@@ -138,7 +149,6 @@ final class file extends mod{
 		}
 		if(!$_FILES) return error(lang('mod.missingArguments'));
 		$installed = config('mod.installed');
-		$name = !empty($arg['file_name']) ? $arg['file_name'] : ''; //分片上传时设置文件名
 		$src = !empty($arg['file_src']) ? $arg['file_src'] : ''; //分片上传时的源文件地址
 		// 获取相对路径
 		if($src && strapos($src, site_url()) === 0)
@@ -149,12 +159,13 @@ final class file extends mod{
 		foreach ($_FILES as $key => $file) { //遍历 $_FILES 并执行文件保存操作
 			if(is_assoc($file)) $file = array($file);
 			for ($i=0; $i < count($file); $i++) {
-				if($name) $file[$i]['file_name'] = $name;
+				if($fname) $file[$i]['file_name'] = $fname;
 				if($src) $file[$i]['file_src'] = $src;
 				self::uploadChecker($file[$i]);
 				if(error()) return error(); //遇到错误则停止上传操作
 				if(!$file[$i]['error']){
 					if($savepath = self::saveUpload($file[$i])){
+						self::copyMoreImage($savepath);
 						if(empty($arg['file_name']))
 							$arg['file_name'] = $file[$i]['name'];
 						$arg['file_src'] = $savepath;
@@ -163,7 +174,7 @@ final class file extends mod{
 							if(!$result['success']){
 								error(null);
 								do_hooks('file.add', $arg); //执行挂钩函数
-								self::copyMoreImage($savepath)->handler($arg, 'add');
+								self::handler($arg, 'add');
 								if(error()) return error();
 								database::open(0)->insert('file', $arg, $id); //将文件信息存入数据库
 								$result = self::get(array('file_id'=>$id));

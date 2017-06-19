@@ -56,7 +56,7 @@ final class file extends mod{
 		$path = __ROOT__.$savepath;
 		if(!file_exists($path) || $src || !empty($input['file_name'])){
 			if($src && strapos(str_replace('\\', '/', realpath($path)), __ROOT__.$uploadPath) !== 0)
-				error(lang('mod.permissionDenied'));
+				error(lang('mod.permissionDenied')); //仅允许在上传的文件后追加数据
 			if(config('mod.installed') && !error()) do_hooks('file.save', $input); //执行挂钩函数
 			if(error()) return false; //如果遇到错误，则不再继续
 			if($src){ //追加数据
@@ -221,8 +221,11 @@ final class file extends mod{
 			if(strapos($arg['file_src'], __ROOT__) === 0) //获取相对路径
 				$arg['file_src'] = substr($arg['file_src'], strlen(__ROOT__));
 			$_arg['file_src'] = $arg['file_src'];
+			$src = str_replace('\\', '/', realpath(__ROOT__.$arg['file_src'])); //获取绝对路径
 		}
-		if(($installed && get_file($_arg)) || (!$installed && file_exists(__ROOT__.$arg['file_src']))){ //判断文件记录是否存在
+		if(($installed && get_file($_arg)) || (!$installed && file_exists($src))){ //判断文件记录是否存在
+			if(!$installed && strapos($src, __ROOT__.config('file.upload.savePath')) !== 0)
+				return error(lang('mod.permissionDenied')); //只允许删除上传的文件
 			if($installed){
 				$arg['file_id'] = file_id();
 				$result = parent::delete($arg); //删除数据库记录

@@ -1120,7 +1120,7 @@ function doc($func = '', $return = false){
 
 /**
  * encrypt() 加密一段数据
- * @param  string $data 待价密的数据
+ * @param  string $data 待加密的数据
  * @param  string $key  密钥
  * @return string       加密后的数据
  */

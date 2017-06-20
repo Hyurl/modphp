@@ -1038,13 +1038,13 @@ function doc($func = '', $return = false){
 	if($isMd = strpos($func, '::')){ //判断是否为方法
 		$class = substr($func, 0, $isMd);
 		$mdName = substr($func, $isMd+2);
-		if(!method_exists($class, $mdName) && !$return){ //判断方法是否存在
-			echo "This method is not yet defined.";
+		if(!method_exists($class, $mdName)){ //判断方法是否存在
+			if(!$return) echo "This method is not yet defined.";
 			return;
 		}
 	}else{
-		if(!function_exists($func) && !$return){ //判断函数是否存在
-			echo "This function is not yet defined.";
+		if(!function_exists($func)){ //判断函数是否存在
+			if(!$return) echo "This function is not yet defined.";
 			return;
 		}
 	}

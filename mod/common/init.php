@@ -6,13 +6,13 @@ error_reporting(E_ALL ^ E_STRICT); //抑制严格性错误
 set_time_limit(0); //设置程序永不超时
 if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 环境
 	exit('PHP version lower 5.3.0, unable to start ModPHP.');
-$file = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
+$NSFile = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 
 /** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
 define('MOD_VERSION', '2.2.0'); //ModPHP 版本
 define('__TIME__', time(), true); //开始运行时间
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true); //网站根目录
-define('__SCRIPT__', substr($file, strlen(__ROOT__)) ?: $file, true); //执行脚本
+define('__SCRIPT__', substr($NSFile, strlen(__ROOT__)) ?: $NSFile, true); //执行脚本
 
 /** 补全系统常量 */
 if(!defined('STDIN')) define('STDIN', fopen('php://stdin','r'));
@@ -20,37 +20,32 @@ if(!defined('STDOUT')) define('STDOUT', fopen('php://stdout','w'));
 if(!defined('STDERR')) define('STDERR', fopen('php://stderr','w'));
 if(__SCRIPT__ == 'mod/common/init.php') return false;
 
-/** 加载核心文件 */
+//自动加载类文件
+set_include_path(get_include_path().PATH_SEPARATOR.__ROOT__.'mod/classes/'.PATH_SEPARATOR.__ROOT__.'user/classes/');
+spl_autoload_extensions('.class.php');
+spl_autoload_register();
+
+/** 加载核心函数文件 */
 include_once __ROOT__.'mod/functions/extension.func.php';
 include_once __ROOT__.'mod/functions/mod.func.php';
-include_once __ROOT__.'mod/classes/mod.class.php';
 
-$installed = config('mod.installed');
-$database = database();
-
-/** 加载默认模块类文件和其他类库文件 */
-foreach (glob(__ROOT__.'mod/classes/*.php') as $file) {
-	$basename = strstr(basename($file), '.', true);
-	if(!$installed && isset($database[$basename]) && $basename != 'file')
-		continue; //模块类文件仅在系统安装后引入
-	include_once $file;
-}
+$NSInstalled = config('mod.installed');
+$NSDatabase = database();
 
 /** 加载默认函数文件 */
-foreach (glob(__ROOT__.'mod/functions/*.php') as $file) {
-	if($file == __ROOT__.'mod/functions/console.func.php' && !is_console())
+foreach (glob(__ROOT__.'mod/functions/*.php') as $NSFile) {
+	if($NSFile == __ROOT__.'mod/functions/console.func.php' && !is_console())
 		continue; //console.func.php 仅在交互式控制台中引入
-	$basename = strstr(basename($file), '.', true);
-	if(!$installed && isset($database[$basename]))
+	$NSBasename = strstr(basename($NSFile), '.', true);
+	if(!$NSInstalled && isset($NSDatabase[$NSBasename]))
 		continue; //模块函数文件仅在系统安装后引入
-	include_once $file;
+	include_once $NSFile;
 }
-unset($installed, $database, $basename, $file);
 
-if(config('mod.installed')) register_module_functions(); //注册模块函数
+if($NSInstalled) register_module_functions(); //注册模块函数
 
-pre_init(); //执行预初始化操作
-function pre_init(){
+//预初始化
+$NSPreInit = function(){
 	/** 设置文档类型和默认时区 */
 	if(is_agent()) set_content_type('text/html');
 	date_default_timezone_set(config('mod.timezone'));
@@ -133,19 +128,14 @@ function pre_init(){
 			$_SERVER['HTTP_REFERER'] = $_REQUEST['HTTP_REFERER'];
 		}
 	}
-	// conv_request_vars(); //转换表单请求参数
-}
-
-/** 加载自定义模块类文件 */
-foreach (glob(__ROOT__.'user/classes/*.php') as $file) {
-	include_once $file;
-}
+};
+$NSPreInit();
 
 /** 加载自定义函数文件 */
-foreach (glob(__ROOT__.'user/functions/*.php') as $file) {
-	include_once $file;
+foreach (glob(__ROOT__.'user/functions/*.php') as $NSFile) {
+	include_once $NSFile;
 }
-unset($file); //释放变量
+unset($NSInstalled, $NSDatabase, $NSBasename, $NSFile, $NSPreInit); //释放变量
 
 /** 加载模板函数文件 */
 if(file_exists(template_path('functions.php'))) include_once template_path('functions.php');

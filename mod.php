@@ -14,8 +14,8 @@ require_once('mod/common/init.php');
 /** 交互式控制台，兼容 shell 命令 */
 if(__SCRIPT__ != 'mod.php' && !is_console()) goto end;
 $ENCODING = get_cmd_encoding(); //命令行编码，仅 Windows
-$TITLE = 'ModPHP'; //窗口标题
-$PROMPT = '$ '; //提示字符
+$TITLE = 'ModPHP Console'; //窗口标题
+$PROMPT = '>>> '; //提示符
 $STDOUT = $STDIN = null;
 if(is_console()){
 	fwrite(STDOUT, 'ModPHP '.MOD_VERSION.' started at '.date('D M d H:i:s Y').PHP_EOL);

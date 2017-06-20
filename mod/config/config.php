@@ -28,7 +28,7 @@ return array(
 			'prefix' => 'mod_', //数据表前缀
 			),
 		'session' => array( //Session 设置
-			'name' => 'MODID', //名称
+			'name' => '', //名称，不设置则默认
 			'maxLifeTime' => 60*24*7, //生存期(分钟)
 			'savePath' => '', //保存路径，不设置则为默认
 			),

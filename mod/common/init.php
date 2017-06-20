@@ -61,7 +61,7 @@ function pre_init(){
 
 	/** 配置 Session */
 	ini_set('session.gc_maxlifetime', config('mod.session.maxLifeTime')*60); //生存期
-	session_name(config('mod.session.name'));
+	if(config('mod.session.name')) session_name(config('mod.session.name')); //Session 名称
 	$path = config('mod.session.savePath');
 	if($path){
 		if($path[0] != '/' && $path[1] != ':') $path = __ROOT__.$path;

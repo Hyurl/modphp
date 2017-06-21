@@ -14,8 +14,7 @@ return array(
 		'installed' => false, //是否已安装
 		'language' => 'zh-CN', //语言
 		'timezone' => 'Asia/Shanghai', //时区
-		'outputBuffering' => 0, //输出缓冲区大小，可设置为 1-4096(4 KB) 的值，0 则不限制，在 PHP 5.4.0 之前，1 等于 4096
-		'escapeTags' => '<script><style><iframe>', //过滤 HTML 标签
+		'escapeTags' => '<script><style><iframe>', //过滤上传数据中的 HTML 标签
 		'pathinfoMode' => false, //如果开启, create_url() 创建的路径将包含模板入口文件
 		'jsonSerialize' => false, //使用 JSON 序列化数据
 		'database' => array( //数据库设置

@@ -993,13 +993,14 @@ function report_http_error($code, $msg = ''){
 	$file = config('site.errorPage.'.$code);
 	$file = $file ? template_path($file) : false;
 	Header('HTTP/1.1 '.$code.' '.$status[$code]); //添加头部信息
-	if(ob_get_length()) ob_end_clean();  //清除输出缓冲区
 	if($file && file_exists($file) && !$msg){
 		display_file($file, true);
 	}else{
 		echo $msg ?: "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n\t<title>{$code} {$status[$code]}</title>\n</head>\n<body>\n\t<h1>{$status[$code]}</h1>\n\t{$html[$code]}\n</body>\n</html>";
-		do_hooks('mod.template.load.complete'); //在模板加载后执行挂钩回调函数
-		if(is_agent()) exit();
+		if(is_agent()){
+			do_hooks('mod.template.load.complete'); //在模板加载后执行挂钩回调函数
+			exit();
+		}
 	}
 }
 

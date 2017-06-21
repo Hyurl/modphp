@@ -172,7 +172,6 @@ function init(){
 			}elseif($init['__DISPLAY__']){
 				display_file($init['__DISPLAY__'], true); //将初始化变量中的 __DISPLAY__ 设置为展示页面
 			}
-
 			//限制对正在维护的页面的访问
 			if(display_file() && is_template() && config('site.maintenance.pages')){
 				$maint = str_replace(' ', '', config('site.maintenance.pages'));
@@ -217,11 +216,7 @@ function init(){
 				display_file($err403, true);
 			}
 		}
-
-		/** 打开输出缓冲区 */
-		ob_start(null, config('mod.outputBuffering'));
 	}
-
 	if(!display_file()) display_file(__SCRIPT__, true);
 }
 
@@ -247,7 +242,6 @@ if(is_agent()){
 			include_once display_file(); //直接载入展示文件
 		}else{
 			${'FILE'.__TIME__} = template::$saveDir.substr(display_file(), 0, strrpos(display_file(), '.')).'.php';
-			
 			//通过文件的修改日期来判断模板是否被修改，从而决定是否需要重新编译
 			if(config('mod.template.compiler.enable') != 2 && file_exists(${'FILE'.__TIME__}) && filemtime(display_file()) <= filemtime(${'FILE'.__TIME__})){
 				include_once ${'FILE'.__TIME__};
@@ -255,7 +249,6 @@ if(is_agent()){
 				include_once template::compile(display_file()) ?: display_file();
 			}
 		}
-		if(ob_get_length()) ob_end_flush(); //刷出并关闭缓冲区
 		do_hooks('mod.template.load.complete'); //在模板加载后执行挂钩回调函数
 	}
 }

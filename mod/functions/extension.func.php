@@ -686,7 +686,7 @@ function curl($options = array()){
 		'password'=>'', //HTTP 访问认证密码;
 		'charset'=>'', //目标页面编码
 		'convert'=>'', //转换为指定的编码
-		'parseJSON'=>'', //解析 JSON
+		'parseJSON'=>null, //解析 JSON
 		'success'=>null, //请求成功时的回调函数
 		'error'=>null, //请求失败时的回调函数
 		'extra'=>array() //其他 CURL 选项参数
@@ -785,7 +785,7 @@ function curl($options = array()){
 		$curlInfo['error'] = $data;
 		goto returnError;
 	}
-	if($parseJSON || ($parseJSON === '' && stripos($curlInfo['content_type'], 'application/json') !== false))
+	if($parseJSON || ($parseJSON === null && stripos($curlInfo['content_type'], 'application/json') !== false))
 		$data = json_decode($data, true); //解析 JSON
 	curl_info($curlInfo);
 	if(is_callable($success)){

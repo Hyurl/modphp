@@ -523,6 +523,14 @@ function is_ssl(){
 }
 
 /**
+ * is_proxy() 判断应用程序是否运行为代理服务器
+ * @return boolean
+ */
+function is_proxy(){
+	return !empty($_SERVER['HTTP_PROXY_CONNECTION']) || stripos($_SERVER['REQUEST_URI'], 'http://') === 0 || stripos($_SERVER['REQUEST_URI'], 'https://') === 0;
+}
+
+/**
  * redirect() 设置网页重定向
  * @param  string|int  $url  重定向 URL，特殊值 0(当前页)，-1(上一页)
  * @param  integer     $code 状态号 301 或 302
@@ -583,6 +591,7 @@ function set_content_type($type, $encoding = 'UTF-8'){
  */
 function url(){
 	if(!is_agent()) return false;
+	if(is_proxy()) return $_SERVER['REQUEST_URI']; //代理地址
 	$protocol = strstr(strtolower($_SERVER['SERVER_PROTOCOL']), '/', true); //often be http
 	$protocol .= is_ssl() ? 's' : ''; //if is ssl, use https instead
 	return $protocol.'://'.urldecode($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
@@ -698,16 +707,28 @@ function curl($options = array()){
 	if($cookie && is_array($cookie)){ //组合 Cookie
 		$cookie = is_assoc($cookie) ? implode_assoc($cookie, '=', '; ') : implode('; ', $cookie);
 	}
+	if(!is_assoc($requestHeaders)){ //将请求头转换为关联数组
+		foreach ($requestHeaders as $key => $value){
+			if(is_numeric($key)){
+				unset($requestHeaders[$key]);
+				$i = strpos($value, ':');
+				$key = substr($value, 0, $i);
+				$value = ltrim(substr($value, $i+1));
+				$requestHeaders[$key] = $value;
+			}
+		}
+	}
+	if($proxy && empty($requestHeaders['Proxy-Connection'])){
+		$requestHeaders['Proxy-Connection'] = 'close';
+	}
 	if($clientIp){
 		$requestHeaders['Client-IP'] = $clientIp; //设置客户端 IP
 		if(empty($requestHeaders['X-Forwarded-For']))
 			$requestHeaders['X-Forwarded-For'] = $clientIp; //设置代理
 	}
-	if(is_assoc($requestHeaders)){
-		foreach ($requestHeaders as $key => $value){
-			$requestHeaders[] = "$key: $value"; //组合请求头
-			unset($requestHeaders[$key]);
-		}
+	foreach ($requestHeaders as $key => $value){
+		$requestHeaders[] = "$key: $value"; //组合请求头
+		unset($requestHeaders[$key]);
 	}
 	//设置请求参数
 	curl_setopt($ch, CURLOPT_URL, $url);

@@ -1,4 +1,9 @@
 <?php
+/**
+ * image 扩展是 ModPHP 提供的用于进行图像处理的类，它基于 GD 库，并在其基础上增添了
+ * 其他能力，如处理 bmp 图像、处理透明度、获取图像的 Data URL Scheme (Base64) 文本等。
+ * 在对图像进行各种操作前，如画点、画线、画图形等，需要先设置好画笔的属性，如位置、颜色等。
+ */
 final class image{
 	private static $file = ''; //文件名
 	private static $src  = null; //文件资源
@@ -55,6 +60,7 @@ final class image{
 	}
 	/**
 	 * imagecopymergealpha() 合并图像并保留透明度
+	 * @static
 	 * @param  resource $dst_im 目标图像资源
 	 * @param  resource $src_im 原图像资源
 	 * @param  int      $dst_x  目标图像 X 轴坐标
@@ -105,6 +111,7 @@ final class image{
 	}
 	/** 
 	 * imagecreatefrombmp() 从 BMP 文件创建图像
+	 * @static
 	 * @param  string $filename 文件名
 	 * @return source           文件资源
 	 */
@@ -189,9 +196,11 @@ final class image{
 		return array($x, $y);
 	}
 	/**
-	 * set() 设置属性
-	 * @param string $k 属性名
-	 * @param string $v 属性值
+	 * set() 设置属性，在对图像进行各种操作前，如画点、画线、画图形等，需要先设置好画笔的属性，如位置、颜色等
+	 * @static
+	 * @param  string $k 属性名
+	 * @param  string $v 属性值
+	 * @return object    当前对象
 	 */
 	static function set($k, $v = null){
 		$src = &self::$src;
@@ -222,6 +231,7 @@ final class image{
 	}
 	/**
 	 * open() 打开一个图像
+	 * @static
 	 * @param  string  $file 图像路径及名称，无论是否存在这个文件
 	 * @return object        当前对象
 	 */
@@ -259,8 +269,9 @@ final class image{
 
 	/**
 	 * resize() 调整图像大小
-	 * @param  int    $width  宽度
-	 * @param  int    $height 高度
+	 * @static
+	 * @param  int    $width  [可选]宽度，默认 0，即自动设置
+	 * @param  int    $height [可选]高度，默认 0，即自动设置
 	 * @return object         当前对象
 	 */
 	static function resize($width = 0, $height = 0){
@@ -280,10 +291,11 @@ final class image{
 
 	/**
 	 * cut() 裁剪图像
+	 * @static
 	 * @param  int     $width  宽度
 	 * @param  int     $height 高度
-	 * @param  integer $x      起始横坐标
-	 * @param  integer $y      起始纵坐标
+	 * @param  integer $x      [可选]起始横坐标
+	 * @param  integer $y      [可选]起始纵坐标
 	 * @return object          当前对象
 	 */
 	static function cut($width, $height, $x = 0, $y = 0) {
@@ -297,8 +309,9 @@ final class image{
 
 	/**
 	 * opacity() 设置图像不透明度
+	 * @static
 	 * @param  float|int $opacity 不透明度 0 - 1;
-	 * @return object      当前对象
+	 * @return object             当前对象
 	 */
 	static function opacity($opacity){
 		$w = imagesx(self::$src);
@@ -310,8 +323,9 @@ final class image{
 
 	/**
 	 * dot() 画点
-	 * @param  integer $x 横坐标
-	 * @param  integer $y 纵坐标
+	 * @static
+	 * @param  integer $x [可选]横坐标
+	 * @param  integer $y [可选]纵坐标
 	 * @return object     当前对象
 	 */
 	static function dot($x = 0, $y = 0){
@@ -329,6 +343,7 @@ final class image{
 
 	/**
 	 * line() 画线
+	 * @static
 	 * @param  int    $x 结束点横坐标
 	 * @param  int    $y 结束点纵坐标
 	 * @return object    当前对象
@@ -342,6 +357,7 @@ final class image{
 
 	/**
 	 * arc() 画椭圆弧
+	 * @static
 	 * @param  int    $start 开始角度
 	 * @param  int    $end   结束角度
 	 * @return object        当前对象
@@ -355,6 +371,7 @@ final class image{
 
 	/**
 	 * filledarc() 画填充的椭圆弧
+	 * @static
 	 * @param  int    $start 开始角度
 	 * @param  int    $end   结束角度
 	 * @param  int    $style 风格
@@ -369,6 +386,7 @@ final class image{
 
 	/**
 	 * ellipse() 画椭圆
+	 * @static
 	 * @return object 当前对象
 	 */
 	static function ellipse(){
@@ -379,6 +397,7 @@ final class image{
 
 	/**
 	 * filledellipse() 画填充的椭圆
+	 * @static
 	 * @return object  当前对象
 	 */
 	static function filledellipse(){
@@ -389,7 +408,8 @@ final class image{
 
 	/**
 	 * polygon() 画多边形
-	 * @param  string $points 据点
+	 * @static
+	 * @param  string $points [可选]据点
 	 * @return object         当前对象
 	 */
 	static function polygon($points = ''){
@@ -400,7 +420,8 @@ final class image{
 
 	/**
 	 * filledpolygon() 画填充的多边形
-	 * @param  string $points 据点
+	 * @static
+	 * @param  string $points [可选]据点
 	 * @return object         当前对象
 	 */
 	static function filledpolygon($points = ''){
@@ -411,6 +432,7 @@ final class image{
 
 	/**
 	 * rectangle() 画矩形
+	 * @static
 	 * @return object    当前对象
 	 */
 	static function rectangle(){
@@ -421,6 +443,7 @@ final class image{
 
 	/**
 	 * filledrectangle() 画填充的矩形
+	 * @static
 	 * @return object    当前对象
 	 */
 	static function filledrectangle(){
@@ -431,7 +454,8 @@ final class image{
 
 	/**
 	 * fill() 填充颜色
-	 * @param  string $color 填充色(前景色)
+	 * @static
+	 * @param  string $color [可选]填充色(前景色)
 	 * @return object        当前对象
 	 */
 	static function fill($color = ''){
@@ -443,7 +467,8 @@ final class image{
 
 	/**
 	 * rotate() 旋转图像，旋转图像会改变宽和高，原图形区域大小不变，外部会被对角线拉伸
-	 * @param  int    $angle 旋转角度
+	 * @static
+	 * @param  int    $angle [可选]旋转角度
 	 * @return object        当前对象
 	 */
 	static function rotate($angle = 0){
@@ -454,6 +479,7 @@ final class image{
 
 	/**
 	 * reverse() 翻转图像
+	 * @static
 	 * @param  int    $direction 翻转方向：1 左右翻转，2 上下翻转
 	 * @return object            当前对象
 	 */
@@ -477,10 +503,11 @@ final class image{
 
 	/**
 	 * filter() 设置滤镜
-	 * @param  int     $filter 滤镜
-	 * @param  integer $arg1   可选参数1
-	 * @param  integer $arg2   可选参数2
-	 * @param  integer $arg3   可选参数3
+	 * @static
+	 * @param  int     $filter [可选]滤镜
+	 * @param  integer $arg1   [可选]可选参数1
+	 * @param  integer $arg2   [可选]可选参数2
+	 * @param  integer $arg3   [可选]可选参数3
 	 * @return object          当前对象
 	 */
 	static function filter($filter = 0, $arg1 = 0, $arg2 = 0, $arg3 = 0){
@@ -491,8 +518,9 @@ final class image{
 
 	/**
 	 * text() 插入文本
+	 * @static
 	 * @param  string  $str      文本
-	 * @param  boolean $vertical 纵向插入
+	 * @param  boolean $vertical [可选]纵向插入，默认 false
 	 * @return object            当前对象
 	 */
 	static function text($str, $vertical = false){
@@ -516,10 +544,12 @@ final class image{
 
 	/**
 	 * tile() 设置贴图
-	 * @param  string $tile    贴图文件
-	 * @param  int    $width   宽度
-	 * @param  int    $height  高度
-	 * @param  int    $opacity 透明度
+	 * @static
+	 * @param  string $tile    [可选]贴图文件
+	 * @param  int    $width   [可选]宽度
+	 * @param  int    $height  [可选]高度
+	 * @param  int    $opacity [可选]不透明度
+	 * @param  int    $rotate  [可选]旋转角度
 	 * @return object          当前对象
 	 */
 	static function tile($tile = '', $width = 0, $height = 0, $opacity = 1, $rotate = 0){
@@ -549,8 +579,9 @@ final class image{
 
 	/**
 	 * save() 保存图像
-	 * @param  string  $file  文件名
-	 * @param  boolean $close 保存后关闭图像
+	 * @static
+	 * @param  string  $file  [可选]文件名，不设置则为打开时的文件名
+	 * @param  boolean $close [可选]保存后关闭图像，默认 true
 	 * @return bool
 	 */
 	static function save($file = '', $close = true){
@@ -559,8 +590,9 @@ final class image{
 
 	/**
 	 * output() 输出图像到文件或浏览器
-	 * @param  string  $file  文件名，不设置则输出到浏览器
-	 * @param  boolean $close 关闭图像
+	 * @static
+	 * @param  string  $file  [可选]文件名，不设置则输出到浏览器
+	 * @param  boolean $close [可选]输出后关闭图像，默认 true
 	 * @return boolean
 	 */
 	static function output($file = '', $close = true){
@@ -581,6 +613,10 @@ final class image{
 			$func = 'image'.$ext;
 		}
 		if(function_exists($func)){
+			if($file){
+				$dir = dirname($file);
+				if(!is_dir($dir)) mkdir($dir, 0777, true); //创建文件夹
+			}
 			if($func == 'imagejpeg'){
 				$result = imagejpeg(self::$src, $file ?: null, self::$quality); //jpeg 图像可以设置质量
 			}else{
@@ -597,7 +633,8 @@ final class image{
 
 	/**
 	 * getBinary() 获取图像的二值化文本
-	 * @param  boolean $reverse 反转 0 和 1
+	 * @static
+	 * @param  boolean $reverse [可选]反转 0 和 1，默认 false
 	 * @return string           二值化文本
 	 */
 	static function getBinary($reverse = false){
@@ -620,8 +657,9 @@ final class image{
 
 	/**
 	 * getBase64() 获取 base64 编码的 Data URI Scheme 数据 
-	 * @param  bool   $close 关闭图像资源
-	 * @return string base64 文本
+	 * @static
+	 * @param  bool   $close [可选]关闭图像资源，默认 true
+	 * @return string        经过 base64 编码的 Data URI Scheme 文本
 	 */
 	static function getBase64($close = true){
 		ob_start();

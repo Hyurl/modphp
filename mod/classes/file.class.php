@@ -1,5 +1,10 @@
 <?php
-/** 文件模块及扩展 */
+/** 
+ * File 文件模块扩展，除了继承自 Mod 类的用于操作数据库记录的方法，还包含其他的独有的方法。
+ * file::upload() 用来上传文件，并支持多文件上传以及使用 Data URI Scheme 上传。
+ * file::delete() 则用来删除上传的文件。
+ * 除了这些，File 类还提供操作本地文件的其他方法，它们不能被浏览器等客户端直接访问。
+ */
 final class file extends mod{
 	const TABLE = 'file';
 	const PRIMKEY = 'file_id';
@@ -108,7 +113,8 @@ final class file extends mod{
 
 	/**
 	 * upload() 上传文件
-	 * @param  array  $arg 请求参数，支持使用 Data URI scheme 来传送使用 base64 编码的文件，
+	 * @static
+	 * @param  array  $arg [可选]请求参数，支持使用 Data URI scheme 来传送使用 base64 编码的文件，
 	 *                     但需要将其保存在 [file] 参数中，可以设置为数组同时传送多个文件
 	 * @return array       刚上传的文件或者错误信息(错误信息为包含原始文件信息的数组)
 	 */
@@ -206,7 +212,8 @@ final class file extends mod{
 
 	/**
 	 * delete() 删除文件
-	 * @param  array  $arg 请求参数
+	 * @static
+	 * @param  array  $arg [可选]请求参数
 	 * @return array       操作结果
 	 */
 	static function delete($arg = array()){
@@ -256,8 +263,9 @@ final class file extends mod{
 
 	/**
 	 * open() 打开一个文件，不存在则创建
+	 * @static
 	 * @param  string $filename 文件名
-	 * @return object
+	 * @return object           当前对象
 	 */
 	static function open($filename){
 		self::$filename = $filename;
@@ -282,47 +290,51 @@ final class file extends mod{
 
 	/**
 	 * prepend() 在文件开头前插入新行内容
+	 * @static
 	 * @param  string $str 文本内容
-	 * @return object
+	 * @return object      当前对象
 	 */
 	static function prepend($str){
 		array_unshift(self::$file, $str);
-		return self::retime();
+		return self::resetTime();
 	}
 
 	/**
 	 * append() 在文件末尾插入新行内容
+	 * @static
 	 * @param  string $str 文本内容
-	 * @return object
+	 * @return object      当前对象
 	 */
 	static function append($str){
 		array_push(self::$file, $str);
-		return self::retime();
+		return self::resetTime();
 	}
 
 	/**
 	 * write() 写入文件内容
+	 * @static
 	 * @param  string $str     文本内容
-	 * @param  bool   $rewrite 覆盖重写
-	 * @return object
+	 * @param  bool   $rewrite [可选]覆盖重写，默认 false
+	 * @return object          当前对象
 	 */
 	static function write($str, $rewrite = false){
-		if(!$rewrite) return self::append($str)->retime(); //在文件末端添加新行插入
+		if(!$rewrite) return self::append($str)->resetTime(); //在文件末端添加新行插入
 		self::$file = explode("\n", $str); //覆盖重写
-		return self::retime();
+		return self::resetTime();
 	}
 
 	/**
 	 * insert() 在文件中插入文本
+	 * @static
 	 * @param  string  $str    文本内容
-	 * @param  integer $line   在指定行前插入，如果小于 0，则从后往前计算行数，如 -1 代表倒数第一行
-	 * @param  integer $column 在指定列插入，如果不设置，则插入为新行
+	 * @param  integer $line   [可选]在指定行前插入，如果小于 0，则从后往前计算行数，如 -1 (默认)代表倒数第一行
+	 * @param  integer $column [可选]在指定列插入，如果不设置，则插入为新行
 	 * @return object
 	 */
 	static function insert($str, $line = -1, $column = null){
 		$file = &self::$file;
 		if(!$file){
-			return self::append($str)->retime(); //未指定行数，在末尾添加新行插入
+			return self::append($str)->resetTime(); //未指定行数，在末尾添加新行插入
 		}
 		if($line < 0){
 			if($line == -1) $column = null;
@@ -337,7 +349,7 @@ final class file extends mod{
 			$__str = mb_substr($file[$line], $column, mb_strlen($file[$line], 'UTF-8'), 'UTF-8'); //指定列及后面的数据
 			$file[$line] = $_str.$str.$__str;
 		}
-		return self::retime();
+		return self::resetTime();
 	}
 
 	/** output() 输出文件内容 */
@@ -348,12 +360,16 @@ final class file extends mod{
 
 	/**
 	 * save() 保存文件
-	 * @param  string $filename 文件名，不设置则默认为打开时的文件名
+	 * @static
+	 * @param  string $filename [可选]文件名，不设置则默认为打开时的文件名
 	 * @return int              文件长度
 	 */
 	static function save($filename = ''){
-		self::retime();
-		return file_put_contents(self::$filename, implode("\n", self::$file));
+		self::resetTime(); //重设文件时间
+		$filename = $filename ?: self::$filename;
+		$dir = dirname($filename);
+		if(!is_dir($dir)) mkdir($dir, 0777, true); //创建文件夹
+		return file_put_contents($filename, implode("\n", self::$file));
 	}
 
 	/** getContents() 获取文件内容 */
@@ -363,7 +379,8 @@ final class file extends mod{
 
 	/** 
 	 * getInfo() 获取文件信息
-	 * @param  string $key 指定获取的信息，不设置则获取所有
+	 * @static
+	 * @param  string $key [可选]指定获取的信息，不设置则获取所有
 	 * @return mixed       文件信息
 	 */
 	static function getInfo($key = ''){
@@ -374,8 +391,8 @@ final class file extends mod{
 		return isset($info[$key]) ? $info[$key] : false;
 	}
 
-	/** retime() 更新文件的修改时间 */
-	private static function retime(){
+	/** resetTime() 更新文件的修改时间 */
+	private static function resetTime(){
 		self::$info['ctime'] = self::$info['mtime'] = time();
 		return new self;
 	}

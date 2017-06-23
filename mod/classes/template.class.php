@@ -19,6 +19,7 @@ final class template{
 
 	/**
 	 * compile() 编译模板
+	 * @static
 	 * @param  string $tpl 模板文件名
 	 * @return null
 	 */

@@ -1,7 +1,7 @@
 <?php
 /**
  * get_me() 当前登录用户信息获取函数
- * @param  string $key  数组键名
+ * @param  string $key  [可选]数组键名
  * @return array|string 如果未设置 $key 参数，则返回整个数组，
  *                      否则返回数组键名为 $key 所对应的值，结果为空则返回 null
  */
@@ -60,7 +60,7 @@ function is_editor(){
 
 /**
  * is_profile() 判断当前页面是否为用户详情页
- * @param  mixed   $key 如果为整数，则判断是否为 ID 是否是 $key 的用户详情页
+ * @param  mixed   $key [可选]如果为整数，则判断是否为 ID 是否是 $key 的用户详情页
  *                      如果为字符串，则判断是否是用户名为 $key 的用户详情页
  *                      如果为数组，则按数组内容逐一判断
  *                      如果不设置，则仅判断是否为用户详情页

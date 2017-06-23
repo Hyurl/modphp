@@ -12,7 +12,7 @@ function camelcase2underline($str){
 /**
  * underline2camelcase() 将使用下划线命名的字符串转换为驼峰法命名
  * @param  string   $str     下划线命名字符串
- * @param  boolean  $ucfirst 首字母大写
+ * @param  boolean  $ucfirst [可选]首字母大写，默认 false
  * @return string            驼峰命名字符串
  */
 function underline2camelcase($str, $ucfirst = false){
@@ -75,7 +75,7 @@ endif;
 /**
  * get_uploaded_files() 获取上传文件的数组，与 $_FILES 不同，当同一个键名包含多个文件时，
  *                      这个键的值是一个索引数组，数组下面是一个包含文件信息的关联数组
- * @param  string $key  设置只获取指定键(一维键名)的文件信息，如不设置，则返回所有上传文件的信息
+ * @param  string $key  [可选]设置只获取指定键(一维键名)的文件信息，如不设置，则返回所有上传文件的信息
  * @return array        包含所有上传文件的数组, 如果没有上传的文件，或者设置获取的键没有文件，则返回空数组
  */
 function get_uploaded_files($key = ''){
@@ -137,7 +137,7 @@ function array_xmerge(array $array){
 /**
  * xscandir() 递归扫描目录结构
  * @param  string   $dir     起始目录
- * @param  integer  $sort    排序，0 升序，1 降序
+ * @param  integer  $sort    [可选]排序，0 升序(默认)，1 降序
  * @return array             目录树，如果提供的 $dir 不是一个目录名，则返回 false
  */
 function xscandir($dir, $sort = 0){
@@ -173,7 +173,7 @@ function xrmdir($dir){
  * xcopy() 复制目录和它的文件
  * @param  string $src   源地址
  * @param  string $dst   目标地址
- * @param  bool   $cover 设置为 true 时，如果文件已存在，则进行覆盖；设置为 false 时，则跳过
+ * @param  bool   $cover [可选] true 覆盖已存在的文件；false(默认)，跳过已存在的文件
  * @return bool
  */
 function xcopy($src, $dst, $cover = false){
@@ -212,7 +212,7 @@ function xchmod($path, $mode){
 /**
  * array2path() 将数组结构化数据转换为路径
  * @param  array  $array 数组结构数据
- * @param  string $dir   设置父目录
+ * @param  string $dir   [可选]设置父目录
  * @return array         结构数据路径
  */
 function array2path(array $array, $dir = ""){
@@ -271,8 +271,8 @@ function zip_extract($file, $path){
 
 /**
  * rand_str() 获取随机字符串
- * @param  integer $len   字符串长度
- * @param  string  $chars 可能出现的字符串
+ * @param  integer $len   [可选]字符串长度，默认 4
+ * @param  string  $chars [可选]可能出现的字符串
  * @return string         随机的字符串
  */
 function rand_str($len = 4, $chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'){
@@ -308,7 +308,7 @@ function escape_tags($str, $tags){
 /**
  * export() 输出变量的原始信息
  * @param  mixed  $var  变量名
- * @param  string $path 输出到文件
+ * @param  string $path [可选]输出到文件
  * @return mixed        如果输出到文件，则返回写出字符长度，否则返回 null
  */
 function export($var, $path = ''){
@@ -375,8 +375,8 @@ function is_assoc($input){
 /**
  * mb_str_split() 将字符串分割为数组
  * @param  string $str     待分割的字符串
- * @param  int    $len     每个数组元素的长度
- * @param  string $charset 编码
+ * @param  int    $len     [可选]每个数组元素的长度
+ * @param  string $charset [可选]编码
  * @return array           分割成的数组
  */
 function mb_str_split($str, $len = 1, $charset = 'UTF-8'){
@@ -436,8 +436,8 @@ function is_empty_dir($dir){
 
 /**
  * is_img() 判断文件是否为图片
- * @param  string  $src    文件源
- * @param  boolean $strict 严格模式
+ * @param  string  $src     文件源地址
+ * @param  boolean $strict  [可选]严格模式，默认 false
  * @return boolean
  */
 function is_img($src, $strict = false){
@@ -452,7 +452,7 @@ function_alias('is_img', 'is_image');
 
 /**
  * is_agent() 判断当前是否为客户端请求
- * @param  string  $agent 客户端类型
+ * @param  mixed    $agent  [可选]客户端类型，或者设置为 true 判断是否有 User-Agent 请求头
  * @return boolean
  */
 function is_agent($agent = ''){
@@ -464,7 +464,7 @@ function is_agent($agent = ''){
 
 /**
  * is_browser() 判断当前是否为浏览器访问
- * @param  string  $agent 客户端类型
+ * @param  string  $agent  [可选]客户端类型
  * @return boolean
  */
 function is_browser($agent = ''){
@@ -473,7 +473,7 @@ function is_browser($agent = ''){
 
 /**
  * is_mobile() 判断当前是否为手机浏览器访问
- * @param  string  $agent 客户端类型
+ * @param  string  $agent  [可选]客户端类型
  * @return boolean
  */
 function is_mobile($agent = ''){
@@ -532,10 +532,10 @@ function is_proxy(){
 
 /**
  * redirect() 设置网页重定向
- * @param  string|int  $url  重定向 URL，特殊值 0(当前页)，-1(上一页)
- * @param  integer     $code 状态号 301 或 302
- * @param  integer     $time 等待时间
- * @param  string      $msg  跳转提示
+ * @param  string|int  $url   重定向 URL，特殊值 0(当前页)，-1(上一页)
+ * @param  integer     $code  [可选]状态号 301 或 302(默认)
+ * @param  integer     $time  [可选]等待时间，默认 0
+ * @param  string      $msg   [可选]跳转提示
  * @return null
  */
 function redirect($url, $code = 302, $time = 0, $msg = ''){
@@ -558,7 +558,7 @@ function redirect($url, $code = 302, $time = 0, $msg = ''){
  * @param  string|array $key   参数名，也可设置为关联数组同时设置多个参数
  * @param  string       $value 参数值
  */
-function set_query_string($key, $value = ''){
+function set_query_string($key, $value){
 	if(!is_array($key)) $key = array($key => $value);
 	foreach ($key as $k => $v){
 		if($v === null){
@@ -575,7 +575,7 @@ function set_query_string($key, $value = ''){
 /**
  * set_content_type() 设置文档类型和编码
  * @param string $type     文档类型
- * @param string $encoding 编码
+ * @param string $encoding [可选]编码，默认 UTF-8
  */
 function set_content_type($type, $encoding = 'UTF-8'){
 	if(!headers_sent()){
@@ -599,7 +599,7 @@ function url(){
 
 /**
  * get_client_ip() 获取客户端 IP 地址
- * @param  boolean $strict 严格模式，排除 192.168 等私有 IP 地址
+ * @param  boolean $strict [可选]严格模式，排除 192.168 等私有 IP 地址, 默认 false
  * @return string          客户端 IP 地址
  */
 function get_client_ip($strict = false){
@@ -622,7 +622,7 @@ function_alias('get_client_ip', 'get_agent_ip');
 /**
  * array2xml() 将数组转换为 XML 结构数据
  * @param  array   $array    数组
- * @param  boolean $cdata    使用 CDATA 包裹值，当值中包含标签名时，必须设置为 true。
+ * @param  boolean $cdata    [可选]使用 CDATA 包裹值，默认 false；当值中包含标签名时，必须设置为 true。 
  * @return string            XML 文档
  */
 function array2xml(array $array, $cdata = false){
@@ -661,37 +661,60 @@ function xml2array($xml){
 
 /**
  * curl() 进行远程 HTTP 请求，需要开启 CURL 模块
- * @param  array|string   $options 设置请求的参数或者请求的 URL 地址
- * @return string                  返回请求结果，结果是字符串
+ * @param  array|string $options 设置请求的参数(数组)或者请求的 URL 地址
+ *                               请求参数可以包含下面这些项目：
+ *                               [url] => 远程请求地址
+ *                               [method] => 请求方式: POST 或 GET(默认);
+ *                               [data] => POST 数据, 支持关联数组、索引数组、URL 查询字符串以及原生 POST 数据, 要发送文件，需要在文件名前面加上@前缀并使用完整路径
+ *                               [cookie] => 发送 Cookie, 支持关联数组、索引数组和 Cookie 字符串
+ *                               [referer] => 来路页面
+ *                               [userAgent] => 客户端信息
+ *                               [requestHeaders] => 请求头部信息，支持索引数组和关联数组
+ *                               [followLocation] => 跟随跳转，设置数值为最大跳转次数，默认 0
+ *                               [autoReferer] => 跳转时自动设置来路页面，默认 true
+ *                               [sslVerify] => SSL 安全验证，默认 false
+ *                               [proxy] => 代理服务器(格式: 8.8.8.8:80)
+ *                               [clientIp] => 原始客户端 IP，当 curl 用来充当代理服务器时使用
+ *                               [timeout] => 设置超时，默认 5(秒)
+ *                               [onlyIpv4] => 只解析 IPv4，默认 true
+ *                               [username] => HTTP 访问认证用户名
+ *                               [password] => HTTP 访问认证密码
+ *                               [charset] => 目标页面编码
+ *                               [convert] => 转换为指定的编码
+ *                               [parseJSON] => 解析 JSON，true 始终解析，false 始终解析，默认自动解析
+ *                               [success] => 请求成功时的回调函数
+ *                               [error] => 请求失败时的回调函数
+ *                               [extra] => 其他 CURL 选项参数，设置为一个数组
+ * @return string                返回请求结果，结果是字符串
  */
-function curl($options = array()){
+function curl($options){
 	$curl = curl_version();
 	/* 定义默认的参数 */
 	$defaults = array(
-		'url'=>'', //远程请求地址
-		'method'=>'GET', //请求方式: POST 或 GET;
-		'data'=>'', //POST 数据, 支持关联数组、索引数组、URL 查询字符串以及原生 POST 数据, 要发送文件，需要在文件名前面加上@前缀并使用完整路径
-		'cookie'=>'', //发送 Cookie, 支持关联数组、索引数组和 Cookie 字符串
-		'referer'=>'', //来路页面
-		'userAgent'=>'curl/'.$curl['version'], //客户端信息
-		'requestHeaders'=>array(), //请求头部信息，支持索引数组和关联数组
-		'followLocation'=>0, //跟随跳转，设置数值为最大跳转次数
-		'autoReferer'=>true, //跳转时自动设置来路页面
-		'sslVerify'=>false, //SSL 安全验证
-		'proxy'=>'', //代理服务器(格式: 8.8.8.8:80)
-		'clientIp'=>'', //原始客户端 IP，当 curl 用来充当代理服务器时使用
-		'timeout'=>5, //设置超时;
-		'onlyIpv4'=>true, //只解析 IPv4
-		'username'=>'', //HTTP 访问认证用户名;
-		'password'=>'', //HTTP 访问认证密码;
-		'charset'=>'', //目标页面编码
-		'convert'=>'', //转换为指定的编码
-		'parseJSON'=>null, //解析 JSON
-		'success'=>null, //请求成功时的回调函数
-		'error'=>null, //请求失败时的回调函数
-		'extra'=>array() //其他 CURL 选项参数
+		'url'=>'',
+		'method'=>'GET',
+		'data'=>'',
+		'cookie'=>'',
+		'referer'=>'',
+		'userAgent'=>'curl/'.$curl['version'],
+		'requestHeaders'=>array(),
+		'followLocation'=>0,
+		'autoReferer'=>true,
+		'sslVerify'=>false,
+		'proxy'=>'',
+		'clientIp'=>'',
+		'timeout'=>5,
+		'onlyIpv4'=>true,
+		'username'=>'',
+		'password'=>'',
+		'charset'=>'',
+		'convert'=>'',
+		'parseJSON'=>null,
+		'success'=>null,
+		'error'=>null,
+		'extra'=>array()
 		);
-	if(is_string($options)) $options = array('url'=>$options);
+	if(!is_array($options)) $options = array('url'=>$options);
 	$options = array_merge($defaults, $options);
 	extract($options);
 	$ch = curl_init();
@@ -803,8 +826,8 @@ function curl($options = array()){
 
 /**
  * curl_info() 函数获取 CURL 请求的相关信息，需要运行在 curl() 函数之后
- * @param  string $key   设置键名，如果为关联数组，则填充返回值并将填充后的数组返回
- * @param  string $value 设置值
+ * @param  string $key   [可选]设置键名，如果为关联数组，则填充返回值并将填充后的数组返回
+ * @param  string $value [可选]设置值
  * @return array|string  当未设置 $key 时返回所有数组内容
  *                       当设置 $key 并且 $key 是一个关联数组，则返回填充后的数组内容
  *                       当设置 $key 为字符串时，如果为设置 $value, 则返回 $key 对应的值
@@ -822,7 +845,7 @@ function curl_info($key = '', $value = null){
 
 /**
  * curl_cookie_str() 获取 CURL 响应头中的 Cookie 字符串
- * @param  boolean $withSentCookie 返回值包含发送的 Cookie(如果有)
+ * @param  boolean $withSentCookie [可选]返回值包含发送的 Cookie(如果有)
  * @return string                  返回所有的 Cookie 字符串
  */
 function curl_cookie_str($withSentCookie = false){
@@ -924,7 +947,7 @@ endif;
  * @param  array  $argv 通常为 $_SERVER['agrv']
  * @return array        包含键值对 file=>当前运行文件, param=>(array)参数列表
  */
-function parse_cli_param($argv = array(), $i = 0, $isArg = false, $args = array()){
+function parse_cli_param(array $argv, $i = 0, $isArg = false, $args = array()){
 	if(!$argv) return false;
 	$_i = 1;
 	if(!$args){
@@ -1009,7 +1032,7 @@ function get_cmd_encoding(){
 /**
  * ping() 测试一个主机能否被连接
  * @param  string  $addr    主机地址
- * @param  boolean &$output 将输出保存到该变量中
+ * @param  boolean &$output [可选]将输出保存到该变量中
  * @return boolean
  */
 function ping($addr, &$output = null){
@@ -1048,57 +1071,67 @@ function get_local_ip(){
 }
 
 /**
- * doc() 获取一个函数或者类方法的程序文档，支持命名空间和继承
- * @param  string  $func   函数名或者方法名，示例: 
- *                         doc('ping'), doc('user::getMe'), doc('foo\bar')
- * @param  boolean $return 将文档返回
+ * doc() 获取一个函数、类或类方法的程序文档，支持命名空间和继承
+ * @param  string  $name   [可选]函数名、类名或方法名，示例: 
+ *                         doc('ping'), doc('user::getMe'), doc('foo\bar'), doc('template::')
+ * @param  boolean $return [可选]将文档返回，默认 false，直接输出
  * @return string|null     文档内容或者 Null
  */
-function doc($func = '', $return = false){
-	$func = $func ?: __function__;
-	if($isMd = strpos($func, '::')){ //判断是否为方法
-		$class = substr($func, 0, $isMd);
-		$mdName = substr($func, $isMd+2);
-		if(!method_exists($class, $mdName)){ //判断方法是否存在
-			if(!$return) echo "This method is not yet defined.";
-			return;
+function doc($name = '', $return = false){
+	$name = $_name = $name ?: __function__;
+	$isClass = false; //是否为类
+	if($isMd = strpos($name, '::')){ //判断是否为方法
+		$class = substr($name, 0, $isMd);
+		$mdName = substr($name, $isMd+2);
+		if($mdName){
+			if(!method_exists($class, $mdName)){ //判断方法是否存在
+				if(!$return) echo "Method $_name() doesn't exist.";
+				return;
+			}
+		}else{
+			$isMd = false;
+			$isClass = true;
+			if(!class_exists($class)){
+				if(!$return) echo "Class $class doesn't exist.";
+				return;
+			}
 		}
 	}else{
-		if(!function_exists($func)){ //判断函数是否存在
-			if(!$return) echo "This function is not yet defined.";
+		if(!function_exists($name)){ //判断函数是否存在
+			if(!$return) echo "Function $_name() doesn't exist.";
 			return;
 		}
 	}
-	$hasNs = strrpos($func, '\\'); //是否有命名空间
-	if($hasNs){
-		$ns = str_replace('\\', '\\\\', substr($func, 0, $hasNs));
+	$hasNs = strrpos($name, '\\'); //是否有命名空间
+	if($hasNs){ //处理命名空间
+		$ns = str_replace('\\', '\\\\', substr($name, 0, $hasNs));
 		$nsReg = '/namespace[\s]+'.ltrim($ns, '\\').'/i'; //命名空间定义格式
-		$func = substr($func, $hasNs+1);
+		$name = substr($name, $hasNs+1);
 	}
-	if($isMd){
-		$i = strpos($func, '::');
-		$class = substr($func, 0, $i);
-		$func = $mdName;
-		$classReg = '/class[\s]+'.ltrim($class, '\\').'/i'; //类定义格式
+	if($isMd || $isClass){ //处理类和类方法
+		$i = strpos($name, '::');
+		$class = substr($name, 0, $i);
+		$name = $mdName;
+		$classReg1 = '/class[\s]+'.ltrim($class, '\\').'/i'; //类定义格式
 		$classReg2 = '/[\s]+extends[\s]+([\\\_a-zA-Z0-9]*)/i'; //继承
 	}
 	$doc = '';
-	$includes = get_included_files(); //引入的所有文件
-	$funcReg = "/(\/\*\*[\s\S]*\/)[\r\n\sa-zA-Z]+function[\s]+".ltrim($func, '\\').'\([\s\S]*\)/iU'; //函数定义格式
-	$getDoc = function($code) use ($funcReg, $isMd, $hasNs, &$getDoc){
-		if(preg_match($funcReg, $code, $match)){
-			$declare = $match[0]; //定义函数的代码（包括 PHPDoc）
+	$includes = get_included_files(); //获取引入的所有文件
+	$classReg = "/(\/\*\*[\s\S]*\/)[\r\n\sa-zA-Z]+class[\s]+".ltrim(@$class, '\\').'[\s\S]*\{/iU'; //类定义格式
+	$funcReg = "/(\/\*\*[\s\S]*\/)[\r\n\sa-zA-Z]+function[\s]+".ltrim($name, '\\').'\([\s\S]*\)/iU'; //函数定义格式
+	$getDoc = function($code) use ($classReg, $funcReg, $isClass, $isMd, $hasNs, &$getDoc){
+		if((!$isClass && preg_match($funcReg, $code, $match)) || ($isClass && preg_match($classReg, $code, $match))){
+			$declare = $match[0]; //定义函数/类/类方法的代码（包括 PHPDoc）
 			$end = strrpos($declare, '*/');
-			$declare = trim(substr($declare, $end+2), "\r\n"); //函数定义
-			if(!$isMd){
-				if((!$hasNs && stripos($declare, 'function') !== 0)
-					|| ($hasNs && stripos(trim($declare), 'function') !== 0)){
+			$declare = trim(substr($declare, $end+2), "\r\n"); //定义语句
+			if(!$isMd && !$isClass){
+				if((!$hasNs && stripos($declare, 'function') !== 0) || ($hasNs && stripos(trim($declare), 'function') !== 0)){
 					$code = substr($code, strpos($code, $declare)+strlen($declare));
 					return $getDoc($code);
 				}
 			}
 			$match = $match[1];
-			$start = strrpos($match, '/**'); //定位到函数文档开始位置
+			$start = strrpos($match, '/**'); //定位到文档开始位置
 			$doc = substr($match, $start);
 			$docs = explode("\n", $doc);
 			foreach ($docs as &$line) {
@@ -1116,10 +1149,10 @@ function doc($func = '', $return = false){
 			else
 				$code = strstr($code, $match[0]); //定位到命名空间位置
 		}
-		if($isMd){ //处理类方法
-			if(!preg_match($classReg, $code, $match))
+		if($isMd || $isClass){ //处理类方法
+			if(!preg_match($classReg1, $code, $match))
 				continue;
-			else{
+			elseif($isMd){
 				$code = strstr($code, $match[0]); //定位到类位置
 				if(preg_match($classReg2, strstr($code, "\n", true), $match)){
 					$parent = $match[1]; //父类
@@ -1130,29 +1163,34 @@ function doc($func = '', $return = false){
 		if($doc) break;
 	}
 	if(!$doc && isset($parent)){
-		$doc = doc($parent.'::'.$mdName, true);
+		$doc = doc($parent.'::'.$mdName, true); //从父类获取方法文档
 	}
 	if($return){
 		return $doc;
 	}else{
-		echo $doc ?: "This ".($isMd ? 'method' : 'function')." doesn't have a document.";
+		if($doc && is_browser() && !is_ajax()){
+			$doc = '<pre>'.$doc.'</pre>';
+		}
+		echo $doc ?: ($isMd ? "Method $_name()" : ($isClass ? "Class ".rtrim($_name, '::') : "Function $_name()"))." doesn't have a documentation.";
 	}
 }
 
 /**
  * encrypt() 加密一段数据
- * @param  string $data 待加密的数据
- * @param  string $key  密钥
- * @return string       加密后的数据
+ * @param  string $data   待加密的数据
+ * @param  string $key    密钥
+ * @param  int    $expire [可选]过期时间，默认 0(秒)
+ * @return string         加密后的数据
  */
-function encrypt($data, $key){
+function encrypt($data, $key, $expire = 0){
 	$key = (string)$key;
 	$klen = strlen($key);
 	if(!$klen){ //密钥不能为空
 		trigger_error("The second argument passed to encrypt() must not be empty.", E_USER_WARNING);
 		return false;
 	}
-	$data = $key.(string)$data; //确保数据长度 >= 密钥长度
+	$expire = sprintf('%010d', $expire ? $expire + time() : 0);
+	$data = $key.$expire.(string)$data; //确保数据长度 >= 密钥长度
 	$len = strlen($data);
 	for ($i=$j=0,$str=''; $i < $len; $i++,$j++) { 
 		if($j == $klen) $j=0;
@@ -1165,7 +1203,7 @@ function encrypt($data, $key){
  * decrypt() 解密一段由 encrypt() 函数加密的数据
  * @param  string $data 待解密的数据
  * @param  string $key  密钥
- * @return string       解密后的数据
+ * @return mixed        解密后的数据，如果密文已过期，则返回 false
  */
 function decrypt($data, $key){
 	$key = (string)$key;
@@ -1181,5 +1219,22 @@ function decrypt($data, $key){
 		if($j == $klen) $j=0;
 		$str .= chr(ord($data[$i])-ord($key[$j]));
 	}
-	return substr($str, $klen);
+	$expire = substr($str, $klen, 10);
+	if($expire > 0 && $expire < time()){ //判断密文是否过期
+		// trigger_error("The encrypted data is expired.", E_USER_WARNING);
+		return false;
+	}
+	return substr($str, $klen+10);
+}
+
+/**
+ * is_robot() 判断是否为机器人访问
+ * @param  string  $spider [可选]爬虫名称
+ * @return boolean
+ */
+function is_robot($spider = ''){
+	if($spider)
+		return is_agent($spider);
+	else
+		return preg_match("/Bot|Crawl|Spider|slurp|sohu-search|lycos|robozilla/", $_SERVER['HTTP_USER_AGENT']);
 }

@@ -51,8 +51,8 @@ function load_config_file($file){
 
 /**
  * hooks() 存储 Api Hook 回调函数
- * @param  string $api    API 名称，使用点语法，如 user.add
- * @param  array  $value  API 回调函数集
+ * @param  string $api    [可选]API 名称，使用点语法，如 user.add
+ * @param  array  $value  [可选]API 回调函数集
  * @return array          如果未设置 $api 参数，返回所有回调函数集
  *                        如果设置了 $api 参数，但未设置 $value 参数，返回 $api 对应的回调函数集, 不存在则返回 false
  *                        如果同时设置 $api 和 $value 参数，则始终返回 $value
@@ -84,7 +84,7 @@ function hooks($api = '', $value = ''){
  * add_hook() 添加 Api Hook 回调函数
  * @param  string|array $api      API 名称, 可使用索引数组同时为多个 API 设置同一个回调函数
  * @param  callable     $func     回调函数
- * @param  boolean      $apiIsSet API 表示回调函数为集合，默认 true，如果设置为 false, 则 API 表示单个回调函数
+ * @param  boolean      $apiIsSet [可选]API 表示回调函数为集合，默认 true，如果设置为 false, 则 API 表示单个回调函数
  */
 function add_hook($api, $func, $apiIsSet = true) {
 	$apis = is_array($api) ? $api : array($api);
@@ -103,7 +103,7 @@ function_alias('add_hook', 'add_action');
 /**
  * remove_hook() 移除 Api Hook 回调函数
  * @param  string|array $api  API 名称, 可使用索引数组同时为多个 API 移除回调函数
- * @param  callable     $func 要移除的函数名，匿名函数只能通过清空 API 来移除绑定
+ * @param  callable     $func [可选]要移除的函数名，匿名函数只能通过清空 API 来移除绑定
  */
 function remove_hook($api, $func = ''){
 	$apis = is_array($api) ? $api : array($api);
@@ -128,7 +128,7 @@ function_alias('remove_hook', 'delete_action');
 /** 
  * do_hooks() 执行 Api Hook 回调函数
  * @param  string  $api    API 名称
- * @param  mixed   &$input 传入参数
+ * @param  mixed   &$input [可选]传入参数
  */
 function do_hooks($api, &$input = null){
 	$hooks = hooks($api);
@@ -151,8 +151,8 @@ function_alias('do_hooks', 'do_actions');
  *          ModPHP 拥有三层配置模式，即默认配置、用户配置、运行时配置，优先级从右到左
  *          默认配置文件: mod/config/config.php
  *          用户配置文件：user/config/config.php
- * @param  string $key   配置名
- * @param  string $value 配置值
+ * @param  string $key   [可选]配置名
+ * @param  string $value [可选]配置值
  * @return string        如果未设置 $key 参数，则返回所有配置组成的关联数组
  *                       如果仅设置 $key 参数，如果存在该配置，则返回配置值，否则返回 null
  *                       如果设置了 $value 参数，则始终返回 $value
@@ -178,8 +178,8 @@ function config($key = '', $value = null){
 
 /**
  * database() 返回配置的数据库结构数组
- * @param  string  $key      数组的一维键名
- * @param  boolean $withAttr 当设置 $key 参数时返回包含属性的关联数组，默认 false, 只返回包含字段名的索引数组
+ * @param  string  $key      [可选]数组的一维键名
+ * @param  boolean $withAttr [可选]当设置 $key 参数时返回包含属性的关联数组，默认 false, 只返回包含字段名的索引数组
  * @return array             如果设置了 $key，则返回 $database 的二维数组键名组成的数组，否则返回 $database
  */
 function database($key = '', $withAttr = false){
@@ -191,8 +191,8 @@ function database($key = '', $withAttr = false){
 
 /**
  * staticuri() 设置或获取指定模板文件的伪静态 URI 格式
- * @param  string|array $file   模板文件名
- * @param  string       $format 伪静态 URI 格式
+ * @param  string|array $file   [可选]模板文件名
+ * @param  string       $format [可选]伪静态 URI 格式
  * @return mixed                如果未提供参数，则返回所有伪静态地址格式
  *                              如果仅提供 $file 参数，则返回对应的伪静态地址
  *                              如果同时提供两个参数，则始终返回 $format
@@ -218,11 +218,11 @@ function_alias('staticuri', 'staticurl');
 
 /**
  * lang() 设置和获取语言提示
- * @param  string|array $key 指定语言提示或设置为关联数组以设置语言提示
+ * @param  string|array $key [可选]指定语言提示或设置为关联数组以设置语言提示
  *                           该函数还支持其他参数，当提供时，他们将用来替换语言中的标记
  *                           例如 lang('mod.noData') 的返回值是“无{module}数据。”，
  *                           则 lang('mod.noData', '用户') 的返回值则为“无用户数据。”
- * @return string|array      语言提示或所有语言提示
+ * @return string|array      指定语言提示或所有语言提示(如果未设置 $key )
  */
 function lang($key = ''){
 	static $lang = array();
@@ -258,8 +258,7 @@ function lang($key = ''){
 /**
  * success() 返回成功的操作，用在类方法或 Api Hook 回调函数中
  * @param  string|array  $data  操作成功的提示或数据
- * @param  array         $extra 额外的信息
- * @param  boolean       $state 操作状态，默认为 true, 即成功，如果设置为 false, 将返回失败
+ * @param  array         $extra [可选]额外的信息
  * @return array                操作结果
  */
 function success($data, array $extra = array(), $state = true){
@@ -270,8 +269,8 @@ function success($data, array $extra = array(), $state = true){
 
 /**
  * error() 返回失败的操作，用在类方法或 Api Hook 回调函数中
- * @param  string|array  $data  操作失败的提示或数据
- * @param  array         $extra 额外的信息
+ * @param  string|array  $data  [可选]操作失败的提示或数据
+ * @param  array         $extra [可选]额外的信息
  * @return array                操作结果
  */
 function error($data = '', array $extra = array()){
@@ -299,7 +298,7 @@ function is_display($file){
 
 /**
  * is_template() 判断当前展示的页面是否为模板页面或在模板目录中
- * @param  string  $file 模板文件名
+ * @param  string  $file [可选]模板文件名
  * @return boolean
  */
 function is_template($file = ''){
@@ -313,8 +312,8 @@ function is_home(){
 
 /**
  * is_client_call() 判断当前是否为通过 URL 请求操作
- * @param  string  $obj 请求对象
- * @param  string  $act 请求方法
+ * @param  string  $obj [可选]请求对象
+ * @param  string  $act [可选]请求方法
  * @return boolean 
  */
 function is_client_call($obj = '', $act = ''){
@@ -381,7 +380,7 @@ function detect_site_url($header = '', $host = ''){
 
 /**
  * site_url() 获取网站根目录地址
- * @param  string $file 目录下的文件
+ * @param  string $file [可选]目录下的文件
  * @return string       网站根目录 URL 地址，如果设置 $file, 则将返回包含 $file 的地址
  */
 function site_url($file = ''){
@@ -391,7 +390,7 @@ function site_url($file = ''){
 
 /** 
  * template_url() 获取模板目录的完整 URL 地址
- * @param  string $file 目录下的文件
+ * @param  string $file [可选]目录下的文件
  * @return string       模板目录 URL 地址，如果设置 $file, 则将返回包含 $file 的地址
  */
 function template_url($file = ''){
@@ -423,7 +422,7 @@ function create_url($format, $args){
 /**
  * analyze_url() 解析伪静态 URL 地址
  * @param  string  $format  伪静态 URL 格式，如: '{categoryName}/{post_id}.html';
- * @param  string  $url     待解析的 URL 地址，如果不设置，则默认为当前访问路径
+ * @param  string  $url     [可选]待解析的 URL 地址，如果不设置，则默认为当前访问路径
  * @return array            URL 中包含的参数，匹配结果为空则返回 false
  */
 function analyze_url($format, $url = ''){
@@ -478,7 +477,7 @@ function current_file(){
 
 /**
  * current_dir() 获取当前目录
- * @param  string $file 目录下的文件
+ * @param  string $file [可选]目录下的文件
  * @return string       当前目录地址, 如果设置 $file, 则将返回包含 $file 的地址
  */
 function current_dir($file = ''){
@@ -487,8 +486,8 @@ function current_dir($file = ''){
 
 /**
  * template_path() 获取模板目录的路径
- * @param  string $file 目录下的文件
- * @param  bool   $abs  返回绝对路径
+ * @param  string $file [可选]目录下的文件
+ * @param  bool   $abs  [可选]返回绝对路径，默认 true
  * @return string       模板目录的地址，如果设置 $file, 则将返回包含 $file 的地址
  */
 function template_path($file = '', $abs = true){
@@ -506,7 +505,7 @@ function template_file(){
 
 /**
  * current_dir_url() 获取当前目录的完整 URL 地址
- * @param  string $file 目录下的文件
+ * @param  string $file [可选]目录下的文件
  * @return string       当前目录的 URL 地址, 如果设置 $file, 则将返回包含 $file 的地址
  */
 function current_dir_url($file = ''){
@@ -516,8 +515,8 @@ function current_dir_url($file = ''){
 /**
  * import() 在页面中载入 js、css 等文件，也可载入程序文件或其他文件(和 include 相同)
  * @param  string $file 文件名
- * @param  string $tag  html 标签
- * @param  string $attr 标签属性
+ * @param  string $tag  [可选]HTML 标签
+ * @param  string $attr [可选]标签属性
  * @return null|mixed   如果载入的是 php 文件或未知文件，则返回其内容
  */
 function import($file, $tag = '', $attr = ''){
@@ -558,10 +557,11 @@ function import($file, $tag = '', $attr = ''){
 
 /**
  * get_template_file() 获取 URL 请求显示的模板文件
- * @param  string  $url    URL 地址
- * @param  string  $tpldir 模板目录
- * @param  string  $uri    URI 地址
- * @return string|false    模板文件名
+ * @param  string  $url     [可选]URL 地址
+ * @param  string  $tpldir  [可选]模板目录
+ * @param  string  $rootURL [可选]根目录 URL 地址
+ * @param  string  $uri     [可选]URI 地址
+ * @return string|false     模板文件名
  */
 function get_template_file($url = '', $tpldir = '', $rootURL = '', $uri = ''){
 	if(!$uri){
@@ -603,8 +603,8 @@ function get_template_file($url = '', $tpldir = '', $rootURL = '', $uri = ''){
 
 /**
  * display_file() 设置或者获取显示页面文件名
- * @param  string  $url URL 地址，不设置则为当前地址
- * @param  boolean $set 将 $url 设置为一个文件名，然后设置 $set 为 true，以此设置显示页面
+ * @param  string  $url [可选]URL 地址，不设置则为当前地址
+ * @param  boolean $set [可选]将 $url 设置为一个文件名，然后设置 $set 为 true，以此设置显示页面
  * @return string
  */
 function display_file($url = '', $set = false){
@@ -964,9 +964,8 @@ function register_module_functions($module = ''){
 
 /**
  * report_http_error() 报告 HTTP 错误
- * @param string $msg  错误提示
  * @param string $code 状态码，403，404 或 500
- * @param string $file 错误页面文件名（相对于模板目录）
+ * @param string $msg  [可选]错误提示
  */
 function report_http_error($code, $msg = ''){
 	$uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : (display_file() ?: __SCRIPT__);
@@ -1040,7 +1039,13 @@ function socket_retrive_session($sid, $event){
 	return false;
 }
 
-/** strapos() 查找字符串中第一次出现的位置，根据操作系统自动决定是否使用大小写敏感 */
+/**
+ * strapos() 查找字符串中第一次出现的位置，根据操作系统自动决定是否使用大小写敏感
+ * @param  string  $str   规定要搜索的字符串
+ * @param  string  $find  规定要查找的字符串
+ * @param  integer $start 规定在何处开始搜索
+ * @return mixed          返回字符串在另一字符串中第一次出现的位置，如果没有找到字符串则返回 FALSE。
+ */
 function strapos($str, $find, $start = 0){
 	return PHP_OS == 'WINNT' ? stripos($str, $find, $start) : strpos($str, $find, $start);
 }

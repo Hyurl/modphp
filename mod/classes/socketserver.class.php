@@ -20,9 +20,10 @@ class SocketServer{
 
 	/**
 	 * listen() 监听连接
+	 * @static
 	 * @param  int      $port      监听端口
-	 * @param  callable $calback   监听成功回调函数
-	 * @param  bool     $autoStart 自动启动
+	 * @param  callable $calback   [可选]监听成功后执行的回调函数
+	 * @param  bool     $autoStart [可选]自动启动服务，默认 true
 	 * @return resource            服务器资源
 	 */
 	static function listen($port, $callback = null, $autoStart = true){
@@ -46,7 +47,8 @@ class SocketServer{
 
 	/**
 	 * server() 手动设置或获取服务器资源
-	 * @param  resource $server 服务器资源
+	 * @static
+	 * @param  resource $server [可选]设置服务器资源
 	 * @return resource         服务器资源
 	 */
 	static function server($server = null){
@@ -59,9 +61,10 @@ class SocketServer{
 
 	/** 
 	 * send() 发送消息
+	 * @static
 	 * @param  string   $msg    消息内容
-	 * @param  resource $client 接收客户端，不设置则为当前客户端，可设置为数组进行广播
-	 * @param  string   $type   消息类型，支持 text 和 binary
+	 * @param  resource $client [可选]接收客户端，不设置则为当前客户端，可设置为数组进行广播
+	 * @param  string   $type   [可选]消息类型，支持 text(默认) 和 binary
 	 * @return int              发送消息的长度，发送失败则返回 false，只要有一次发送成功，就视为成功
 	 */
 	static function send($msg, $client = null, $type = 'text'){
@@ -85,10 +88,11 @@ class SocketServer{
 
 	/**
 	 * close() 关闭连接
-	 * @param  integer $code   关闭代码，1000-1004|1007|1008
-	 * @param  string  $reason 关闭原因
+	 * @static
+	 * @param  integer $code   [可选]关闭代码，1000-1004|1007|1008，默认 1000，即正常关闭
+	 * @param  string  $reason [可选]关闭原因
 	 */
-	static function close($code = 1000, $reason = 'Normal closure.'){
+	static function close($code = 1000, $reason = ''){
 		$sockets = &self::$sockets;
 		$client = &self::$client;
 		$shaked = &self::$handshaked;
@@ -109,6 +113,7 @@ class SocketServer{
 
 	/**
 	 * getAllClients() 获得所有客户端资源
+	 * @static
 	 * @return array   由客户端组成的索引数组
 	 */
 	static function getAllClients(){
@@ -119,6 +124,7 @@ class SocketServer{
 
 	/**
 	 * on() 绑定事件
+	 * @static
 	 * @param  string   $event    事件名称
 	 * @param  callable $callback 回调函数
 	 * @return object             当前对象

@@ -15,13 +15,13 @@ class SocketServerThread extends Thread{
 	}
 }
 
-include 'mod/classes/socket-server.class.php'; //引入 SocketServer 扩展
+include 'mod/classes/socketserver.class.php'; //引入 SocketServer 扩展
 
 /** 监听端口 */
 $port = @$_SERVER['argv'][1] ?: 8080;
 $server = SocketServer::listen($port, function($server, $port){
 	$tip = "SocketServer $server started on $port at ".date('D M d H:i:s Y');
-	fwrite(STDOUT, $tip.PHP_EOL);
+	fwrite(STDOUT, $tip.PHP_EOL.PHP_EOL);
 }, false); //将第三个参数($autoStart)设置为 false
 
 $threads = array(); //线程组

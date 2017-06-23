@@ -1,12 +1,13 @@
 <?php
-/** 分类目录模块 */
+/** 分类目录模块，包含获取分类目录树的方法 */
 final class category extends mod{
 	const TABLE = 'category'; //表名
 	const PRIMKEY = 'category_id'; //主键
 
 	/**
 	 * getTree() 获取分类目录树形结构数据
-	 * @param  array  $arg  请求参数
+	 * @static
+	 * @param  array  $arg  [可选]请求参数
 	 * @return array        分类目录结构
 	 */
 	static function getTree($arg = array()){

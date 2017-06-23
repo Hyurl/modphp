@@ -9,7 +9,7 @@ if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 
 $NSFile = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 
 /** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '2.2.0'); //ModPHP 版本
+define('MOD_VERSION', '2.2.1'); //ModPHP 版本
 define('__TIME__', time(), true); //开始运行时间
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true); //网站根目录
 define('__SCRIPT__', substr($NSFile, strlen(__ROOT__)) ?: $NSFile, true); //执行脚本
@@ -21,9 +21,18 @@ if(!defined('STDERR')) define('STDERR', fopen('php://stderr','w'));
 if(__SCRIPT__ == 'mod/common/init.php') return false;
 
 //自动加载类文件
-set_include_path(get_include_path().PATH_SEPARATOR.__ROOT__.'mod/classes/'.PATH_SEPARATOR.__ROOT__.'user/classes/');
-spl_autoload_extensions('.class.php');
-spl_autoload_register();
+spl_autoload_register(function($class){
+	$class1 = strtolower($class);
+	foreach (array('mod', 'user') as $path) {
+		if(is_file($file = __ROOT__."$path/classes/$class1.class.php")){
+			include $file; //按小写类名称引入
+			break;
+		}elseif(is_file($file = __ROOT__."$path/classes/$class.class.php")){
+			include $file; //按调用的类名称引入
+			break;
+		}
+	}
+});
 
 /** 加载核心函数文件 */
 include_once __ROOT__.'mod/functions/extension.func.php';
@@ -31,6 +40,13 @@ include_once __ROOT__.'mod/functions/mod.func.php';
 
 $NSInstalled = config('mod.installed');
 $NSDatabase = database();
+
+ini_set('user_agent', 'ModPHP/'.MOD_VERSION); //设置 PHP 远程请求客户端
+if(is_browser()){ //开/关调试模式
+	ini_set('display_errors', config('mod.debug'));
+	ini_set('display_startup_errors', config('mod.debug'));
+	ini_set('html_errors', config('mod.debug'));
+}
 
 /** 加载默认函数文件 */
 foreach (glob(__ROOT__.'mod/functions/*.php') as $NSFile) {

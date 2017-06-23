@@ -1,6 +1,6 @@
 <?php
 /** PHP 内置服务器，使用 php -S 0.0.0.0:80 index.php 的方式开启服务器 */
-if(php_sapi_name() == "cli-server"){
+if(PHP_SAPI == "cli-server"){
 	$dir = $_SERVER["DOCUMENT_ROOT"].DIRECTORY_SEPARATOR;
 	$file = explode("?", $_SERVER["REQUEST_URI"]);
 	$file = $dir.substr($file[0], 1);

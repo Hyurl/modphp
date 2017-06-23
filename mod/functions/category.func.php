@@ -1,7 +1,7 @@
 <?php
 /** 
  * category_tree() 获取分类目录树
- * @param  array  $arg 请求参数
+ * @param  array  $arg [可选]请求参数
  * @return array       获取的目录树
  */
 function category_tree($arg = array()){
@@ -18,7 +18,7 @@ function category_tree($arg = array()){
 
 /** 
  * is_category() 判断当前页面是否为分类目录页面
- * @param  mixed   $key 如果为整数，则判断是否为 ID 是否是 $key 的分类目录页
+ * @param  mixed   $key [可选]如果为整数，则判断是否为 ID 是否是 $key 的分类目录页
  *                      如果为字符串，则判断则判断是否为 ID 是否是 $key 的分类目录页
  *                      如果为数组，则按数组内容逐一判断
  *                      如果不设置，则判断仅是否为分类目录页

@@ -1,4 +1,10 @@
 <?php
+/**
+ * mail 扩展是 ModPHP 提供的用于进行邮件事务管理的类。
+ * 该类包含收发邮件两个部分，其中，接收邮件需要服务器开启 imap 扩展。
+ * 即使你未登录发件服务器也可直接将邮件发送给收件人，mail 扩展会自行模拟一个发件服务器，
+ * 但这种方式发送的邮件可能会被收件人的服务器拒收。
+ */
 final class mail{
 	public  static $error = array(); //错误信息
 	private static $imap = null; //收件服务器
@@ -313,6 +319,7 @@ final class mail{
 
 	/**
 	 * open() 打开一个邮件服务器，该方法不会直接连接，只是预备连接参数
+	 * @static
 	 * @param  string $name 连接描述名称
 	 * @return object       当前对象
 	 */
@@ -336,10 +343,11 @@ final class mail{
 	}
 
 	/**
-	 * set() 设置连接选项
-	 * @param  string $opt  选项名
-	 * @param  mixed  $val  选项值
-	 * @return object       当前对象
+	 * set() 设置和获取连接选项
+	 * @static
+	 * @param  string $opt  [可选]选项名
+	 * @param  mixed  $val  [可选]选项值
+	 * @return mixed        如果设置选项值，则返回当前对象，否则返回查询的选项值或者全部选项值
 	 */
 	static function set($opt = null, $val = null){
 		$set = &self::$set;
@@ -360,7 +368,7 @@ final class mail{
 		return new self;
 	}
 	
-	/** 快速设置方法 */
+	/** 快速设置和获取方法 */
 	static function host($host = null){ return self::set('host', $host); }
 	static function type($type = null){ return self::set('type', $type); }
 	static function port($port = null){ return self::set('port', $port); }
@@ -381,8 +389,9 @@ final class mail{
 
 	/**
 	 * login() 登录邮件服务器
-	 * @param  string $user 用户名
-	 * @param  string $pass 密码
+	 * @static
+	 * @param  string $user [可选]用户名
+	 * @param  string $pass [可选]密码
 	 * @return object       当前对象
 	 */
 	static function login($user = '', $pass = '', $to = ''){
@@ -443,7 +452,8 @@ final class mail{
 
 	/**
 	 * mailboxStatus() 获取邮箱状态
-	 * @param  int $key 获取指定的信息
+	 * @static
+	 * @param  int $key [可选]获取指定的信息
 	 * @return array    状态信息
 	 */
 	static function mailboxStatus($key = ''){
@@ -453,6 +463,7 @@ final class mail{
 
 	/**
 	 * listmailbox() 获取邮箱列表
+	 * @static
 	 * @param  string $dir 开始目录
 	 * @return array       文件夹名称
 	 */
@@ -468,8 +479,9 @@ final class mail{
 
 	/**
 	 * get() 获取邮件
+	 * @static
 	 * @param  int    $num  邮件编号
-	 * @param  bool   $html HTML 版本优先，如果有多个版本
+	 * @param  bool   $html [可选]HTML 版本优先，如果有多个版本，默认 false
 	 * @return array        邮件信息, 包含 header 和 body
 	 */
 	static function get($num, $html = false){
@@ -481,9 +493,10 @@ final class mail{
 
 	/**
 	 * search() 搜索邮件
+	 * @static
 	 * @param  string   $str     搜索语句
-	 * @param  int|bool $num     获取指定邮件内容，设置为 true 则获取所有内容
-	 * @param  string   $charset 编码
+	 * @param  int|bool $num     [可选]获取指定邮件内容，设置为 true 则获取所有内容
+	 * @param  string   $charset [可选]编码，默认 UTF-8
 	 * @return array             搜索结果
 	 */
 	static function search($str, $num = false, $charset = 'UTF-8'){
@@ -515,7 +528,8 @@ final class mail{
 
 	/**
 	 * send() 发送邮件
-	 * @param  string  $msg 消息内容
+	 * @static
+	 * @param  string  $msg [可选]消息内容
 	 * @return boolean      发送结果
 	 */
 	static function send($msg = ''){
@@ -583,7 +597,7 @@ final class mail{
 	}
 
 	/** debug() 设置和显示调试信息 */
-	static function debug($msg = null){
+	static function debug($msg){
 		if(is_bool($msg) || $msg === 1 || $msg === 0){
 			self::set('debug', $msg); //设置调试状态
 		}elseif($msg !== null){

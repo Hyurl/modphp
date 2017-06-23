@@ -1,7 +1,9 @@
 <?php
 /**
- * mod.php 核心类
- * 所有模块都继承于核心类
+ * ModPHP 核心类，所有模块都继承于核心类，并以此获取对数据进行基本操作的能力。
+ * Mod 类提供了一系列基本的操作数据记录的方法，如 mod::add()、mod::update() 等，
+ * 子类可以重新定义某些方法，也可以直接使用，例如 user::add() 是直接继承的，
+ * 而 file::add() 则是由 file 类重写的。
  */
 class mod{
 	const TABLE = ''; //当前数据表
@@ -249,10 +251,11 @@ class mod{
 
 	/**
 	 * install() 安装系统
+	 * @static
 	 * @param  array  $arg 请求参数
 	 * @return array       请求结果
 	 */
-	final static function install(array $arg = array()){
+	final static function install(array $arg){
 		if(static::TABLE) return error(lang('mod.methodDenied', __method__));
 		if(config('mod.installed')) return error(lang('mod.installed'));
 		if(is_writable(__ROOT__.'user/config')){
@@ -279,7 +282,8 @@ class mod{
 
 	/**
 	 * uninstall() 卸载系统
-	 * @param  array  $arg 请求参数
+	 * @static
+	 * @param  array  $arg [可选]请求参数
 	 * @return array       请求结果
 	 */
 	final static function uninstall(array $arg = array()){
@@ -311,10 +315,11 @@ class mod{
 
 	/** 
 	 * config() 更新配置
+	 * @static
 	 * @param  array  $arg 请求参数
 	 * @return array       请求结果
 	 */
-	final static function config(array $arg = array()){
+	final static function config(array $arg){
 		if(static::TABLE) return error(lang('mod.methodDenied', __method__));
 		if(!config('mod.installed')) return error(lang('mod.notInstalled')); 
 		if(is_writable(__ROOT__.'user/config')){
@@ -338,10 +343,11 @@ class mod{
 
 	/**
 	 * add() 通用的添加记录方式
+	 * @static
 	 * @param  array  $arg 请求参数
 	 * @return array       刚添加的记录
 	 */
-	static function add(array $arg = array()){
+	static function add(array $arg){
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
 		do_hooks($tb.'.add', $arg); //执行添加前挂钩函数
@@ -358,7 +364,8 @@ class mod{
 
 	/**
 	 * update() 通用的更新记录方式，也可以用来更新系统
-	 * @param  array  $arg 请求参数
+	 * @static
+	 * @param  array  $arg [可选]请求参数
 	 * @return array       更新后的记录或者更新结果(更新系统时)
 	 */
 	static function update(array $arg = array()){
@@ -404,10 +411,11 @@ class mod{
 
 	/**
 	 * delete() 通用的删除记录方式
+	 * @static
 	 * @param  array  $arg  请求参数
 	 * @return array        操作结果
 	 */
-	static function delete(array $arg = array()){
+	static function delete(array $arg){
 		$tb = static::TABLE;
 		$primkey = static::PRIMKEY;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
@@ -427,10 +435,11 @@ class mod{
 
 	/**
 	 * get() 通用的获取单条记录方式
+	 * @static
 	 * @param  array  $arg 请求参数
 	 * @return array       请求的记录或错误
 	 */
-	final static function get(array $arg = array()){
+	final static function get(array $arg){
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
 		foreach($arg as $k => $v){
@@ -448,7 +457,8 @@ class mod{
 
 	/**
 	 * getMulti() 通用的获取多条记录方式
-	 * @param  array  $arg  请求参数
+	 * @static
+	 * @param  array  $arg  [可选]请求参数
 	 * @return array        符合条件的记录或错误
 	 */
 	final static function getMulti(array $arg = array()){
@@ -484,10 +494,11 @@ class mod{
 
 	/**
 	 * search() 搜索记录，使用模糊查询，需要配置模块的搜索字段
-	 * @param  array  $arg       请求参数
-	 * @return array             请求结果或错误
+	 * @static
+	 * @param  array  $arg  请求参数
+	 * @return array        请求结果或错误
 	 */
-	final static function search(array $arg = array()){
+	final static function search(array $arg){
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
 		$default = array(
@@ -563,12 +574,11 @@ class mod{
 
 	/**
 	 * getPrev() 通用的获取上一条记录方式
-	 * @param  array  $arg      请求的参数
-	 * @param  string $sign     比较运算符号
-	 * @param  string $sequence 排序方式，asc 或 desc
-	 * @return array            请求的记录或错误
+	 * @static
+	 * @param  array  $arg  请求的参数
+	 * @return array        请求的记录或错误
 	 */
-	final static function getPrev(array $arg = array(), $sign = '>=', $sequence = 'desc'){
+	final static function getPrev(array $arg, $sign = '>=', $sequence = 'desc'){
 		$tb = static::TABLE;
 		$primkey = static::PRIMKEY;
 		if(!$tb) return error(lang('mod.methodDenied', $sign == '>=' ? __method__ : 'getNext'));
@@ -594,16 +604,18 @@ class mod{
 
 	/**
 	 * getNext() 通用的获取下一条记录方式
+	 * @static
 	 * @param  array  $arg  请求参数
 	 * @return array        请求的记录或错误
 	 */
-	final static function getNext(array $arg = array()){
+	final static function getNext(array $arg){
 		return static::getPrev($arg, '<=', 'asc'); //调用获取上一记录的方法，只将排序反转
 	}
 
 	/**
 	 * trash() 操作无效的数据库记录
-	 * @param  string $action 'get' 或者 'delete' 操作
+	 * @static
+	 * @param  string $action get 或者 delete 操作
 	 * @return array          获取的记录或删除操作成功提示
 	 */
 	final protected static function trash($action = 'get'){

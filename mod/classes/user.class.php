@@ -1,5 +1,5 @@
 <?php
-/** 用户模块 */
+/** 用户模块，包含用户登录、登出和获取当前登录用户的方法 */
 final class user extends mod{
 	const TABLE = 'user';
 	const PRIMKEY = 'user_id';
@@ -14,6 +14,7 @@ final class user extends mod{
 
 	/**
 	 * getMe() 获得当前登录用户
+	 * @static
 	 * @return array  当前登录的用户或错误
 	 */
 	static function getMe(){
@@ -31,10 +32,11 @@ final class user extends mod{
 
 	/**
 	 * login() 登录
+	 * @static
 	 * @param  array $arg 请求参数
 	 * @return array      当前登录的用户或错误
 	 */
-	static function login($arg = array()){
+	static function login(array $arg){
 		do_hooks('user.login', $arg); //执行登录前挂钩函数
 		if(error()) return error();
 		$login = explode('|', config('user.keys.login'));
@@ -71,6 +73,7 @@ final class user extends mod{
 
 	/**
 	 * logout() 登出
+	 * @static
 	 * @return array 操作结果
 	 */
 	static function logout(){

@@ -1,5 +1,11 @@
 <?php
-/** 数据库扩展 */
+/** 
+ * database 数据库扩展基于 PDO，提供一个统一的数据连接管理对象。
+ * 该类使用单例多连模式，也就是说，你可以用它来同时连接多个数据库，只需要在进行操作时进行切换。
+ * 类中提供了一些基本数据库操作的方法，可以方便地对数据进行增删查改等操作。
+ * 你可以通过一个类似 URL 地址地资源名称来建立数据库连接，例如 mysql:://localhost:3306/modphp/?username=root&password=12345。
+ * 也可以使用数组来组合查询语句的 where 添加，如 array('username'=>'root')。
+ */
 final class database{
 	/* 默认的数据库信息配置 */
 	public  static $error = ''; //错误信息
@@ -66,8 +72,9 @@ final class database{
 
 	/**
 	 * set() 设置连接选项
-	 * @param  string $opt  选项名
-	 * @param  mixed  $val  选项值
+	 * @static
+	 * @param  string $opt  [可选]选项名
+	 * @param  mixed  $val  [可选]选项值
 	 * @return mixed        如果进行设置，则返回当前对象，否则返回设置(项)
 	 */
 	static function set($opt = null, $val = null){
@@ -124,10 +131,11 @@ final class database{
 
 	/**
 	 * debug() 设置调试模式或调试信息
+	 * @static
 	 * @param  mixed  $msg 调试信息或 true|false 来开启或关闭调试
 	 * @return object      当前对象
 	 */
-	static function debug($msg = null){
+	static function debug($msg){
 		if(is_bool($msg) || $msg === 1 || $msg === 0){
 			self::set('debug', $msg); //设置调试状态
 		}elseif($msg !== null){
@@ -141,7 +149,8 @@ final class database{
 
 	/**
 	 * info() 获取连接的相关信息
-	 * @param  string $key 获取项
+	 * @static
+	 * @param  string $key [可选]获指定项
 	 * @return mixed       连接相关信息
 	 */
 	static function info($key = ''){
@@ -166,6 +175,7 @@ final class database{
 
 	/**
 	 * open() 打开新连接或切换连接
+	 * @static
 	 * @param  string|int $name 连接名称或者用于建立连接的 URL 描述地址
 	 * @return object           当前对象
 	 */
@@ -197,6 +207,7 @@ final class database{
 
 	/**
 	 * close() 关闭当前连接
+	 * @static
 	 * @return object 当前对象
 	 */
 	static function close(){
@@ -212,7 +223,8 @@ final class database{
 
 	/**
 	 * connect() 连接数据库
-	 * @param  string $user 用户名
+	 * @static
+	 * @param  string $user [可选]用户名
 	 * @param  string $pass 密码
 	 * @return object       当前对象
 	 */
@@ -244,6 +256,7 @@ final class database{
 
 	/**
 	 * quote() 转义字符串并添加引号
+	 * @static
 	 * @param  string $str 原字符串
 	 * @return string      转义后字符串
 	 */
@@ -253,6 +266,7 @@ final class database{
 
 	/**
 	 * query() 执行查询
+	 * @static
 	 * @param  string $str 查询语句
 	 * @return mixed       执行结果
 	 */
@@ -276,9 +290,10 @@ final class database{
 
 	/**
 	 * insert() 插入记录
+	 * @static
 	 * @param  string $table 表名(不含前缀)，多个表用 , 分隔
 	 * @param  array  $input 记录信息，关联数组
-	 * @param  int    &$id   填充插入 id
+	 * @param  int    &$id   [可选]填充插入 id
 	 * @return boolean
 	 */
 	static function insert($table, array $input, &$id = 0){
@@ -300,11 +315,12 @@ final class database{
 
 	/**
 	 * update() 更新记录
+	 * @static
 	 * @param  string           $table   表名(不含前缀)，多个表用 , 分隔
 	 * @param  array|string     $input   记录信息，关联数组或字符串
 	 * @param  int|string|array $where   where 条件
-	 * @param  int|string       $limit   限制记录条数
-	 * @param  string           $orderby 排序规则
+	 * @param  int|string       $limit   [可选]限制记录条数，默认 0(无限制)
+	 * @param  string           $orderby [可选]排序规则
 	 * @return boolean
 	 */
 	static function update($table, $input, $where, $limit = 0, $orderby = ''){
@@ -328,11 +344,12 @@ final class database{
 	}
 	/**
 	 * select() 查询记录
+	 * @static
 	 * @param  string           $table   表名(不含前缀)，多个表用 , 分隔
-	 * @param  string           $key     指定字段， * 表示所有字段
-	 * @param  int|string|array $where   where 条件
-	 * @param  int|string       $limit   限制记录条数或区间
-	 * @param  string           $orderby 排序规则
+	 * @param  string           $key     [可选]指定字段， * (默认)表示所有字段
+	 * @param  int|string|array $where   [可选]where 条件
+	 * @param  int|string       $limit   [可选]限制记录条数或区间，默认 0(无限制)
+	 * @param  string           $orderby [可选]排序规则
 	 * @return object                    PDOStatement 对象
 	 */
 	static function select($table, $key = '*', $where = 1, $limit = 0, $orderby = ''){
@@ -354,10 +371,11 @@ final class database{
 
 	/**
 	 * delete() 删除记录
+	 * @static
 	 * @param  string           $table   表名(不含前缀)，多个表用 , 分隔
 	 * @param  int|string|array $where   where 条件
-	 * @param  int|string       $limit   限制记录条数
-	 * @param  string           $orderby 排序规则
+	 * @param  int|string       $limit   [可选]限制记录条数，默认 0(不限制)
+	 * @param  string           $orderby [可选]排序规则
 	 * @return boolean
 	 */
 	static function delete($table, $where, $limit = 0, $orderby = ''){

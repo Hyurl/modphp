@@ -661,31 +661,32 @@ function xml2array($xml){
 
 /**
  * curl() 进行远程 HTTP 请求，需要开启 CURL 模块
- * @param  array|string $options 设置请求的参数(数组)或者请求的 URL 地址
- *                               请求参数可以包含下面这些项目：
- *                               [url] => 远程请求地址
- *                               [method] => 请求方式: POST 或 GET(默认);
- *                               [data] => POST 数据, 支持关联数组、索引数组、URL 查询字符串以及原生 POST 数据, 要发送文件，需要在文件名前面加上@前缀并使用完整路径
- *                               [cookie] => 发送 Cookie, 支持关联数组、索引数组和 Cookie 字符串
- *                               [referer] => 来路页面
- *                               [userAgent] => 客户端信息
- *                               [requestHeaders] => 请求头部信息，支持索引数组和关联数组
- *                               [followLocation] => 跟随跳转，设置数值为最大跳转次数，默认 0
- *                               [autoReferer] => 跳转时自动设置来路页面，默认 true
- *                               [sslVerify] => SSL 安全验证，默认 false
- *                               [proxy] => 代理服务器(格式: 8.8.8.8:80)
- *                               [clientIp] => 原始客户端 IP，当 curl 用来充当代理服务器时使用
- *                               [timeout] => 设置超时，默认 5(秒)
- *                               [onlyIpv4] => 只解析 IPv4，默认 true
- *                               [username] => HTTP 访问认证用户名
- *                               [password] => HTTP 访问认证密码
- *                               [charset] => 目标页面编码
- *                               [convert] => 转换为指定的编码
- *                               [parseJSON] => 解析 JSON，true 始终解析，false 始终解析，默认自动解析
- *                               [success] => 请求成功时的回调函数
- *                               [error] => 请求失败时的回调函数
- *                               [extra] => 其他 CURL 选项参数，设置为一个数组
- * @return string                返回请求结果，结果是字符串
+ * @param array|string $options 设置请求的参数(数组)或者请求的 URL 地址
+ *                              请求参数可以包含下面这些项目：
+ *                              [url] => 远程请求地址
+ *                              [method] => 请求方式: POST 或 GET(默认);
+ *                              [data] => POST 数据, 支持关联数组、索引数组、URL 查询字符串以及原始 POST 数据；
+ *                                        要发送文件，需要在文件名前面加上@前缀并使用完整路径
+ *                              [cookie] => 发送 Cookie, 支持关联数组、索引数组和 Cookie 字符串
+ *                              [referer] => 来路页面
+ *                              [userAgent] => 客户端信息
+ *                              [requestHeaders] => 请求头部信息，支持索引数组和关联数组
+ *                              [followLocation] => 跟随跳转，设置数值为最大跳转次数，默认 0
+ *                              [autoReferer] => 跳转时自动设置来路页面，默认 true
+ *                              [sslVerify] => SSL 安全验证，默认 false
+ *                              [proxy] => 代理服务器(格式: 8.8.8.8:80)
+ *                              [clientIp] => 原始客户端 IP，当 curl 用来充当代理服务器时使用
+ *                              [timeout] => 设置超时，默认 5(秒)
+ *                              [onlyIpv4] => 只解析 IPv4，默认 true
+ *                              [username] => HTTP 访问认证用户名
+ *                              [password] => HTTP 访问认证密码
+ *                              [charset] => 目标页面编码
+ *                              [convert] => 转换为指定的编码
+ *                              [parseJSON] => 解析 JSON，true 始终解析，false 始终不解析，默认自动解析
+ *                              [success] => 请求成功时的回调函数
+ *                              [error] => 请求失败时的回调函数
+ *                              [extra] => 其他 CURL 选项参数，设置为一个数组
+ * @return string               返回请求结果，结果是字符串
  */
 function curl($options){
 	$curl = curl_version();

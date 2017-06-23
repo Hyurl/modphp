@@ -24,6 +24,7 @@ RewriteRule . index.php
 order deny,allow";
 	file_put_contents($file, $data);
 }
+
 //Session 保存目录的 .htaccess，禁止客户端访问该目录
 if(strapos($tmp, __ROOT__) === 0 && !file_exists($file = $tmp.'.htaccess')){
 	file_put_contents($file, "order deny,allow\ndeny from all");
@@ -48,14 +49,16 @@ foreach (array('config', 'database', 'static-uri', $lang) as $conf) {
 }
 
 /** 恢复自定义模块类文件 */
-foreach (array_keys(database()) as $table) {
-	$file = 'classes/'.$table.'.class.php';
-	if(!file_exists(__ROOT__.'mod/'.$file) && !file_exists($file = __ROOT__.'user/'.$file)){
-		$data = '<?php
-final class '.$table.' extends mod{
-	const TABLE = "'.$table.'";
-	const PRIMKEY = "'.get_primkey_by_table($table).'";
-}';
-		file_put_contents($file, $data);
+if(config('mod.installed')){
+	foreach (array_keys(database()) as $table) {
+		$file = 'classes/'.$table.'.class.php';
+		if(!file_exists(__ROOT__.'mod/'.$file) && !file_exists($file = __ROOT__.'user/'.$file)){
+			$data = '<?php
+	final class '.$table.' extends mod{
+		const TABLE = "'.$table.'";
+		const PRIMKEY = "'.get_primkey_by_table($table).'";
+	}';
+			file_put_contents($file, $data);
+		}
 	}
 }

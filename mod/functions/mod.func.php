@@ -19,12 +19,11 @@ function conv_request_vars(&$input = null){
 		elseif($v === 'false') $v = false; //将 'false' 转换为 false
 		elseif($v === 'undefined' || $v === 'null') $v = null; //将 'undefined' 和 'null' 转换为 null
 		elseif(is_numeric($v) && (int)$v < 2147483647) $v = (int)$v; //为确保平台兼容性，数字最大值不应超过 2147483646
-		if(!is_socket()){ //针对配置项的转换，将一部分 _ 转换为 .
-			$_k = "['".str_replace('_', "']['", $k)."']";
-			if(strpos($k, '_') && ((is_client_call('mod', 'install') && strpos($k, 'user_') !== 0) || is_client_call('mod', 'config')) && eval('return isset($config'.$_k.');')){
-				unset($input[$k]);
-				$k = str_replace('_', '.', $k);
-			}
+		//针对配置项的转换，将一部分 _ 转换为 .
+		$_k = "['".str_replace('_', "']['", $k)."']";
+		if(strpos($k, '_') && ((is_client_call('mod', 'install') && strpos($k, 'user_') !== 0) || is_client_call('mod', 'config')) && eval('return isset($config'.$_k.');')){
+			unset($input[$k]);
+			$k = str_replace('_', '.', $k);
 		}
 		$input[$k] = $v;
 	}
@@ -622,11 +621,14 @@ function display_file($url = '', $set = false){
 	$url = $url ?: url();
 	if(!$url) return false;
 	$uri = strstr($url, '?', true) ?: $url;
-	if(strapos($uri, site_url('index.php')) === 0)             //去掉网址中的 index.php 入口文件
+	if(strapos($uri, site_url('index.php')) === 0){
+		$index = 'index.php/';
 		$uri = site_url().substr($uri, strlen(site_url())+10); //10 表示可能截掉 index.php? 或 index.php/
+	}else{
+		$index = '';
+	}
 	$tplPath = template_path('', false);
 	$appPath = config('mod.template.appPath') ?: $tplPath;
-	$index = config('mod.pathinfoMode') ? 'index.php/' : '';
 	$home = config('site.home.template');
 	if($uri == site_url() || $uri == site_url($home)){ //首页
 		return $file = $tplPath.$home;
@@ -686,17 +688,19 @@ function display_file($url = '', $set = false){
 		}
 		foreach(database() as $key => $value){
 			if(isset($value[$key.'_link'])){ //尝试根据自定义永久链接获取记录
-				$link = substr($url, strlen(site_url($index)));
-				$get = 'get_'.$key;
-				$result = database::open(0)->select($key, "{$key}_id", "`{$key}_link` = '{$link}'"); //检查记录是否存在
-				if($result && $result->fetchObject()){
-					$file = $tplPath.@$config[$key]['template'];
-					if($_file !== $file || $sid !== session_id()){
-						$_file = $file;
-						$sid = session_id();
-						$get(array($key.'_link'=>$link)); //获取记录
+				$hasIndex = strapos($url, site_url('index/')) === 0;
+				if($link = substr($url, strlen(site_url($index)))){
+					$get = 'get_'.$key;
+					$result = database::open(0)->select($key, "{$key}_id", "`{$key}_link` = '{$link}'"); //检查记录是否存在
+					if($result && $result->fetchObject()){
+						$file = $tplPath.@$config[$key]['template'];
+						if($_file !== $file || $sid !== session_id()){
+							$_file = $file;
+							$sid = session_id();
+							$get(array($key.'_link'=>$link)); //获取记录
+						}
+						return $file;
 					}
-					return $file;
 				}
 			}
 		}
@@ -996,10 +1000,7 @@ function report_http_error($code, $msg = ''){
 		display_file($file, true);
 	}else{
 		echo $msg ?: "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n\t<title>{$code} {$status[$code]}</title>\n</head>\n<body>\n\t<h1>{$status[$code]}</h1>\n\t{$html[$code]}\n</body>\n</html>";
-		if(is_agent()){
-			do_hooks('mod.template.load.complete'); //在模板加载后执行挂钩回调函数
-			exit();
-		}
+		if(is_agent()) exit();
 	}
 }
 

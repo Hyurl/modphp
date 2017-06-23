@@ -6,6 +6,7 @@
 4. 改变 encrypt() 和 decrypt() 函数的行为，增加第三个参数 $expire 来设置密码有效期。
 5. 完善 PHPDOC 文档，doc() 函数也支持查询类的文档，示例如 doc('template::')。
 6. 新增 mod.debug 配置项，默认 true，显示错误信息；mod.jsonSerialize 默认为 true。
+7. 优化程序的初始化过程，修复一些 BUG。
 
 版本 2.2.0 (2017-6-22 14:15)
 1. 内置 Socket 服务器也可以通过发送二进制数据来上传文件。

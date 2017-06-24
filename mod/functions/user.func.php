@@ -16,7 +16,7 @@ function get_me($key = ''){
 		if(!$_result['success']) return null;
 		else $result = $_result['data'];
 	}
-	if(!$key) return $result;
+	if(!$key) return $result ?: null;
 	else if(isset($result[$key])) return $result[$key];
 	else if(strpos($key, 'user_') !== 0){
 		$key = 'user_'.$key;
@@ -29,10 +29,9 @@ foreach (database('user') as $key) {
 	$_key = substr($key, 5);
 	$code = '
 	function me_'.$_key.'($key = ""){
-		return get_me("'.$key.'");
-		if($result === null) return null;
-		else if(!$key) return $result;
-		else if(isset($result[$key])) return $result[$key];
+		$result = get_me("'.$key.'");
+		if(!$key) return $result ?: null;
+		elseif(isset($result[$key])) return $result[$key];
 		elseif(strpos($key, "user_") !== 0){
 			$key = "user_".$key;
 			return @$result[$key];

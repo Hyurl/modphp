@@ -789,7 +789,7 @@ function register_module_functions($module = ''){
 	if(!function_exists("_'.$module.'")){
 		function _'.$module.'($key = "", $value = null){
 			static $module = array();
-			if(!$key) return $module;
+			if(!$key) return $module ?: null;
 			if($value === null){
 				return isset($module[$key]) ? $module[$key] : null;
 			}else{
@@ -871,13 +871,13 @@ function register_module_functions($module = ''){
 		function the_'.$module.'($key = "", $value = null){
 			static $result = array();
 			if(is_assoc($key)){
-				return $result = array_merge($result, $key);
+				return ($result = array_merge($result, $key)) ?: null;
 			}else if($key && $value !== null){
 				return $result[$key] = $value;
 			}else if($key === null){
-				return $result = array();
+				return ($result = array()) ?: null;
 			}
-			if(!$key) return $result;
+			if(!$key) return $result ?: null;
 			else if(isset($result[$key])) return $result[$key];
 			else if(strpos($key, "'.$module.'_") !== 0){
 				$key = "'.$module.'_".$key;
@@ -903,7 +903,7 @@ function register_module_functions($module = ''){
 				if(!$_result["success"]) return null;
 				else $result = $_result["data"];
 			}
-			if(!$key || is_array($key)) return $result;
+			if(!$key || is_array($key)) return $result ?: null;
 			else if(isset($result[$key])) return $result[$key];
 			else if(strpos($key, "'.$module.'_") !== 0){
 				$key = "'.$module.'_".$key;
@@ -925,7 +925,7 @@ function register_module_functions($module = ''){
 				if(!function_exists("'.$func.'")){
 					function '.$func.'($key = ""){
 						$result = the_'.$module.'("'.$keys[$i].'");
-						if(!$key) return $result;
+						if(!$key) return $result ?: null;
 						else if(isset($result[$key])) return $result[$key];
 						else if(strpos($key, "'.$module.'_") !== 0){
 							$key = "'.$module.'_".$key;
@@ -951,7 +951,7 @@ function register_module_functions($module = ''){
 							if(!$_result["success"]) return null;
 							else $result = $_result["data"];
 						}
-						if(!$key) return $result;
+						if(!$key) return $result ?: null;
 						else if(isset($result[$key])) return $result[$key];
 						else if(strpos($key, "'.$module.'_") !== 0){
 							$key = "'.$module.'_".$key;
@@ -977,7 +977,7 @@ function register_module_functions($module = ''){
 								if(isset($_result[$k])) $result[$k] = $_result[$k];
 							}
 						}
-						if(!$key) return $result;
+						if(!$key) return $result ?: null;
 						else if(isset($result[$key])) return $result[$key];
 						else if(strpos($key, "'.$_table.'_") !== 0){
 							$key = "'.$_table.'_".$key;

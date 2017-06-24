@@ -247,17 +247,17 @@ if(is_agent()){
 		set_content_type('application/json'); //设置文档类型为 json
 		exit(json_encode($data)); //输出 JSON 结果
 	}elseif(__SCRIPT__ == 'index.php'){ /** 载入模板文件 */
-		do_hooks('mod.template.load'); //在载入模板前执行挂钩回调函数
 		display:
-		//错误处理
-		if(is_403()) report_403();
-		elseif(is_404()) report_404();
-		elseif(is_500()) report_500();
 		/** 配置模板引擎 */
 		template::$rootDir = __ROOT__;
 		template::$rootDirURL = site_url();
 		template::$saveDir = __ROOT__.config('mod.template.compiler.savePath');
 		template::$extraTags = config('mod.template.compiler.extraTags');
+		do_hooks('mod.template.load'); //在载入模板前执行挂钩回调函数
+		//错误处理
+		if(is_403()) report_403();
+		elseif(is_404()) report_404();
+		elseif(is_500()) report_500();
 		//载入模板
 		if(!config('mod.template.compiler.enable')){
 			include_once display_file(); //直接载入展示文件

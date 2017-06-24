@@ -20,6 +20,9 @@ if(!defined('STDOUT')) define('STDOUT', fopen('php://stdout','w'));
 if(!defined('STDERR')) define('STDERR', fopen('php://stderr','w'));
 if(__SCRIPT__ == 'mod/common/init.php') return false;
 
+ini_set('default_charset', 'UTF-8'); //设置默认脚本编码
+ini_set('user_agent', 'ModPHP/'.MOD_VERSION); //设置 PHP 远程请求客户端
+
 //自动加载类文件
 spl_autoload_register(function($class){
 	$class1 = strtolower($class);
@@ -42,7 +45,6 @@ $NSInstalled = config('mod.installed');
 $NSDatabase = database();
 
 date_default_timezone_set(config('mod.timezone')); //设置默认时区
-ini_set('user_agent', 'ModPHP/'.MOD_VERSION); //设置 PHP 远程请求客户端
 if(is_browser()){ //开/关调试模式
 	ini_set('display_errors', config('mod.debug'));
 	ini_set('display_startup_errors', config('mod.debug'));
@@ -162,8 +164,6 @@ function init(){
 	/** 加载自动恢复程序 */
 	include_once __ROOT__.'mod/common/recover.php';
 
-	conv_request_vars(); //转换表单请求参数
-
 	/** 系统初始化接口 */
 	$init = array(
 		'__DISPLAY__' => null //false 表示展示 404 页面，null 无操作
@@ -237,6 +237,7 @@ function init(){
 if(is_agent()){
 	if(__SCRIPT__ == 'mod.php'){ //通过 URL 传参的方式执行类方法
 		if(is_403() || is_404() || is_500()) goto display; //HTTP 错误跳转到显示页面
+		conv_request_vars(); //转换表单请求参数
 		$reqMd = $_SERVER['REQUEST_METHOD'];
 		$act = $_GET['act'];
 		if(!is_get() && !is_post()) $reqMd = 'REQUEST';
@@ -246,17 +247,17 @@ if(is_agent()){
 		set_content_type('application/json'); //设置文档类型为 json
 		exit(json_encode($data)); //输出 JSON 结果
 	}elseif(__SCRIPT__ == 'index.php'){ /** 载入模板文件 */
+		do_hooks('mod.template.load'); //在载入模板前执行挂钩回调函数
 		display:
+		//错误处理
+		if(is_403()) report_403();
+		elseif(is_404()) report_404();
+		elseif(is_500()) report_500();
 		/** 配置模板引擎 */
 		template::$rootDir = __ROOT__;
 		template::$rootDirURL = site_url();
 		template::$saveDir = __ROOT__.config('mod.template.compiler.savePath');
 		template::$extraTags = config('mod.template.compiler.extraTags');
-		do_hooks('mod.template.load'); //在载入模板前执行挂钩回调函数
-		//错误处理
-		if(is_403()) report_403();
-		elseif(is_404()) report_404();
-		elseif(is_500()) report_500();
 		//载入模板
 		if(!config('mod.template.compiler.enable')){
 			include_once display_file(); //直接载入展示文件

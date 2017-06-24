@@ -7,7 +7,9 @@ final class category extends mod{
 	/**
 	 * getTree() 获取分类目录树形结构数据
 	 * @static
-	 * @param  array  $arg  [可选]请求参数
+	 * @param  array  $arg  [可选]请求参数，可以提供下面这些字段中的一个：
+	 *                      [category_id] => 目录 ID
+	 *                      [category_parent] => 父目录 ID
 	 * @return array        分类目录结构
 	 */
 	static function getTree($arg = array()){
@@ -17,8 +19,10 @@ final class category extends mod{
 			);
 		$arg = is_array($arg) ? array_merge($default, $arg) : $default;
 		do_hooks('category.get.before', $arg); //执行回调函数
-		if($arg['category_id']) $where['category_id'] = $arg['category_id'];
-		else $where['category_parent'] = $arg['category_parent'];
+		if($arg['category_id']) //通过 ID 查询
+			$where['category_id'] = $arg['category_id'];
+		else //通过父目录 ID 查询
+			$where['category_parent'] = $arg['category_parent'];
 		$categories = array();
 		$result = database::open(0)->select('category', '*', $where, 0); //从数据库获取数据
 		while ($result && $category = $result->fetch()) { //迭代获取数据

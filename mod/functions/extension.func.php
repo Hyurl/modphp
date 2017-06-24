@@ -272,7 +272,7 @@ function zip_extract($file, $path){
 /**
  * rand_str() 获取随机字符串
  * @param  integer $len   [可选]字符串长度，默认 4
- * @param  string  $chars [可选]可能出现的字符串
+ * @param  string  $chars [可选]可能出现的字符序列
  * @return string         随机的字符串
  */
 function rand_str($len = 4, $chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'){
@@ -337,7 +337,7 @@ function export($var, $path = ''){
 function function_alias($original, $alias){
 	if(!function_exists($original) || function_exists($alias)) return false;
 	$code = 'function '.$alias.'(){return call_user_func_array("'.$original.'", func_get_args());}';
-	eval($code); //evaluate the code and define alias function 
+	eval($code); //运行代码创建函数
 	return true;
 }
 
@@ -556,15 +556,14 @@ function redirect($url, $code = 302, $time = 0, $msg = ''){
 /**
  * set_query_string() 设置 URL 查询字符串，并重新加载页面
  * @param  string|array $key   参数名，也可设置为关联数组同时设置多个参数
- * @param  string       $value 参数值
+ * @param  string       $value 参数值，设置为 null 或 false 则清除该参数
  */
 function set_query_string($key, $value){
 	if(!is_array($key)) $key = array($key => $value);
 	foreach ($key as $k => $v){
-		if($v === null){
+		if($v === null || $v === false){
 			unset($_GET[$k]); //删除参数
 		}else{
-			if($v === false) $v = 'false'; //将 false 当作 'false'
 			$_GET[$k] = $v; //设置参数
 		}
 	}
@@ -592,9 +591,9 @@ function set_content_type($type, $encoding = 'UTF-8'){
 function url(){
 	if(!is_agent()) return false;
 	if(is_proxy()) return $_SERVER['REQUEST_URI']; //代理地址
-	$protocol = strstr(strtolower($_SERVER['SERVER_PROTOCOL']), '/', true); //often be http
-	$protocol .= is_ssl() ? 's' : ''; //if is ssl, use https instead
-	return $protocol.'://'.urldecode($_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
+	$protocol = strstr(strtolower($_SERVER['SERVER_PROTOCOL']), '/', true);
+	$protocol .= is_ssl() ? 's' : ''; //SSL 使用 https
+	return $protocol.'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
 }
 
 /**
@@ -945,8 +944,8 @@ endif;
 
 /** 
  * parse_cli_param() 解析 PHP 运行于 CLI 模式时传入的参数，支持的格式包括 --key value，-k value 以及 value
- * @param  array  $argv 通常为 $_SERVER['agrv']
- * @return array        包含键值对 file=>当前运行文件, param=>(array)参数列表
+ * @param  array $argv 通常为 $_SERVER['agrv']
+ * @return array       包含键值对 file=>当前运行文件, param=>(array)参数列表
  */
 function parse_cli_param(array $argv, $i = 0, $isArg = false, $args = array()){
 	if(!$argv) return false;

@@ -12,7 +12,7 @@
 return array(
 	'mod' => array( //系统设置
 		'installed' => false, //是否已安装
-		'language' => 'zh-CN', //语言
+		'language' => 'en-US', //语言
 		'timezone' => 'Asia/Shanghai', //时区
 		'escapeTags' => '<script><style><iframe>', //过滤上传数据中的 HTML 标签
 		'pathinfoMode' => false, //如果开启, create_url() 创建的路径将包含模板入口文件

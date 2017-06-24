@@ -114,8 +114,9 @@ final class file extends mod{
 	/**
 	 * upload() 上传文件
 	 * @static
-	 * @param  array  $arg [可选]请求参数，支持使用 Data URI scheme 来传送使用 base64 编码的文件，
-	 *                     但需要将其保存在 [file] 参数中，可以设置为数组同时传送多个文件
+	 * @param  array  $arg [可选]请求参数，可以包含所有的数据表字段，支持使用
+	 *                     Data URI scheme 来传送使用 base64 编码的文件，但需要将
+	 *                     其保存在 [file] 参数中，可以设置为数组同时传送多个文件
 	 * @return array       刚上传的文件或者错误信息(错误信息为包含原始文件信息的数组)
 	 */
 	static function upload(array $arg = array()){
@@ -213,7 +214,9 @@ final class file extends mod{
 	/**
 	 * delete() 删除文件
 	 * @static
-	 * @param  array  $arg [可选]请求参数
+	 * @param  array  $arg [可选]请求参数，可以包含所有的数据表字段，但应该提供下面这些字段中的一个：
+	 *                     [file_id] => 文件 ID，
+	 *                     [file_src] => 文件保存地址(系统未安装时必须提供)
 	 * @return array       操作结果
 	 */
 	static function delete($arg = array()){

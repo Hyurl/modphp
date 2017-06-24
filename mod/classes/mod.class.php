@@ -413,7 +413,8 @@ class mod{
 			$id = !empty($arg[$primkey]) ? $arg[$primkey] : 0;
 			static::handler($arg, 'update');
 			if(error()) return error();
-			if($arg && database::open(0)->update($tb, $arg, "`$primkey` = ".database::quote($id))){ //更新数据库记录
+			database::open(0);
+			if($arg && database::update($tb, $arg, "`$primkey` = ".database::quote($id))){ //更新数据库记录
 				$result = static::get(array($primkey=>$id)); //获取更新后的记录
 				do_hooks($tb.'.update.complete', $result['data']); //执行模块更新后挂钩函数
 				return error() ?: $result;
@@ -440,7 +441,7 @@ class mod{
 		database::open(0);
 		$tables = explode(',', static::tableRelated($tb)); //获取从表
 		for($i=0; $i<count($tables); $i++){ //依次删除从表中的记录
-			if(!database::delete($tables[$i], "`$primkey` = ".database::quote($id) && $i == 0))
+			if(!database::delete($tables[$i], "`$primkey` = ".database::quote($id)) && $i == 0)
 				return error(lang('mod.deleteFailed', lang($tb.'.label')));
 		}
 		do_hooks($tb.'.delete.complete', $arg); //执行模块删除记录完成后挂钩函数
@@ -579,7 +580,7 @@ class mod{
 			$b[] = '('.implode(' AND ', $a[$i]).')'; //组合 AND 语句
 		}
 		$_where = '('.implode(' OR ', $b).')'; //组合 OR 语句
-		$_where = $where = $where ? $_where.' AND '.database::open(0)->parseWhere($where) : $_where; //解析并组合 where 条件
+		$_where = $where = $where ? $_where.' AND '.database::parseWhere($where) : $_where; //解析并组合 where 条件
 		$_limit = $arg['limit'];
 		$tables = static::relateTables($tb);
 		$__where = static::relateWhere($tables);
@@ -590,7 +591,7 @@ class mod{
 	
 	/** fetchMulti() 获取多记录 */
 	final protected static function fetchMulti($tables, $where, $limit, $orderby, $extra, $tb, $arg, $_where, $_limit){
-		$result = database::open(0)->select($tables, '*', $where, $limit, $orderby); //获取符合条件的记录
+		$result = database::select($tables, '*', $where, $limit, $orderby); //获取符合条件的记录
 		$data = array();
 		while($result && $single = $result->fetch()){
 			static::handler($single, 'get');

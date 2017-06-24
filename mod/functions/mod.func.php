@@ -21,10 +21,17 @@ function conv_request_vars(&$input = null){
 		elseif($v === 'undefined' || $v === 'null') $v = null; //将 'undefined' 和 'null' 转换为 null
 		elseif(is_numeric($v) && (int)$v < 2147483647) $v = (int)$v; //为确保平台兼容性，数字最大值不应超过 2147483646
 		//针对配置项的转换，将一部分 _ 转换为 .
-		$_k = "['".str_replace('_', "']['", $k)."']";
-		if(strpos($k, '_') && ((is_client_call('mod', 'install') && strpos($k, 'user_') !== 0) || is_client_call('mod', 'config')) && eval('return isset($config'.$_k.');')){
-			unset($input[$k]);
-			$k = str_replace('_', '.', $k);
+		if(is_client_call('mod')){
+			if(strpos($k, "'") !== false){
+				unset($input[$k]); //过滤非法参数
+				continue;
+			}elseif((is_client_call('', 'install') && strpos($k, 'user_') !== 0) || is_client_call('', 'config')){
+				$_k = "['".str_replace('_', "']['", $k)."']";
+				if(strpos($k, '_') && eval('return isset($config'.$_k.');')){
+					unset($input[$k]);
+					$k = str_replace('_', '.', $k);
+				}
+			}
 		}
 		$input[$k] = $v;
 	}
@@ -627,8 +634,11 @@ function display_file($url = '', $set = false){
 		if(strapos($url, __ROOT__) === 0)
 			$url = substr($url, strlen(__ROOT__)); //获取文件相对路径
 		return $file = $url;
-	}elseif(!$url && (__SCRIPT__ == 'mod.php' || is_socket()) && !empty($_SERVER['HTTP_REFERER'])){
-		$url = $_SERVER['HTTP_REFERER']; //使用来路页面作为需要解析的地址
+	}elseif(!$url && (__SCRIPT__ == 'mod.php' || is_socket())){
+		if(!empty($_SERVER['HTTP_REFERER']))
+			$url = $_SERVER['HTTP_REFERER']; //使用来路页面作为需要解析的地址
+		else
+			return $file = __SCRIPT__;
 	}
 	$url = $url ?: url();
 	if(!$url) return false;

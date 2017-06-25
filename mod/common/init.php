@@ -26,7 +26,7 @@ ini_set('user_agent', 'ModPHP/'.MOD_VERSION); //设置 PHP 远程请求客户端
 //自动加载类文件
 spl_autoload_register(function($class){
 	$class1 = strtolower($class);
-	foreach (array('mod', 'user') as $path) {
+	foreach (array('user', 'mod') as $path) {
 		if(is_file($file = __ROOT__."$path/classes/$class1.class.php")){
 			include $file; //按小写类名称引入
 			break;
@@ -98,13 +98,14 @@ $NSPreInit = function() use($NSInstalled){
 		$url = parse_url(url());
 		if(isset($url['query']) && preg_match('/[_0-9a-zA-Z]+::.*/', $url['query'])){ //形式：obj::act|arg1:value1[|...]
 			array_shift($_GET);
-			$arg = explode('|', $url['query']);
+			$delimiter = strpos($url['query'], '|') ? '|' : '&'; //分隔符
+			$arg = explode($delimiter, $url['query']);
 			$arg[0] = explode('::', $arg[0]);
 			$_GET['obj'] = $arg[0][0];
 			$_GET['act'] = $arg[0][1];
 			$arg = array_slice($arg, 1);
 			foreach ($arg as $param) {
-				$sep = strpos($param, ':') ? ':' : '=';
+				$sep = strpos($param, ':') ? ':' : '='; //分隔符
 				$param = explode($sep, $param);
 				$_GET = array_merge($_GET, array($param[0] => @$param[1]));
 			}

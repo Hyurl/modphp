@@ -22,14 +22,15 @@ class mod{
 
 	/**
 	 * relateTables() 自动将主表与从表的表名合并为字符串
-	 * @param  string $table 主表表名
 	 * @return string        包含多个表名的字符串，各表名之间以 , 分隔，第一个表名为主表
 	 */
-	final protected static function relateTables($table){
-		$tables = '';
+	final protected static function relateTables(){
+		static $tables = '';
+		if($tables) return $tables;
 		$database = database();
-		foreach(database($table) as $key){
+		foreach(database(static::TABLE) as $key){
 			if(!$database) break;
+			elseif($key == static::PRIMKEY) continue;
 			foreach($database as $k => $v){
 				if(isset($v[$key]) && stripos($v[$key], 'PRIMARY KEY')){
 					$tables .= ','.$k;
@@ -37,27 +38,27 @@ class mod{
 				}
 			}
 		}
-		return substr($tables, 1);
+		return $tables = static::TABLE.$tables;
 	}
 
 	/**
 	 * tableRelated() 自动将从表和主表的表名合并为字符串
-	 * @param  string $table 从表表名
 	 * @return string        包含多个表名的字符串，各表名之间以 , 分隔，第一个表名为从表
 	 */
-	final protected static function tableRelated($table){
-		$tables = '';
-		foreach(database($table, true) as $key => $value){
+	final protected static function tableRelated(){
+		static $tables = '';
+		if($tables) return $tables;
+		foreach(database(static::TABLE, true) as $key => $value){
 			if(stripos($value, 'PRIMARY KEY')){
 				foreach(database() as $k => $v){
-					if(isset($v[$key]) && $k != $table){
+					if(isset($v[$key]) && $k != static::TABLE){
 						$tables .= ','.$k;
 					}
 				}
 				break;
 			}
 		}
-		return $table.$tables;
+		return $tables = static::TABLE.$tables;
 	}
 
 	/** 
@@ -135,7 +136,7 @@ class mod{
 	final protected static function dataSerializer(&$arg = array(), $act = ''){
 		$keys = array();
 		if($act == 'get'){ //获取操作时需要反序列化所有关联表的字段
-			$tables = explode(',', static::relateTables(static::TABLE));
+			$tables = explode(',', static::relateTables());
 			foreach($tables as $table){
 				if($_keys = config($table.'.keys.serialize')){
 					$keys = array_merge($keys, explode('|', str_replace(' ', '', $_keys))); //需要反序列化的字段
@@ -438,7 +439,7 @@ class mod{
 		static::handler($arg, 'delete');
 		if(error()) return error();
 		database::open(0);
-		$tables = explode(',', static::tableRelated($tb)); //获取从表
+		$tables = explode(',', static::tableRelated()); //获取从表
 		for($i=0; $i<count($tables); $i++){ //依次删除从表中的记录
 			if(!database::delete($tables[$i], "`$primkey` = ".database::quote($id)) && $i == 0)
 				return error(lang('mod.deleteFailed', lang($tb.'.label')));
@@ -453,11 +454,14 @@ class mod{
 	 * @param  array  $arg 请求参数，可以包含除了外键外的所有数据表字段，但应提供具有唯一性的字段
 	 * @return array       请求的记录或错误
 	 */
-	final static function get(array $arg){
+	static function get(array $arg){
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
+		$extables = array_slice(explode(',', static::relateTables()), 1); //外表
 		foreach($arg as $k => $v){
-			if(!in_array($k, database($tb)) || strpos($k, $tb.'_') !== 0) unset($arg[$k]); //删除无效参数
+			$table = strstr($k, '_', true);
+			if(!in_array($k, database($tb)) || ($table && $extables && in_array($table, $extables)))
+				unset($arg[$k]); //删除无效参数
 		}
 		if(!$arg) return error(lang('mod.missingArguments'));
 		$result = static::getMulti(array_merge($arg, array('limit'=>1))); //通过获取多记录的方法获取一条记录
@@ -480,7 +484,7 @@ class mod{
 	 *                      [page] => 获取页码，默认 1
 	 * @return array        符合条件的记录或错误
 	 */
-	final static function getMulti(array $arg = array()){
+	static function getMulti(array $arg = array()){
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
 		$default = array(
@@ -512,7 +516,7 @@ class mod{
 		}
 		$_where = $where;
 		$_limit = $arg['limit'];
-		$tables = static::relateTables($tb); //获取从表
+		$tables = static::relateTables(); //获取从表
 		$where = static::relateWhere($tables, $where); //组合从表的查询条件
 		$limit = $arg['limit'] ? $arg['limit']*($arg['page']-1).",".$arg['limit'] : 0; //limit 条件
 		return static::fetchMulti($tables, $where, $limit, $orderby, array(), $tb, $arg, $_where, $_limit);
@@ -529,7 +533,7 @@ class mod{
 	 *                      [page] => 获取页码，默认 1
 	 * @return array        请求结果或错误
 	 */
-	final static function search(array $arg){
+	static function search(array $arg){
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
 		$default = array(
@@ -581,7 +585,7 @@ class mod{
 		$_where = '('.implode(' OR ', $b).')'; //组合 OR 语句
 		$_where = $where = $where ? $_where.' AND '.database::parseWhere($where) : $_where; //解析并组合 where 条件
 		$_limit = $arg['limit'];
-		$tables = static::relateTables($tb);
+		$tables = static::relateTables();
 		$__where = static::relateWhere($tables);
 		if($__where) $where .= ' AND '.database::parseWhere($__where);
 		$limit = $arg['limit'] ? $arg['limit']*($arg['page']-1).",".$arg['limit'] : 0; //limit 条件
@@ -617,7 +621,7 @@ class mod{
 	 *                      [sequence] => 排序方式, asc 升序(默认)，desc 降序
 	 * @return array        请求的记录或错误
 	 */
-	final static function getPrev(array $arg, $sign = '>='){
+	static function getPrev(array $arg, $sign = '>='){
 		$tb = static::TABLE;
 		$primkey = static::PRIMKEY;
 		if(!$tb) return error(lang('mod.methodDenied', $sign == '>=' ? __method__ : 'getNext'));
@@ -647,7 +651,7 @@ class mod{
 			}
 		}
 		if(!isset($where)) $where = array();
-		$tables = static::relateTables($tb);
+		$tables = static::relateTables();
 		$where = static::relateWhere($tables, $where) ?: 1;
 		$result = database::open(0)->select($tables, '*', $where, 1, $orderby)->fetch();
 		if(!$result || eval('return '.$result[$primkey]." $sign {$id};")) //获取记录的 ID >= 传入的 ID 都表示没有获取到
@@ -665,7 +669,7 @@ class mod{
 	 *                      [sequence] => 排序方式, asc 升序(默认)，desc 降序
 	 * @return array        请求的记录或错误
 	 */
-	final static function getNext(array $arg){
+	static function getNext(array $arg){
 		return static::getPrev($arg, '<='); //调用获取上一记录的方法，只将排序反转
 	}
 
@@ -683,7 +687,7 @@ class mod{
 		$count = 0;
 		$data = array();
 		$invalidId = array();
-		$tables = explode(',', static::relateTables($tb));
+		$tables = explode(',', static::relateTables());
 		while($result && $single = $result->fetch()){
 			for($i=1; $i<count($tables); $i++){
 				$table = database($tables[$i]); //从表结构

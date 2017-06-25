@@ -1074,7 +1074,7 @@ function is_console(){
  * @param  array  $config     配置数组
  * @param  string $prefix     [可选]前缀
  * @param  string $delimiter  [可选]分隔符，默认 .
- * @param  string $bottomOnly [可选]只获取最底层配置，默认 false
+ * @param  bool   $bottomOnly [可选]只获取最底层配置，默认 false
  * @return array              一个包含所有传入配置的点语法列表的索引数组
  */
 function config2list(array $config, $prefix = '', $delimiter = '.', $bottomOnly = false){

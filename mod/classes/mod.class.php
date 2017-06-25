@@ -450,14 +450,14 @@ class mod{
 	/**
 	 * get() 通用的获取单条记录方式
 	 * @static
-	 * @param  array  $arg 请求参数，可以包含所有的数据表字段，但应提供具有唯一性的字段
+	 * @param  array  $arg 请求参数，可以包含除了外键外的所有数据表字段，但应提供具有唯一性的字段
 	 * @return array       请求的记录或错误
 	 */
 	final static function get(array $arg){
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
 		foreach($arg as $k => $v){
-			if(!in_array($k, database($tb))) unset($arg[$k]); //删除无效参数
+			if(!in_array($k, database($tb)) || strpos($k, $tb.'_') !== 0) unset($arg[$k]); //删除无效参数
 		}
 		if(!$arg) return error(lang('mod.missingArguments'));
 		$result = static::getMulti(array_merge($arg, array('limit'=>1))); //通过获取多记录的方法获取一条记录

@@ -1236,5 +1236,5 @@ function is_robot($spider = ''){
 	if($spider)
 		return is_agent($spider);
 	else
-		return preg_match("/Bot|Crawl|Spider|slurp|sohu-search|lycos|robozilla/", $_SERVER['HTTP_USER_AGENT']);
+		return preg_match("/bot|spider|crawl|slurp|sohu-search|lycos|robozilla/i", $_SERVER['HTTP_USER_AGENT']);
 }

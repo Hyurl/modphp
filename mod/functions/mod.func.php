@@ -1,10 +1,11 @@
 <?php
 /** ModPHP 核心函数 */
 /** conv_request_vars() 转换表单提交的变量 */
-function conv_request_vars(&$input = null){
+function conv_request_vars(&$input = null, $config = array()){
 	if($input === null){
-		conv_request_vars($_GET); //转换 $_GET
-		conv_request_vars($_POST); //转换 $_POST
+		$config = config2list(config(), '', '_', true);
+		conv_request_vars($_GET, $config); //转换 $_GET
+		conv_request_vars($_POST, $config); //转换 $_POST
 		$reqOd = array('G'=>'_GET', 'P'=>'_POST', 'C'=>'_COOKIE');
 		$_REQUEST = array();
 		foreach (str_split(ini_get('request_order')) as $v) {
@@ -13,25 +14,16 @@ function conv_request_vars(&$input = null){
 		}
 		return null;
 	}
-	$config = config();
 	foreach ($input as $k => $v) {
-		if(is_array($v)) conv_request_vars($v); //递归转换
+		if(is_array($v)) conv_request_vars($v, $config); //递归转换
 		elseif($v === 'true') $v = true; //将 'true' 转换为 true
 		elseif($v === 'false') $v = false; //将 'false' 转换为 false
 		elseif($v === 'undefined' || $v === 'null') $v = null; //将 'undefined' 和 'null' 转换为 null
 		elseif(is_numeric($v) && (int)$v < 2147483647) $v = (int)$v; //为确保平台兼容性，数字最大值不应超过 2147483646
-		//针对配置项的转换，将一部分 _ 转换为 .
-		if(is_client_call('mod')){
-			if(strpos($k, "'") !== false){
-				unset($input[$k]); //过滤非法参数
-				continue;
-			}elseif((is_client_call('', 'install') && strpos($k, 'user_') !== 0) || is_client_call('', 'config')){
-				$_k = "['".str_replace('_', "']['", $k)."']";
-				if(strpos($k, '_') && eval('return isset($config'.$_k.');')){
-					unset($input[$k]);
-					$k = str_replace('_', '.', $k);
-				}
-			}
+		//针对配置项，将 _ 转换为 .
+		if(strpos($k, '_') && (is_client_call('mod', 'install') || is_client_call('mod', 'config')) && in_array($k, $config)){
+			unset($input[$k]);
+			$k = str_replace('_', '.', $k);
 		}
 		$input[$k] = $v;
 	}
@@ -1083,4 +1075,27 @@ function strapos($str, $find, $start = 0){
 function is_console(){
 	$files = get_included_files();
 	return PHP_SAPI == 'cli' && ((__SCRIPT__ == 'mod.php' && !isset($_SERVER['argv'][1])) || (is_socket() && in_array(realpath(__ROOT__.'mod.php'), $files)));
+}
+
+/**
+ * config2list() 获取配置的点语法列表，也可以用来获取语言、Api Hook 等等。
+ * @param  array  $config     配置数组
+ * @param  string $prefix     [可选]前缀
+ * @param  string $delimiter  [可选]分隔符，默认 .
+ * @param  string $bottomOnly [可选]只获取最底层配置，默认 false
+ * @return array              一个包含所有传入配置的点语法列表的索引数组
+ */
+function config2list(array $config, $prefix = '', $delimiter = '.', $bottomOnly = false){
+	$paths = array();
+	if($prefix && $prefix[strlen($prefix)-1] != $delimiter) $prefix .= $delimiter;
+	foreach ($config as $k => $v){
+		if(is_array($v)){
+			if(!$bottomOnly)
+				$paths[] = $prefix.$k;
+			$paths = array_merge($paths, config2list($v, $prefix.$k, $delimiter, $bottomOnly)); //递归获取
+		}else{
+			$paths[] = $prefix.$k;
+		}
+	}
+	return $paths;
 }

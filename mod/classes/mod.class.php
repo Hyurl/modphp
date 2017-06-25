@@ -257,10 +257,9 @@ class mod{
 	 * @return null
 	 */
 	final private static function configFilter(&$arg = array()){
-		$config = config();
+		$config = config2list(config(), '', '.', true);
 		foreach($arg as $k => $v){
-			$_k = "['".str_replace('.', "']['", $k)."']";
-			if(eval('return !isset($config'.$_k.');')) unset($arg[$k]);
+			if(!in_array($k, $config)) unset($arg[$k]);
 		}
 	}
 

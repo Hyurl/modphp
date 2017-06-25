@@ -81,15 +81,7 @@ function hooks($api = '', $value = ''){
 		return null;
 	}else{
 		eval('$hooks'.$_api.' = null; $_hook = &$hooks'.$_api.';'); //通过引用的方式来修改原变量
-		$_hook = $value; //给 $_hook 赋值就相当于给 $hook 赋值
-		$module = strstr($api, '.', true);
-		$func = '_'.$module;
-		if(function_exists($func)){
-			$__hook = $func('hooks') ?: array();
-			$__hook = array_merge($__hook, $hooks[$module]);
-			$func('hooks', $__hook); //更新模块的挂钩信息
-		}
-		return $_hook;
+		return $_hook = $value; //给 $_hook 赋值就相当于给 $hook 赋值
 	}
 }
 

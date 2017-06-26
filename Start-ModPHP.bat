@@ -1,7 +1,7 @@
 @echo off
 :top
 cls
-title ModPHP
+title %~f0
 echo 1. Start Console
 echo 2. Start HTTP Server
 echo 3. Start Socket Server

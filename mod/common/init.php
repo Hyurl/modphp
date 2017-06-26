@@ -3,7 +3,6 @@
  * 系统初始化程序，加载系统运行所需的各类文件及配置
  */
 error_reporting(E_ALL ^ E_STRICT); //抑制严格性错误
-set_time_limit(0); //设置程序永不超时
 if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 环境
 	exit('PHP version lower 5.3.0, unable to start ModPHP.');
 $NSFile = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));

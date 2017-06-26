@@ -1,4 +1,5 @@
 <?php
+set_time_limit(0); //设置脚本永不超时
 require_once('mod/common/init.php');
 /**
  * SocketServer 说明：

@@ -105,15 +105,21 @@ SocketServer::on('open', function($event){ //绑定连接事件
 		$SOCKET_INFO[$srcId]['session_id'] = session_id();
 	if(!$SOCKET_INFO[$srcId]['user_id'])
 		$SOCKET_INFO[$srcId]['user_id'] = $installed ? me_id() : 0;
-	if(($obj == 'mod' || is_subclass_of($obj, 'mod')) && (method_exists($obj, $act) || is_callable(hooks($obj.'.'.$act))) && !in_array($obj.'::'.strtolower($act), ${'DENIES'.__TIME__})){
+	if(is_403()){
+		report_403();
+	}elseif(is_404()){
+		report_404();
+	}elseif(is_500()){
+		report_500();
+	}elseif(($obj == 'mod' || is_subclass_of($obj, 'mod')) && (method_exists($obj, $act) || is_callable(hooks($obj.'.'.$act))) && !in_array($obj.'::'.strtolower($act), ${'DENIES'.__TIME__})){
 		$uid = $installed ? me_id() : 0;
 		sendResult:
 		if(!error()) do_hooks('mod.client.call', $data);
 		$result = error() ?: $obj::$act($data);
 		$result = array_merge($result, array('obj'=>$_GET['obj'], 'act'=>$_GET['act']));
+		do_hooks('mod.client.call', $result);
 		//调用类方法并将结果发送给客户端
 		SocketServer::send(@json_encode($result)); //发送 JSON 结果
-		do_hooks('mod.client.call', $result);
 		if($installed && $obj == 'user' && $result['success']){
 			if(!strcasecmp('login', $act)){ //登录操作
 				$uid = $result['data']['user_id'];

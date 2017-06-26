@@ -27,3 +27,28 @@ add_hook('mod.template.load', function(){
 	if(!strcasecmp(__ROOT__.display_file(), template_path('functions.php')))
 		report_403();
 });
+
+//输出运行信息
+if(config('mod.debug') === 2){
+	$NSGetRuntimeInfo = function(){
+		list($msec, $sec) = explode(' ', microtime());
+		return array(
+			'Time Usage'=>(round($sec+$msec - INIT_TIME, 3)).' s', //程序耗时
+			'Memory Usage'=>round((memory_get_usage() - INIT_MEMORY)/1024, 3).' KB', //内存占用
+			'Memory Peak'=>round((memory_get_peak_usage() - INIT_MEMORY)/1024, 3).' KB', //内存峰值
+			'Database Queries'=>database::set('queries'), //数据库查询次数
+			);
+	};
+	add_action('mod.template.load.complete.show_runtime_info', function() use($NSGetRuntimeInfo){
+		echo '<fieldset style="display: inline-block;padding-right: 40px;"><legend>Runtime Info</legend>';
+		foreach ($NSGetRuntimeInfo() as $key => $value) {
+			echo '<strong>'.$key.'</strong>: <em>'.$value.'</em><br/>';
+		}
+		echo '</fieldset>';
+	}, false);
+	add_action('mod.client.call.complete.show_runtime_info', function($result) use($NSGetRuntimeInfo){
+		$result['Runtime Info'] = $NSGetRuntimeInfo();
+		return $result;
+	}, false);
+	unset($NSGetRuntimeInfo);
+}

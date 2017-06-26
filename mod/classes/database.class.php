@@ -91,7 +91,8 @@ final class database{
 			'dsn'     => '', //自定义连接标识
 			'prefix'  => '', //默认表前缀
 			'debug'   => false, //调试模式
-			'options' => array() //其他选项
+			'options' => array(), //其他选项
+			'queries' => 0, //记录查询次数
 		   );
 		if(!isset($set[$name])) $set[$name] = $_set;
 		$_set = &$set[$name]; //引用当前连接的设置选项
@@ -102,12 +103,13 @@ final class database{
 		}else{
 			if(is_string($opt)) $opt = array($opt => $val);
 			foreach ($opt as $k => $v) {
-				$_set[$k] = $v;
 				if($k == 'dbname') self::select_db($v); //切换数据库
+				elseif($k == 'queries') continue;
 				elseif($k == 'dsn'){ //手动设置 dsn
 					$_set['type'] = strstr($v, ':', true);
 					self::$dsnSet[$name] = true; //固定 dsn，不再自动生成
 				}
+				$_set[$k] = $v;
 			}
 		}
 		if(empty(self::$dsnSet[$name])) $_set = array_merge($_set, self::generateDSN('', $_set['type'], $_set['host'], $_set['port'], $_set['dbname']));
@@ -277,6 +279,7 @@ final class database{
 		try{
 			$result = @$link->query($str); //尝试执行查询语句
 			$error = @$link->errorInfo();
+			self::$set[self::$name]['queries'] += 1; //更新总查询次数
 		}catch(PDOException $e){ //处理异常
 			$error = array('Error', $e->getCode() ?: 255, 'Error: '.$e->getMessage());
 			if(stripos($error[2], 'server has gone away')){

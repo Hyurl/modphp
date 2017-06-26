@@ -550,10 +550,10 @@ function import($file, $tag = '', $attr = ''){
 	}elseif($tag){ //其他通过 html 标签引入的文件，如 iframe 引入 html
 		echo '<'.$tag.' src="'.$url.'"'.$attr.($tag == 'img' || $tag == 'embed' ? ' />' : '></'.$tag.'>');
 	}else{ //其他直接引入到程序中的文件，如 php
-		${'file'.__TIME__} = $file;
+		${'FILE'.INIT_TIME} = $file;
 		unset($file, $tag, $attr, $url, $ext, $path);
 		extract($GLOBALS); //将全局变量暴露给引用的文件
-		return include ${'file'.__TIME__};
+		return include ${'FILE'.INIT_TIME};
 	}
 }
 
@@ -1090,4 +1090,35 @@ function config2list(array $config, $prefix = '', $delimiter = '.', $bottomOnly 
 		}
 	}
 	return $paths;
+}
+
+/**
+ * get_module_funcs() 获取自动创建的模块函数
+ * @param  string $module 模块名称
+ * @return array          由所有模块函数组成的数组
+ */
+function get_module_funcs($module){
+	$funcs = get_defined_functions();
+	$funcs = $funcs['user'];
+	$_funcs = array(
+		'_'.$module,
+		'get_'.$module,
+		'get_multi_'.$module,
+		'get_search_'.$module,
+		'the_'.$module,
+		'prev_'.$module,
+		'next_'.$module,
+		);
+	$keys = database($module);
+	foreach ($keys as $key) {
+		if(strpos($key, $module.'_') === 0){
+			$_funcs[] = $key;
+		}elseif($extable = get_table_by_primkey($key)){ //判断是否存在外表
+			$_funcs[] = $module.'_'.$extable;
+		}
+	}
+	foreach ($_funcs as $i => $func) {
+		if(!in_array($func, $funcs)) unset($_funcs[$i]); //去除不存在的函数名
+	}
+	return $_funcs;
 }

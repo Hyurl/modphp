@@ -2,16 +2,19 @@
 /**
  * 系统初始化程序，加载系统运行所需的各类文件及配置
  */
+define('INIT_MEMORY', memory_get_usage()); //初始内存占用
+list($NSmsec, $NSsec) = explode(' ', microtime());
+define('INIT_TIME', round($NSsec+$NSmsec, 3), true); //初始运行时间
 error_reporting(E_ALL ^ E_STRICT); //抑制严格性错误
 if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 环境
 	exit('PHP version lower 5.3.0, unable to start ModPHP.');
-$NSFile = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 
-/** 定义常量 MOD_VERSION, __TIME__, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '2.2.1'); //ModPHP 版本
-define('__TIME__', time(), true); //开始运行时间
+/** 定义常量 MOD_VERSION, __ROOT_, __SCRIPT__ */
+define('MOD_VERSION', '2.2.2'); //ModPHP 版本
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true); //网站根目录
+$NSFile = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 define('__SCRIPT__', substr($NSFile, strlen(__ROOT__)) ?: $NSFile, true); //执行脚本
+define('__TIME__', time(), true); //系统运行时间，不再建议使用，将在未来版本中删除
 
 /** 补全系统常量 */
 if(!defined('STDIN')) define('STDIN', fopen('php://stdin','r'));
@@ -140,7 +143,7 @@ $NSPreInit();
 foreach (glob(__ROOT__.'user/functions/*.php') as $NSFile) {
 	include_once $NSFile;
 }
-unset($NSInstalled, $NSDatabase, $NSBasename, $NSFile, $NSPreInit); //释放变量
+unset($NSInstalled, $NSDatabase, $NSBasename, $NSmsec, $NSsec, $NSFile, $NSPreInit); //释放变量
 
 /** 加载模板函数文件 */
 if(file_exists(template_path('functions.php'))) include_once template_path('functions.php');
@@ -148,8 +151,8 @@ if(file_exists(template_path('functions.php'))) include_once template_path('func
 init(); //执行系统初始化
 function init(){
 	/** 禁止客户端访问的方法列表 */
-	global ${'DENIES'.__TIME__};
-	${'DENIES'.__TIME__} = array(
+	global ${'DENIES'.INIT_TIME};
+	${'DENIES'.INIT_TIME} = array(
 		'file::open',
 		'file::prepend',
 		'file::append',
@@ -222,7 +225,7 @@ function init(){
 				$act = $_GET['act'];
 
 				//判断请求的操作是否合法
-				if($obj != 'mod' && !is_subclass_of($obj, 'mod') || (!method_exists($obj, $act) && !is_callable(hooks($obj.'.'.$act))) || in_array($obj.'::'.strtolower($act), ${'DENIES'.__TIME__})){
+				if($obj != 'mod' && !is_subclass_of($obj, 'mod') || (!method_exists($obj, $act) && !is_callable(hooks($obj.'.'.$act))) || in_array($obj.'::'.strtolower($act), ${'DENIES'.INIT_TIME})){
 					display_file($err403, true);
 				}
 			}else{
@@ -242,10 +245,11 @@ if(is_agent()){
 		$act = $_GET['act'];
 		if(!is_get() && !is_post()) $reqMd = 'REQUEST';
 		do_hooks('mod.client.call', ${'_'.$reqMd}); //在执行类方法前执行挂钩回调函数
-		$result = error() ?: $_GET['obj']::$act(${'_'.$reqMd});
-		$data  = array_merge($result, array('obj'=>$_GET['obj'], 'act'=>$act));
 		set_content_type('application/json'); //设置文档类型为 json
-		exit(json_encode($data)); //输出 JSON 结果
+		$result = error() ?: $_GET['obj']::$act(${'_'.$reqMd}); //执行类方法并获取结果
+		$result  = array_merge($result, array('obj'=>$_GET['obj'], 'act'=>$act));
+		do_hooks('mod.client.call.complete', $result); //在获取结果后执行回调函数
+		exit(json_encode($result)); //输出 JSON 结果
 	}elseif(__SCRIPT__ == 'index.php'){ /** 载入模板文件 */
 		display:
 		/** 配置模板引擎 */
@@ -262,10 +266,10 @@ if(is_agent()){
 		if(!config('mod.template.compiler.enable')){
 			include_once display_file(); //直接载入展示文件
 		}else{
-			${'FILE'.__TIME__} = template::$saveDir.substr(display_file(), 0, strrpos(display_file(), '.')).'.php';
+			${'FILE'.INIT_TIME} = template::$saveDir.substr(display_file(), 0, strrpos(display_file(), '.')).'.php';
 			//通过文件的修改日期来判断模板是否被修改，从而决定是否需要重新编译
-			if(config('mod.template.compiler.enable') != 2 && file_exists(${'FILE'.__TIME__}) && filemtime(display_file()) <= filemtime(${'FILE'.__TIME__})){
-				include_once ${'FILE'.__TIME__};
+			if(config('mod.template.compiler.enable') !== 2 && file_exists(${'FILE'.INIT_TIME}) && filemtime(display_file()) <= filemtime(${'FILE'.INIT_TIME})){
+				include_once ${'FILE'.INIT_TIME};
 			}else{
 				include_once template::compile(display_file()) ?: display_file();
 			}

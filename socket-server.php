@@ -113,6 +113,7 @@ SocketServer::on('open', function($event){ //绑定连接事件
 		$result = array_merge($result, array('obj'=>$_GET['obj'], 'act'=>$_GET['act']));
 		//调用类方法并将结果发送给客户端
 		SocketServer::send(@json_encode($result)); //发送 JSON 结果
+		do_hooks('mod.client.call', $result);
 		if($installed && $obj == 'user' && $result['success']){
 			if(!strcasecmp('login', $act)){ //登录操作
 				$uid = $result['data']['user_id'];

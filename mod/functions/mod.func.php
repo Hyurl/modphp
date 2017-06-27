@@ -643,6 +643,9 @@ function display_file($url = '', $set = false){
 	}elseif(strpos($uri, '://')){ //URL 地址不是本站地址
 		return $file = __SCRIPT__;
 	}
+	if(file_exists(__ROOT__.$uri)){ // URL 是一个实际的文件地址
+		return $file = $uri;
+	}
 	$isIndex = __SCRIPT__ == 'index.php'; //是否运行索引（模板入口）文件
 	$uri = rtrim($uri, '/');
 	$tpl = '';

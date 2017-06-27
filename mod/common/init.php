@@ -46,6 +46,7 @@ include_once __ROOT__.'mod/functions/mod.func.php';
 $NSInstalled = config('mod.installed');
 $NSDatabase = database();
 
+set_content_type('text/html'); //设置默认文档类型
 date_default_timezone_set(config('mod.timezone')); //设置默认时区
 if(is_browser()){ //开/关调试模式
 	ini_set('display_errors', config('mod.debug'));
@@ -176,7 +177,6 @@ function init(){
 
 	/** 解析客户端请求，获取展示页面 */
 	if(is_agent()){
-		set_content_type('text/html'); //设置文档类型
 		$tplPath = template_path('', false);
 		$errPage = config('site.errorPage');
 		$err403 = $tplPath.$errPage[403];

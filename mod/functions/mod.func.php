@@ -1097,10 +1097,17 @@ function config2list(array $config, $prefix = '', $delimiter = '.', $bottomOnly 
 
 /**
  * get_module_funcs() 获取自动创建的模块函数
- * @param  string $module 模块名称
+ * @param  string $module [可选]模块名称
  * @return array          由所有模块函数组成的数组
  */
-function get_module_funcs($module){
+function get_module_funcs($module = ''){
+	if(!$module){
+		$modules = database();
+		foreach ($modules as $key => &$value) {
+			$value = get_module_funcs($key);
+		}
+		return $modules;
+	}
 	$funcs = get_defined_functions();
 	$funcs = $funcs['user'];
 	$_funcs = array(

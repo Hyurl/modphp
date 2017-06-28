@@ -40,11 +40,13 @@ if(config('mod.debug') === 2){
 			);
 	};
 	add_action('mod.template.load.complete.show_runtime_info', function() use($NSGetRuntimeInfo){
-		echo '<fieldset style="display: inline-block;padding-right: 40px;"><legend>Runtime Info</legend>';
-		foreach ($NSGetRuntimeInfo() as $key => $value) {
-			echo '<strong>'.$key.'</strong>: <em>'.$value.'</em><br/>';
+		if(strpos(get_response_headers('Content-Type'), 'text/html') === 0){
+			echo '<fieldset style="display: inline-block;padding-right: 40px;"><legend>Runtime Info</legend>';
+			foreach ($NSGetRuntimeInfo() as $key => $value) {
+				echo '<strong>'.$key.'</strong>: <em>'.$value.'</em><br/>';
+			}
+			echo '</fieldset>';
 		}
-		echo '</fieldset>';
 	}, false);
 	add_action('mod.client.call.complete.show_runtime_info', function($result) use($NSGetRuntimeInfo){
 		$result['Runtime Info'] = $NSGetRuntimeInfo();

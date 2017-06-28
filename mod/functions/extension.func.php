@@ -523,11 +523,19 @@ function is_ssl(){
 }
 
 /**
- * is_proxy() 判断应用程序是否运行为代理服务器
+ * is_proxy_server() 判断应用程序是否运行为代理服务器
+ * @return boolean
+ */
+function is_proxy_server(){
+	return !empty($_SERVER['HTTP_PROXY_CONNECTION']) || stripos($_SERVER['REQUEST_URI'], 'http://') === 0 || stripos($_SERVER['REQUEST_URI'], 'https://') === 0;
+}
+
+/**
+ * is_proxy() 判断客户端是否通过代理服务器访问
  * @return boolean
  */
 function is_proxy(){
-	return !empty($_SERVER['HTTP_PROXY_CONNECTION']) || stripos($_SERVER['REQUEST_URI'], 'http://') === 0 || stripos($_SERVER['REQUEST_URI'], 'https://') === 0;
+	return !empty($_SERVER['HTTP_X_FORWARDED_FOR']) || !empty($_SERVER['HTTP_VIA']);
 }
 
 /**

@@ -39,7 +39,7 @@ function conv_request_vars(&$input = null, $config = array()){
 function load_config($file, $dir = ''){
 	$config = array();
 	$import = function($file){
-		$ext = pathinfo($file, PATHINFO_EXTENSION);
+		$ext = extname($file);
 		if($ext == 'ini') //载入 ini
 			return parse_ini_file($file);
 		elseif($ext == 'json') //载入 json
@@ -537,7 +537,7 @@ function import($file, $tag = '', $attr = ''){
 	}else{
 		$url = '';
 	}
-	$ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+	$ext = extname($file);
 	$tag = strtolower(trim($tag, '<>'));
 	$attr = $attr ? " $attr" : '';
 	if(!$url && $tag) return null;
@@ -656,7 +656,7 @@ function display_file($url = '', $set = false){
 	if(!$tpl)
 		return $file = $tplPath.config('site.errorPage.404'); //无模板则报告 404 错误
 	if($tpl != $tplPath.$home){ //URL 地址对应一个真实的文件
-		$ext = '.'.strtolower(pathinfo($tpl, PATHINFO_EXTENSION));
+		$ext = '.'.extname($tpl);
 		if($ext != '.'){
 			$cts = load_config('mime.ini'); //加载 Mime 类型配置
 			$mime = @$cts[$ext] ?: 'text/plain';

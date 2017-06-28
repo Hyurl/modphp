@@ -95,6 +95,7 @@ return array(
 			'acceptTypes' => 'jpg|jpeg|png|gif|bmp', //接受类型(后缀)
 			'maxSize' => 1024*2, //最大体积(单位 KB)
 			'imageSizes' => '64|96|128', //自动添加图像尺寸(宽度, 单位: px)
+			'keepName' => true, //保留原始文件名(文件名重复则自动添加 MD5 后缀)，false 则仅使用 MD5 保存
 			)
 		),
 	'category' => array( //分类目录模块设置

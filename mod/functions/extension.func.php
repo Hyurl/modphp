@@ -442,7 +442,7 @@ function is_empty_dir($dir){
  */
 function is_img($src, $strict = false){
 	if(!$strict || !function_exists('finfo_open')){
-		$ext = pathinfo($src, PATHINFO_EXTENSION);
+		$ext = strtolower(pathinfo($src, PATHINFO_EXTENSION));
 		return in_array($ext, array('jpg','jpeg','png','gif','bmp')); //compare extension name
 	}
 	$finfo = finfo_open(FILEINFO_MIME_TYPE);
@@ -1277,4 +1277,13 @@ function is_robot($spider = ''){
 		return is_agent($spider);
 	else
 		return preg_match("/bot|spider|crawl|slurp|sohu-search|lycos|robozilla/i", $_SERVER['HTTP_USER_AGENT']);
+}
+
+/**
+ * extname() 获取一个文件的扩展名(始终小写)
+ * @param  string $filename 指定文件名
+ * @return string           文件扩展名
+ */
+function extname($filename){
+	return strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 }

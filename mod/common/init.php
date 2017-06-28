@@ -168,6 +168,12 @@ function init(){
 	/** 加载自动恢复程序 */
 	include_once __ROOT__.'mod/common/recover.php';
 
+	/** 配置模板引擎 */
+	template::$rootDir = __ROOT__;
+	template::$rootDirURL = site_url();
+	template::$saveDir = __ROOT__.config('mod.template.compiler.savePath');
+	template::$extraTags = config('mod.template.compiler.extraTags');
+
 	/** 系统初始化接口 */
 	$init = array(
 		'__DISPLAY__' => null //false 表示展示 404 页面，null 无操作
@@ -252,11 +258,6 @@ if(is_agent()){
 		exit(json_encode($result)); //输出 JSON 结果
 	}elseif(__SCRIPT__ == 'index.php'){ /** 载入模板文件 */
 		display:
-		/** 配置模板引擎 */
-		template::$rootDir = __ROOT__;
-		template::$rootDirURL = site_url();
-		template::$saveDir = __ROOT__.config('mod.template.compiler.savePath');
-		template::$extraTags = config('mod.template.compiler.extraTags');
 		do_hooks('mod.template.load'); //在载入模板前执行挂钩回调函数
 		//错误处理
 		if(is_403()) report_403();

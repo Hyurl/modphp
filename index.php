@@ -9,6 +9,7 @@ if(PHP_SAPI == "cli-server"){
 	}elseif($file != __FILE__ && $file != __DIR__.DIRECTORY_SEPARATOR){
 		return false;
 	}
+	unset($dir, $file);
 }
 require_once("mod/common/init.php");
 /**

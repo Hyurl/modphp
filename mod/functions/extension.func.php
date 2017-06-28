@@ -895,6 +895,38 @@ function parse_header($str){
 }
 
 /**
+ * get_response_headers() 获取发送到客户端（或准备发送）的 HTTP 响应头信息
+ * @param  string $name [可选]指定头信息名称
+ * @return mixed        如果未设置 $name 参数，则返回所有头信息组成的关联数组；
+ *                      如果设置了 $name 参数，则返回指定的头信息，没有则返回 false
+ */
+function get_response_headers($name = ''){
+	$headers = parse_header(implode("\r\n", headers_list()));
+	return $name ? (isset($headers[$name]) ? $headers[$name] : false) : $headers;
+}
+
+/**
+ * get_request_headers() 获取全部 HTTP 请求头信息
+ * @param  string $name [可选]指定头信息名称
+ * @return mixed        如果未设置 $name 参数，则返回所有头信息组成的关联数组；
+ *                      如果设置了 $name 参数，则返回指定的头信息，没有则返回 false
+ */
+function get_request_headers($name = ''){
+	$headers = array();
+	foreach ($_SERVER as $key => $value) {
+		if(strpos($key, 'HTTP_') === 0){
+			$key = explode("_", strtolower(substr($key, 5)));
+			foreach ($key as &$v) {
+				$v = ucfirst($v);
+			}
+			$key = implode('-', $key);
+			$headers[$key] = $value;
+		}
+	}
+	return $name ? (isset($headers[$name]) ? $headers[$name] : false) : $headers;
+}
+
+/**
  * session_retrieve() 重现会话
  * @param  string $id Session ID
  * @return bool

@@ -31,9 +31,8 @@ add_hook('mod.template.load', function(){
 //输出运行信息
 if(config('mod.debug') === 2){
 	$NSGetRuntimeInfo = function(){
-		list($msec, $sec) = explode(' ', microtime());
 		return array(
-			'Time Usage'=>(round($sec+$msec - INIT_TIME, 3)).' s', //程序耗时
+			'Time Usage'=>round(microtime(true) - INIT_TIME, 3).' s', //程序耗时
 			'Memory Usage'=>round((memory_get_usage() - INIT_MEMORY)/1024, 3).' KB', //内存占用
 			'Memory Peak'=>round((memory_get_peak_usage() - INIT_MEMORY)/1024, 3).' KB', //内存峰值
 			'Database Queries'=>database::set('queries'), //数据库查询次数

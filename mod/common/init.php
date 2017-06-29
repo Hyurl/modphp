@@ -3,8 +3,7 @@
  * 系统初始化程序，加载系统运行所需的各类文件及配置
  */
 define('INIT_MEMORY', memory_get_usage()); //初始内存占用
-list($NSmsec, $NSsec) = explode(' ', microtime());
-define('INIT_TIME', round($NSsec+$NSmsec, 3), true); //初始运行时间
+define('INIT_TIME', microtime(true)); //初始运行时间
 error_reporting(E_ALL ^ E_STRICT); //抑制严格性错误
 if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 环境
 	exit('PHP version lower 5.3.0, unable to start ModPHP.');
@@ -149,7 +148,7 @@ $NSPreInit();
 foreach (glob(__ROOT__.'user/functions/*.php') as $NSFile) {
 	include_once $NSFile;
 }
-unset($NSInstalled, $NSDatabase, $NSmsec, $NSsec, $NSFile, $NSPreInit); //释放变量
+unset($NSInstalled, $NSDatabase, $NSFile, $NSPreInit); //释放变量
 
 /** 加载模板函数文件 */
 if(file_exists(template_path('functions.php'))) include_once template_path('functions.php');

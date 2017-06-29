@@ -3,7 +3,7 @@
 if(PHP_SAPI == "cli-server"){
 	$dir = $_SERVER["DOCUMENT_ROOT"].DIRECTORY_SEPARATOR;
 	$file = explode("?", $_SERVER["REQUEST_URI"]);
-	$file = $dir.substr($file[0], 1);
+	$file = $dir.urldecode(substr($file[0], 1));
 	if(!file_exists($file)){
 		$_SERVER["SCRIPT_FILENAME"] = $dir."index.php";
 	}elseif($file != __FILE__ && $file != __DIR__.DIRECTORY_SEPARATOR){

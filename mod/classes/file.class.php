@@ -109,7 +109,7 @@ final class file extends mod{
 
 	/** moreImage() 复制更多尺寸图像或删除更多尺寸图像 */
 	private static function moreImage($src, $action){
-		if(is_img($src)){
+		if(class_exists('image') && is_img($src)){
 			$ext = '.'.extname($src);
 			$filename = substr($src, 0, -strlen($ext));
 			$pxes = config('file.upload.imageSizes'); //获取配置尺寸
@@ -362,8 +362,13 @@ final class file extends mod{
 			array_splice($file, $line);
 			$file = array_merge($file, array($str), $arr);
 		}else{ //指定插入列
-			$_str = mb_substr($file[$line], 0, $column, 'UTF-8'); //指定列前面的数据
-			$__str = mb_substr($file[$line], $column, mb_strlen($file[$line], 'UTF-8'), 'UTF-8'); //指定列及后面的数据
+			if(extension_loaded('mbstring')){
+				$_str = mb_substr($file[$line], 0, $column, 'UTF-8'); //指定列前面的数据
+				$__str = mb_substr($file[$line], $column, mb_strlen($file[$line], 'UTF-8'), 'UTF-8'); //指定列及后面的数据
+			}else{
+				$_str = substr($file[$line], 0, $column);
+				$__str = substr($file[$line], $column, strlen($file[$line]));
+			}
 			$file[$line] = $_str.$str.$__str;
 		}
 		return self::resetTime();

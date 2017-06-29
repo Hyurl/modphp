@@ -1035,6 +1035,7 @@ foreach (array(403, 404, 500) as $code) {
 }
 unset($code);
 
+if(extension_loaded('sockets')):
 /**
  * socket_retrive_session() socket 模式下重现会话
  * @param  string $sid   会话 ID
@@ -1054,6 +1055,7 @@ function socket_retrive_session($sid, $event){
 	}
 	return false;
 }
+endif;
 
 /**
  * strapos() 查找字符串中第一次出现的位置，根据操作系统自动决定是否使用大小写敏感

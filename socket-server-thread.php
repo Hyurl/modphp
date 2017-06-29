@@ -3,6 +3,8 @@ if(!class_exists('Thread'))
 	exit("PHP does not support multi-threading yet.\n");
 elseif(PHP_SAPI != 'cli')
 	exit("Multi-threading socket server must run in command line.\n");
+elseif(!extension_loaded('sockets'))
+	trigger_error("Extension 'sockets' is not loaded, cannot start socket server.", E_USER_ERROR);
 
 /** 创建线程类 */
 class SocketServerThread extends Thread{

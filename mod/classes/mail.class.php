@@ -57,6 +57,13 @@ final class mail{
 		return new self;
 	}
 
+	/** testImap() 检查 IMAP 功能是否可用 */
+	private static function testImap(){
+		if(!extension_loaded('imap'))
+			trigger_error("Extension 'imap' is not loaded, cannot use mailbox capability.", E_USER_ERROR);
+		return new self;
+	}
+
 	/** imapResult() 获取邮箱请求结果并尝试获取错误 */
 	private static function imapResult($input){
 		$error = imap_errors();
@@ -328,7 +335,9 @@ final class mail{
 		if(strpos($name, '://') === false) $name = 'tcp://'.$name;
 		extract(parse_url($name));
 		$set['host'] = $host;
+		$scheme = strtolower($scheme);
 		if($scheme != 'tcp') $set['type'] = $scheme;
+		if($scheme != 'smtp') self::testImap();
 		if(isset($port)) $set['port'] = $port;
 		if(isset($path) && $path != '/') $set['directory'] = ltrim($path, '/'); //打开收件服务器的子文件夹
 		if(!empty($query)){
@@ -414,6 +423,7 @@ final class mail{
 					$info['smtpAuthed'] = true;
 				}
 			}else{ //登录收件服务器
+				self::testImap();
 				$flag = array();
 				array_push($flag, $set['type']);
 				if($set['ssl']) array_push($flag, 'ssl'); //使用 SSL
@@ -433,7 +443,7 @@ final class mail{
 		if(self::$set['type'] == 'smtp'){
 			fclose(self::$smtp);
 			self::$smtp = null;
-		}else{
+		}elseif(extension_loaded('imap')){
 			imap_close(self::$imap);
 			self::$imap = null;
 		}
@@ -457,7 +467,7 @@ final class mail{
 	 * @return array    状态信息
 	 */
 	static function mailboxStatus($key = ''){
-		$status = self::imapResult((array)imap_status(self::$imap, self::$info['imapSpec'], SA_ALL));
+		$status = self::testImap()->imapResult((array)imap_status(self::$imap, self::$info['imapSpec'], SA_ALL));
 		return $key ? (isset($status[$key]) ? $status[$key] : false) : $status;
 	}
 
@@ -468,6 +478,7 @@ final class mail{
 	 * @return array       文件夹名称
 	 */
 	static function listmailbox($dir = '*'){
+		self::testImap();
 		$list = imap_list(self::$imap, self::$info['imapSpec'], $dir);
 		if(is_array($list)){
 			foreach ($list as $key => $value) {
@@ -485,6 +496,7 @@ final class mail{
 	 * @return array        邮件信息, 包含 header 和 body
 	 */
 	static function get($num, $html = false){
+		self::testImap();
 		return array(
 			'header'=>self::imapGetHeader($num), //邮件头信息
 			'body'=>self::imapGetBody($num, $html) //邮件主体
@@ -500,6 +512,7 @@ final class mail{
 	 * @return array             搜索结果
 	 */
 	static function search($str, $num = false, $charset = 'UTF-8'){
+		self::testImap();
 		$nums = imap_search(self::$imap, $str, SE_FREE, $charset);
 		if($num === true){
 			$mails = array();

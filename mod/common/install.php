@@ -11,8 +11,21 @@
 	$file = __ROOT__.'modphp.zip';
 	$update = url() == site_url('install.php?update');
 	$uninstall = url() == site_url('install.php?uninstall');
-	$ver = @json_decode(file_get_contents($host.'version'), true) ?: @curl(array('url'=>$host.'version', 'parseJSON'=>true));
-	$gt = $ver && !curl_info('error') ? version_compare($ver['version'], MOD_VERSION) : -1;
+	$opt = array('http'=>array('method'=>'GET', 'timeout'=>1));
+	$arg = array('url'=>$url, 'parseJSON'=>false, 'timeout'=>1);
+	$json = @file_get_contents($url, false, stream_context_create($opt)); //获取版本信息
+	if(!$json && function_exists('curl')){
+		$result = curl($arg); //通过 CURL 获取版本信息
+		if(!curl_info('error'))
+			$json = $result;
+	}
+	if($json){
+		$ver = json_decode($json, true);
+		$gt = version_compare($ver['version'], MOD_VERSION);
+	}else{
+		$ver  = "";
+		$gt = -1;
+	}
 	if($gt > 0 || (!$gt && file_exists($file) && $ver['md5'] != md5_file($file))){
 		$newVerTip = '<p style="margin-bottom: 0">'.($gt > 0 ? '有新版本可用：' : '版本').'<code>'.$ver['version'].'</code>'.($gt > 0 ? '' : '存在更新');
 	}else{

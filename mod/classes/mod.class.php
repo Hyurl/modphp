@@ -395,9 +395,14 @@ class mod{
 					return error(lang('mod.missingArguments'));
 				$file = 'modphp.zip';
 				//尝试获取安装包
-				$tmp = @file_get_contents($arg['src']) ?: @curl(array('url'=>$arg['src'], 'followLocation'=>1));
-				$len = file_put_contents($file, $tmp);
-				if($len && md5_file($file) == $arg['md5']){ //通过 MD5 验证安装包完整性
+				$tmp = @file_get_contents($arg['src']);
+				if(!$tmp && function_exists('curl')){
+					$tmp = curl(array('url'=>$arg['src'], 'followLocation'=>1));
+					if(curl_info('error'))
+						$tmp = "";
+				}
+				$len = @file_put_contents($file, $tmp);
+				if($len && md5_file($file) == $arg['md5'] && function_exists('zip_extract')){ //通过 MD5 验证安装包完整性
 					$ok = zip_extract($file, __ROOT__); //解压安装包
 					export(load_config_file('config.php'), __ROOT__.'user/config/config.php'); //更新配置
 				}

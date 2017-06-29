@@ -228,6 +228,7 @@ function array2path(array $array, $dir = ""){
 	return $paths;
 }
 
+if(extension_loaded('zip')):
 /**
  * zip_compress() 快速压缩文件（夹）为 ZIP
  * @param  string $path 文件（夹）路径
@@ -268,6 +269,7 @@ function zip_extract($file, $path){
 	$zip->close();
 	return $ok;
 }
+endif;
 
 /**
  * rand_str() 获取随机字符串
@@ -341,6 +343,7 @@ function function_alias($original, $alias){
 	return true;
 }
 
+if(extension_loaded('mbstring')):
 /**
  * unicode_encode() 将字符串进行 unicode 编码
  * @param  string $str 字符串
@@ -363,16 +366,6 @@ function unicode_decode($str){
 }
 
 /**
- * is_assoc() 判断一个变量是否为完全关联数组
- * @param  array   $input 待判断的变量
- * @return boolean
- */
-function is_assoc($input){
-	if(!is_array($input) || !$input) return false;
-	return array_keys($input) !== range(0, count($input) - 1);
-}
-
-/**
  * mb_str_split() 将字符串分割为数组
  * @param  string $str     待分割的字符串
  * @param  int    $len     [可选]每个数组元素的长度
@@ -388,6 +381,26 @@ function mb_str_split($str, $len = 1, $charset = 'UTF-8'){
 		$strlen = mb_strlen($str);
 	}
 	return $array;
+}
+
+/**
+ * is_ascii() 判断一个字符串是否只包含 ASCII 字符
+ * @param  string  $str 待检测的字符串
+ * @return boolean
+ */
+function is_ascii($str){
+	return strlen($str) === mb_strlen($str, "UTF-8");
+}
+endif;
+
+/**
+ * is_assoc() 判断一个变量是否为完全关联数组
+ * @param  array   $input 待判断的变量
+ * @return boolean
+ */
+function is_assoc($input){
+	if(!is_array($input) || !$input) return false;
+	return array_keys($input) !== range(0, count($input) - 1);
 }
 
 /**
@@ -666,6 +679,7 @@ function xml2array($xml){
 	return object2array($obj);
 }
 
+if(extension_loaded('curl')):
 /**
  * curl() 进行远程 HTTP 请求，需要开启 CURL 模块
  * @param array|string $options 设置请求的参数(数组)或者请求的 URL 地址
@@ -872,6 +886,7 @@ function curl_cookie_str($withSentCookie = false){
 	}
 	return rtrim($cookie, '; ');
 }
+endif;
 
 /**
  * parse_header() 解析头部信息为关联数组
@@ -1098,6 +1113,7 @@ function array2object(array $arr){
 	return json_decode(json_encode($arr));
 }
 
+if(extension_loaded('sockets')):
 /**
  * get_local_ip() 获取本地 IP 地址
  * @return string 本机 IP 地址
@@ -1109,6 +1125,7 @@ function get_local_ip(){
 	socket_close($sock);
 	return $name;
 }
+endif;
 
 /**
  * doc() 获取一个函数、类或类方法的程序文档，支持命名空间和继承

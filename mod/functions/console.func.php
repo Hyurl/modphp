@@ -83,12 +83,20 @@ add_action('console.open.check_update', function(){
 	$arg = array('url'=>$url, 'parseJSON'=>false, 'timeout'=>1);
 	try{
 		$file = __ROOT__.'modphp.zip';
-		$ver = @json_decode(file_get_contents($url, false, stream_context_create($opt)) ?: @curl($arg), true); //访问远程链接并获取响应
-		$gt = $ver && !curl_info('error') ? version_compare($ver['version'], MOD_VERSION) : -1;
-		if($gt > 0 || (!$gt && file_exists($file) && $ver['md5'] != md5_file($file))){
-			update($ver); //保存新版本信息
-			$tip = "ModPHP {$ver['version']} ".($gt > 0 ? 'is now availible' : 'has updates').", use \"update\" to get the new version.";
-			fwrite(STDOUT, $tip.PHP_EOL); //输出更新提示
+		$json = @file_get_contents($url, false, stream_context_create($opt)); //获取版本信息
+		if(!$json && function_exists('curl')){
+			$result = curl($arg); //通过 CURL 获取版本信息
+			if(!curl_info('error'))
+				$json = $result;
+		}
+		if($json){
+			$ver = json_decode($json, true);
+			$gt = version_compare($ver['version'], MOD_VERSION);
+			if($gt > 0 || (!$gt && file_exists($file) && $ver['md5'] != md5_file($file))){
+				update($ver); //保存新版本信息
+				$tip = "ModPHP {$ver['version']} ".($gt > 0 ? 'is now availible' : 'has updates').", use \"update\" to get the new version.";
+				fwrite(STDOUT, $tip.PHP_EOL); //输出更新提示
+			}
 		}
 	}catch(Exception $e){}
 }, false);

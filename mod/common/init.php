@@ -25,10 +25,16 @@ if(__SCRIPT__ == 'mod/common/init.php') return false;
 ini_set('default_charset', 'UTF-8'); //设置默认脚本编码
 ini_set('user_agent', 'ModPHP/'.MOD_VERSION); //设置 PHP 远程请求客户端
 
-//自动加载类文件
+//自动加载类文件（优先从用户目录加载）
 spl_autoload_register(function($class){
 	$class1 = strtolower($class);
 	foreach (array('user', 'mod') as $path) {
+		if($path == 'mod'){
+			//引入某些类时先检查 PHP 扩展是否启用
+			if($class1 == 'database' && !extension_loaded('pdo')) break;
+			if($class1 == 'image' && !extension_loaded('gd')) break;
+			if($class1 == 'socketserver' && !extension_loaded('sockets')) break;
+		}
 		if(is_file($file = __ROOT__."$path/classes/$class1.class.php")){
 			include $file; //按小写类名称引入
 			break;

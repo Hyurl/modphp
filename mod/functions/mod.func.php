@@ -431,7 +431,7 @@ function analyze_url($format, $url = ''){
 	$uri = strstr($url, '?', true) ?: $url;
 	$uri = urldecode($uri); //对 URI 地址进行转义解码
 	if(strapos($uri, site_url('index.php')) === 0) //URL 以网站地址 + index.php 开始
-		$uri = site_url().substr($uri, strlen(site_url())+10);
+		$uri = substr($uri, strlen(site_url())+10);
 	elseif(strapos($uri, site_url()) === 0) //URL 以网站地址开始
 		$uri = substr($uri, strlen(site_url()));
 	$format = explode('/', trim($format, '/')); //使用 / 作为分隔符

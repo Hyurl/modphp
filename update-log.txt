@@ -7,6 +7,7 @@
 4. 某些类扩展和函数扩展仅在依赖的 PHP 扩展被载入的情况下有效，如 Image 类需要在 GD 库启用时
    才有效，SocketServer 类需要 sockets 扩展启用时才会被引入，curl() 函数需要在 CURL 扩展
    启用时才被定义，等等。
+5. 修复开启 pathinfo 模式时 URL 解析失败的 BUG。
 
 版本 2.2.2 (2017-6-28 17:30)
 1. 新增 INIT_MEMORY 常量存储程序初始时的内存占用量（单位 Byte），新增 INIT_TIME 存储

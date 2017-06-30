@@ -897,14 +897,14 @@ function curl($options, $wait = false){
 }
 
 /**
- * curl_info() 函数获取 CURL 请求的相关信息，需要运行在 curl() 函数之后
- * @param  string $key   [可选]设置键名，如果为数组，则将其填充到内部并将填充后的数组返回
+ * curl_info() 获取 CURL 请求的相关信息，需要运行在 curl() 函数之后
+ * @param  string $key   [可选]设置要获取信息的键名
  * @return mixed         当未设置 $key 时返回所有数组内容，当设置 $key 时，返回对应的内容或者 false
  */
 function curl_info($key = ''){
 	static $info = array();
 	if(is_array($key)){
-		return $info = array_merge($info, $key);
+		return $info = $key;
 	}else{
 		return $key === "" ? $info : (isset($info[$key]) ? $info[$key] : false);
 	}

@@ -441,12 +441,12 @@ function analyze_url($format, $url = ''){
 	for ($i=0; $i < count($format); $i++) {
 		if(!isset($uri[$i])) continue;
 		if($i == $end){
-			$ext1 = strstr($format[$i], '.');
-			$ext2 = strrchr($uri[$i], '.');
+			$ext1 = strrchr($format[$i], '.'); //伪静态后缀
+			$ext2 = strrchr($uri[$i], '.'); // URI 后缀
 			if($ext1 != $ext2) return false; //判断后缀名是否相同(如果有)
-			elseif($ext1){
-				$format[$i] = strstr($format[$i], '.', true);
-				$uri[$i] = strstr($uri[$i], '.', true);
+			elseif($len = strlen($ext1)){
+				$format[$i] = substr($format[$i], 0, -$len);
+				$uri[$i] = substr($uri[$i], 0, -$len);
 			}
 		}
 		if($format[$i][0] == '{' && $format[$i][strlen($format[$i])-1] == '}'){

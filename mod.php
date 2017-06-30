@@ -27,7 +27,7 @@ if(is_console()){
 	fwrite(STDOUT, $PROMPT);
 }
 while(true){
-	if(PHP_OS == 'WINNT') exec("title ".__DIR__." - $TITLE");
+	if(PHP_OS == 'WINNT') exec("title ".__DIR__." - ".$TITLE); //设置 CMD 窗口标题
 	error(null);
 	if(!is_console() || $STDIN = fgets(STDIN)){
 		if($STDIN){ //交互式控制台

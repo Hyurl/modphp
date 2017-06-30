@@ -8,6 +8,7 @@
 	<meta name="generator" content="ModPHP"/>
 	<?php
 	$host = 'http://modphp.hyurl.com/';
+	$url = $host.'version';
 	$file = __ROOT__.'modphp.zip';
 	$update = url() == site_url('install.php?update');
 	$uninstall = url() == site_url('install.php?uninstall');

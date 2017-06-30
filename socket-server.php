@@ -1,7 +1,7 @@
 <?php
 set_time_limit(0); //设置脚本永不超时
 if(!extension_loaded('sockets'))
-	trigger_error("Extension 'sockets' is not loaded, cannot start socket server.", E_USER_ERROR);
+	exit("Extension 'sockets' is not loaded, cannot start socket server.");
 require_once('mod/common/init.php');
 /**
  * SocketServer 说明：

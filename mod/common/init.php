@@ -9,7 +9,7 @@ if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 
 	exit('PHP version lower 5.3.0, unable to start ModPHP.');
 
 /** 定义常量 MOD_VERSION, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '2.2.3'); //ModPHP 版本
+define('MOD_VERSION', '2.2.4'); //ModPHP 版本
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true); //网站根目录
 $NSFile = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 define('__SCRIPT__', substr($NSFile, strlen(__ROOT__)) ?: $NSFile, true); //执行脚本

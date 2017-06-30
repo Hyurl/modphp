@@ -1134,3 +1134,12 @@ function get_module_funcs($module = ''){
 	}
 	return $_funcs;
 }
+
+if(!function_exists('mime_content_type')):
+function mime_content_type($filename){
+	static $mime = array();
+	if(!$mime) $mime = load_config('mime.ini'); //加载 mime 类型扩展
+	$ext = '.'.extname($filename);
+	return isset($mime[$ext]) ? $mime[$ext] : "";
+}
+endif;

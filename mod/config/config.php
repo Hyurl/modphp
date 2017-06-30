@@ -17,7 +17,7 @@ return array(
 		'escapeTags' => '<script><style><iframe>', //过滤上传数据中的 HTML 标签
 		'pathinfoMode' => false, //如果开启, create_url() 创建的路径将包含模板入口文件
 		'jsonSerialize' => true, //使用 JSON 序列化数据
-		'debug' => true, //调试模式，显示错误
+		'debug' => true, //调试模式，显示错误，2: 在网页中显示运行信息，3: 在浏览器控制台中显示运行信息
 		'database' => array( //数据库设置
 			'type' => 'mysql', //数据库类型
 			'host' => 'localhost', //主机地址

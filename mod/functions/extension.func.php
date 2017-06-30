@@ -454,12 +454,11 @@ function is_empty_dir($dir){
  * @return boolean
  */
 function is_img($src, $strict = false){
-	if(!$strict || !function_exists('finfo_open')){
+	if(!$strict || !function_exists('mime_content_type')){
 		$ext = strtolower(pathinfo($src, PATHINFO_EXTENSION));
 		return in_array($ext, array('jpg','jpeg','png','gif','bmp')); //compare extension name
 	}
-	$finfo = finfo_open(FILEINFO_MIME_TYPE);
-	return strpos(finfo_file($finfo, $src), 'image/') === 0; //比较 MimeType
+	return strpos(mime_content_type($src), 'image/') === 0; //比较 MimeType
 }
 function_alias('is_img', 'is_image');
 
@@ -682,12 +681,14 @@ function xml2array($xml){
 if(extension_loaded('curl')):
 /**
  * curl() 进行远程 HTTP 请求，需要开启 CURL 模块
- * @param array|string $options 设置请求的参数(数组)或者请求的 URL 地址
+ * @param array|string $options 设置请求的参数(数组)或者请求的 URL 地址；
+ *                              也可以设置为一个数组包含多个 URL 地址，或者多个请求参数，来进行批处理请求
  *                              请求参数可以包含下面这些项目：
  *                              [url] => 远程请求地址
  *                              [method] => 请求方式: POST 或 GET(默认);
  *                              [data] => POST 数据, 支持关联数组、索引数组、URL 查询字符串以及原始 POST 数据；
- *                                        要发送文件，需要在文件名前面加上@前缀并使用完整路径
+ *                                        要发送文件，需要在文件名前面加上 @ 前缀，兼容 PHP 5.5.0+；
+ *                                        可选在文件名后加 ;type={Mime-Type} 来设置文件的 MIME 类型
  *                              [cookie] => 发送 Cookie, 支持关联数组、索引数组和 Cookie 字符串
  *                              [referer] => 来路页面
  *                              [userAgent] => 客户端信息
@@ -704,13 +705,17 @@ if(extension_loaded('curl')):
  *                              [charset] => 目标页面编码
  *                              [convert] => 转换为指定的编码
  *                              [parseJSON] => 解析 JSON，true 始终解析，false 始终不解析，默认自动解析
+ *                              [decodeUnicode] => 解析 Unicode 字符串，默认 false
  *                              [success] => 请求成功时的回调函数
  *                              [error] => 请求失败时的回调函数
  *                              [extra] => 其他 CURL 选项参数，设置为一个数组
+ * @param  int         $wait    批处理请求时等待前一个处理完成的超时秒数，默认 0，即异步并行处理
  * @return string               返回请求结果，结果是字符串
  */
-function curl($options){
+function curl($options, $wait = false){
 	$curl = curl_version();
+	$curlData = array(); //请求结果数据
+	$curlInfo = array(); //请求信息
 	/* 定义默认的参数 */
 	$defaults = array(
 		'url'=>'',
@@ -732,137 +737,177 @@ function curl($options){
 		'charset'=>'',
 		'convert'=>'',
 		'parseJSON'=>null,
+		'decodeUnicode'=>false,
 		'success'=>null,
 		'error'=>null,
 		'extra'=>array()
 		);
 	if(!is_array($options)) $options = array('url'=>$options);
-	$options = array_merge($defaults, $options);
-	extract($options);
-	$ch = curl_init();
-	if($data && is_array($data) && !is_assoc($data)){
-		$data = explode_assoc(implode('&', $data), '&', '=');
-	}
-	if(strtolower($method) == 'post'){ //POST 请求
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-	}else{ //GET 请求
-		if($data) $url .= (strpos($url, '?') ? '&' : '?').(is_array($data) ? http_build_query($data) : $data);
-	}
-	if($cookie && is_array($cookie)){ //组合 Cookie
-		$cookie = is_assoc($cookie) ? implode_assoc($cookie, '=', '; ') : implode('; ', $cookie);
-	}
-	if(!is_assoc($requestHeaders)){ //将请求头转换为关联数组
+	$requests = !is_assoc($options) ? $options : array($options); //批处理请求
+	$mh = curl_multi_init();
+	foreach ($requests as $i => $options) {
+		if(!is_array($options)) $options = array('url'=>$options);
+		$requests[$i] = $options = array_merge($defaults, $options); //合并选项
+		extract($options);
+		$ch[$i] = curl_init($url); //初始化 CURL
+		if($data && is_array($data) && !is_assoc($data)){
+			$data = explode_assoc(implode('&', $data), '&', '=');
+		}
+		if(strtolower($method) == 'post'){ //POST 请求
+			$createFile = function_exists('curl_file_create'); //PHP 5.5.0 起使用 CURLFile 上传文件
+			if(is_array($data)){
+				foreach ($data as $key => &$value) {
+					if($value[0] == "@"){ //处理文件上传
+						$file = ltrim($value, '@');
+						if(!strpos($file, ';type=')){
+							if(function_exists('mime_content_type') && $mime = mime_content_type($file)){ //获取 MIME 类型
+								$value = $createFile ? curl_file_create($file, $mime) : '@'.$file.';type='.$mime; //设置 MIME 类型
+							}elseif($createFile){
+								$value = curl_file_create($file); //创建 CURLFile 对象
+							}
+						}elseif($createFile){
+							$file = strstr($file, ';', true) ?: $file;
+							$mime = substr($value, strpos($value, ';type=')+6); //获取 MIME 类型
+							$value = curl_file_create($file, $mime);
+						}
+					}
+				}
+			}
+			curl_setopt($ch[$i], CURLOPT_POST, 1);
+			curl_setopt($ch[$i], CURLOPT_POSTFIELDS, $data);
+		}else{ //GET 请求
+			if($data) $url .= (strpos($url, '?') ? '&' : '?').(is_array($data) ? http_build_query($data) : $data);
+		}
+		if($cookie && is_array($cookie)){ //组合 Cookie
+			$cookie = is_assoc($cookie) ? implode_assoc($cookie, '=', '; ') : implode('; ', $cookie);
+		}
+		if(!is_assoc($requestHeaders)){ //将请求头转换为关联数组
+			foreach ($requestHeaders as $key => $value){
+				if(is_numeric($key)){
+					unset($requestHeaders[$key]);
+					$i = strpos($value, ':');
+					$key = substr($value, 0, $i);
+					$value = ltrim(substr($value, $i+1));
+					$requestHeaders[$key] = $value;
+				}
+			}
+		}
+		if($proxy && empty($requestHeaders['Proxy-Connection'])){
+			$requestHeaders['Proxy-Connection'] = 'close'; //代理连接设置为 close
+		}
+		if($clientIp){
+			$requestHeaders['Client-IP'] = $clientIp; //设置客户端 IP
+			if(empty($requestHeaders['X-Forwarded-For']))
+				$requestHeaders['X-Forwarded-For'] = $clientIp; //设置代理
+		}
 		foreach ($requestHeaders as $key => $value){
-			if(is_numeric($key)){
-				unset($requestHeaders[$key]);
-				$i = strpos($value, ':');
-				$key = substr($value, 0, $i);
-				$value = ltrim(substr($value, $i+1));
-				$requestHeaders[$key] = $value;
-			}
+			$requestHeaders[] = "$key: $value"; //组合请求头
+			unset($requestHeaders[$key]);
 		}
+		//设置请求参数
+		curl_setopt($ch[$i], CURLOPT_HEADER, true);
+		curl_setopt($ch[$i], CURLINFO_HEADER_OUT, true);
+		curl_setopt($ch[$i], CURLOPT_FOLLOWLOCATION, $followLocation ? true : false);
+		curl_setopt($ch[$i], CURLOPT_MAXREDIRS, $followLocation);
+		curl_setopt($ch[$i], CURLOPT_AUTOREFERER, $autoReferer);
+		curl_setopt($ch[$i], CURLOPT_TIMEOUT, $timeout);
+		curl_setopt($ch[$i], CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch[$i], CURLOPT_SSL_VERIFYHOST, 2);
+		if($sslVerify) curl_setopt($ch[$i], CURLOPT_SSL_VERIFYPEER, 2);
+		else curl_setopt($ch[$i], CURLOPT_SSL_VERIFYPEER, false);
+		if($cookie) curl_setopt($ch[$i], CURLOPT_COOKIE, $cookie);
+		if($referer) curl_setopt($ch[$i], CURLOPT_REFERER, $referer);
+		if($userAgent) curl_setopt($ch[$i], CURLOPT_USERAGENT, $userAgent);
+		if($proxy) curl_setopt($ch[$i], CURLOPT_PROXY, $proxy);
+		if($onlyIpv4) curl_setopt($ch[$i], CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+		if($requestHeaders) curl_setopt($ch[$i], CURLOPT_HTTPHEADER, $requestHeaders);
+		if($username) curl_setopt($ch[$i], CURLOPT_USERPWD, $username.':'.$password);
+		if($extra) curl_setopt_array($ch[$i], $extra); //设置额外参数
+		curl_multi_add_handle($mh, $ch[$i]); //添加批处理句柄
 	}
-	if($proxy && empty($requestHeaders['Proxy-Connection'])){
-		$requestHeaders['Proxy-Connection'] = 'close';
-	}
-	if($clientIp){
-		$requestHeaders['Client-IP'] = $clientIp; //设置客户端 IP
-		if(empty($requestHeaders['X-Forwarded-For']))
-			$requestHeaders['X-Forwarded-For'] = $clientIp; //设置代理
-	}
-	foreach ($requestHeaders as $key => $value){
-		$requestHeaders[] = "$key: $value"; //组合请求头
-		unset($requestHeaders[$key]);
-	}
-	//设置请求参数
-	curl_setopt($ch, CURLOPT_URL, $url);
-	curl_setopt($ch, CURLOPT_HEADER, true);
-	curl_setopt($ch, CURLINFO_HEADER_OUT, true);
-	curl_setopt($ch, CURLOPT_FOLLOWLOCATION, $followLocation ? true : false);
-	curl_setopt($ch, CURLOPT_MAXREDIRS, $followLocation);
-	curl_setopt($ch, CURLOPT_AUTOREFERER, $autoReferer);
-	curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
-	if($sslVerify) curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 2);
-	else curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-	if($cookie) curl_setopt($ch, CURLOPT_COOKIE, $cookie);
-	if($referer) curl_setopt($ch, CURLOPT_REFERER, $referer);
-	if($userAgent) curl_setopt($ch, CURLOPT_USERAGENT, $userAgent);
-	if($proxy) curl_setopt($ch, CURLOPT_PROXY, $proxy);
-	if($onlyIpv4) curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
-	if($requestHeaders) curl_setopt($ch, CURLOPT_HTTPHEADER, $requestHeaders);
-	if($username) curl_setopt($ch, CURLOPT_USERPWD, $username.':'.$password);
-	if($extra) curl_setopt_array($ch, $extra);
-	$data = curl_exec($ch); //执行请求并获取返回值
-	$curlInfo = curl_getinfo($ch); //获取请求信息
-	$curlInfo['error'] = '';
-	if(isset($curlInfo['request_header'])){
-		$curlInfo['request_headers'] = parse_header($curlInfo['request_header']); //解析请求头
-		unset($curlInfo['request_header']);
-	}
-	if(curl_errno($ch)){
-		$curlInfo['error'] = curl_error($ch);
-		goto returnError;
-	}
-	curl_close($ch);
-	if(!$charset){ //自动获取目标页面使用的编码
-		if(preg_match('/.*charset=(.+)/i', $curlInfo['content_type'], $match)){
-			$charset = $match[1];
+	do{
+		curl_multi_exec($mh, $running); //执行批处理请求
+		if($wait) curl_multi_select($mh, $wait);
+	}while($running);
+	foreach ($requests as $i => $options) {
+		extract($options);
+		$data = curl_multi_getcontent($ch[$i]); //取得结果
+		$curlInfo[$i] = curl_getinfo($ch[$i]); //获取请求信息
+		$curlInfo[$i]['error'] = ''; //保存错误的字段
+		if(isset($curlInfo[$i]['request_header'])){
+			$curlInfo[$i]['request_headers'] = parse_header($curlInfo[$i]['request_header']); //解析请求头
+			unset($curlInfo[$i]['request_header']);
 		}else{
-			$_data = str_replace(array('\'', '"', '/'), '', $data);
-			$htmlRegex = '/<meta.*charset=(.+)>/iU';
-			$xmlRegex = '/<\?xml.*encoding=(.+)\?>/iU';
-			if(preg_match($htmlRegex, $_data, $match) || preg_match($xmlRegex, $_data, $match)){
-				$charset = strstr($match[1], ' ', true) ?: $match[1];
-			}else{
-				$charset = 'UTF-8';
-			}
+			$curlInfo[$i]['request_headers'] = array();
 		}
+		if(curl_errno($ch[$i]) || !$data){
+			$curlInfo[$i]['error'] = curl_error($ch[$i]); //获取错误信息
+		}
+		curl_multi_remove_handle($mh, $ch[$i]); //移除批处理句柄
+		curl_close($ch[$i]); //关闭句柄
+		if($data){
+			if(!$charset){ //自动获取目标页面使用的编码
+				if(preg_match('/.*charset=(.+)/i', $curlInfo[$i]['content_type'], $match)){
+					$charset = $match[1];
+				}else{
+					$_data = str_replace(array('\'', '"', '/'), '', $data);
+					$htmlRegex = '/<meta.*charset=(.+)>/iU'; //HTML 编码
+					$xmlRegex = '/<\?xml.*encoding=(.+)\?>/iU'; //XML 编码
+					if(preg_match($htmlRegex, $_data, $match) || preg_match($xmlRegex, $_data, $match)){
+						$charset = strstr($match[1], ' ', true) ?: $match[1];
+					}else{
+						$charset = 'UTF-8'; //没有检测到编码则设置为 UTF-8
+					}
+				}
+			}
+			if(strtolower(str_replace('-', '', $charset)) != 'utf8')
+				$data = iconv($charset, 'UTF-8', $data); //将数据转码为 UTF-8
+			if($convert) $data = iconv('UTF-8', $convert, $data); //将数据转换为其他编码
+			$header = substr($data, 0, $curlInfo[$i]['header_size']); //获取头部信息
+			$data = substr($data, $curlInfo[$i]['header_size']); //获取主体数据
+			if($decodeUnicode) $data = unicode_decode($data); //进行 Unicode 解码
+			$curlInfo[$i]['response_headers'] = parse_header($header); //解析响应头
+			if($curlInfo[$i]['http_code'] >= 400){ //400 以上的 HTTP 代码表示网页有错误
+				$curlInfo[$i]['error'] = $data;
+				$data = ""; //清空数据
+				if(is_callable($error)){
+					$_error = $error($curlInfo[$i]['error']); //执行失败回调函数
+					if($_error !== null) $curlInfo[$i]['error'] = $_error; //保存返回的错误信息
+				}
+			}else{
+				if($parseJSON || ($parseJSON === null && stripos($curlInfo[$i]['content_type'], 'application/json') !== false))
+					$data = json_decode($data, true); //解析 JSON
+				if(is_callable($success)){
+					$_data = $success($data); //执行成功回调函数
+					if($_data !== null) $data = $_data; //保存返回的数据
+				}
+			}
+		}else{
+			$curlInfo[$i]['response_headers'] = array();
+		}
+		$curlData[$i] = $data;
 	}
-	if(strtolower(str_replace('-', '', $charset)) != 'utf8')
-		$data = iconv($charset, 'UTF-8', $data); //将数据转码为 UTF-8
-	if($convert) $data = iconv('UTF-8', $convert, $data); //将数据转换为其他编码
-	$curlInfo['response_headers'] = parse_header(substr($data, 0, $curlInfo['header_size'])); //解析响应头
-	$data = unicode_decode(substr($data, $curlInfo['header_size'])); //进行 Unicode 解码
-	if($curlInfo['http_code'] >= 400){ //400 以上的 HTTP 代码表示网页有错误
-		$curlInfo['error'] = $data;
-		goto returnError;
+	curl_multi_close($mh);
+	if(count($curlData) == 1){ //处理单个请求
+		$curlData = $curlData[0];
+		$curlInfo = $curlInfo[0];
 	}
-	if($parseJSON || ($parseJSON === null && stripos($curlInfo['content_type'], 'application/json') !== false))
-		$data = json_decode($data, true); //解析 JSON
-	curl_info($curlInfo);
-	if(is_callable($success)){
-		$_data = $success($data); //执行成功回调函数
-		if($_data !== null) $data = $_data;
-	}
-	return $data;
-	returnError: //处理并返回错误
-	curl_info($curlInfo);
-	if(is_callable($error)){
-		curl_info('error', $error(curl_info('error'))); //执行失败回调函数并保存返回值
-	}
-	return curl_info('error');
+	curl_info($curlInfo); //填充 CURL 信息
+	return $curlData; //返回请求结果
 }
 
 /**
  * curl_info() 函数获取 CURL 请求的相关信息，需要运行在 curl() 函数之后
- * @param  string $key   [可选]设置键名，如果为关联数组，则填充返回值并将填充后的数组返回
- * @param  string $value [可选]设置值
- * @return array|string  当未设置 $key 时返回所有数组内容
- *                       当设置 $key 并且 $key 是一个关联数组，则返回填充后的数组内容
- *                       当设置 $key 为字符串时，如果为设置 $value, 则返回 $key 对应的值
- *                       当设置 $key 为字符串并且设置 $value, 则始终返回 $vlaue;
+ * @param  string $key   [可选]设置键名，如果为数组，则将其填充到内部并将填充后的数组返回
+ * @return mixed         当未设置 $key 时返回所有数组内容，当设置 $key 时，返回对应的内容或者 false
  */
-function curl_info($key = '', $value = null){
+function curl_info($key = ''){
 	static $info = array();
-	if(is_assoc($key)){
+	if(is_array($key)){
 		return $info = array_merge($info, $key);
-	}elseif($value !== null){
-		return $info[$key] = $value;
+	}else{
+		return $key === "" ? $info : (isset($info[$key]) ? $info[$key] : false);
 	}
-	return $key ? (@$info[$key] ?: false) : $info;
 }
 
 /**
@@ -871,20 +916,28 @@ function curl_info($key = '', $value = null){
  * @return string                  返回所有的 Cookie 字符串
  */
 function curl_cookie_str($withSentCookie = false){
-	$cookie = '';
-	$reqHr = curl_info('request_headers'); //请求头
-	$resHr = curl_info('response_headers'); //响应头
-	if(!empty($resHr['Set-Cookie'])){
-		if(is_string($resHr['Set-Cookie']))
-			$resHr['Set-Cookie'] = array($resHr['Set-Cookie']);
-		foreach ($resHr['Set-Cookie'] as $value){
-			$cookie .= strstr($value, ';', true).'; ';
+	$cookies = array();
+	$curlInfo = curl_info();
+	if(!$curlInfo) return false;
+	if(is_assoc($curlInfo)) $curlInfo = array($curlInfo);
+	foreach ($curlInfo as $i => $info) {
+		$cookie = '';
+		$reqHr = $info['request_headers'];
+		$resHr = $info['response_headers'];
+		if(!empty($resHr['Set-Cookie'])){
+			if(is_string($resHr['Set-Cookie']))
+				$resHr['Set-Cookie'] = array($resHr['Set-Cookie']);
+			foreach ($resHr['Set-Cookie'] as &$value){
+				$value = strstr($value, ';', true) ?: $value;
+			}
+			$cookie = join('; ', $resHr['Set-Cookie']);
 		}
+		if($withSentCookie && !empty($reqHr['Cookie'])){
+			$cookie .= '; '.$reqHr['Cookie']; //加上发送的 Cookie
+		}
+		$cookies[] = $cookie;
 	}
-	if($withSentCookie && !empty($reqHr['Cookie'])){
-		$cookie .= $reqHr['Cookie']; //加上发送的 Cookie
-	}
-	return rtrim($cookie, '; ');
+	return count($cookies) > 1 ? $cookies : (isset($cookies[0]) ? $cookies[0] : "");
 }
 endif;
 

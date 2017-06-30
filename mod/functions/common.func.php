@@ -29,7 +29,7 @@ add_hook('mod.template.load', function(){
 });
 
 //输出运行信息
-if(config('mod.debug') === 2){
+if(config('mod.debug') === 2 || config('mod.debug') === 3){
 	$NSGetRuntimeInfo = function(){
 		return array(
 			'Time Usage'=>round(microtime(true) - INIT_TIME, 3).' s', //程序耗时
@@ -40,15 +40,20 @@ if(config('mod.debug') === 2){
 	};
 	add_action('mod.template.load.complete.show_runtime_info', function() use($NSGetRuntimeInfo){
 		if(strpos(get_response_headers('Content-Type'), 'text/html') === 0){
-			echo '<fieldset style="display: inline-block;padding-right: 40px;"><legend>Runtime Info</legend>';
-			foreach ($NSGetRuntimeInfo() as $key => $value) {
-				echo '<strong>'.$key.'</strong>: <em>'.$value.'</em><br/>';
+			if(config('mod.debug') === 2){
+				echo '<fieldset style="display: inline-block;padding-right: 40px;"><legend>Runtime-Info</legend>';
+				foreach ($NSGetRuntimeInfo() as $key => $value) {
+					echo '<strong>'.$key.'</strong>: <em>'.$value.'</em><br/>';
+				}
+				echo '</fieldset>';
+			}else{
+				$json = json_encode(array('Runtime-Info'=>$NSGetRuntimeInfo()));
+				echo '<script type="application/javascript">console.log(JSON.parse(\''.$json.'\'))</script>';
 			}
-			echo '</fieldset>';
 		}
 	}, false);
 	add_action('mod.client.call.complete.show_runtime_info', function($result) use($NSGetRuntimeInfo){
-		$result['Runtime Info'] = $NSGetRuntimeInfo();
+		$result['Runtime-Info'] = $NSGetRuntimeInfo();
 		return $result;
 	}, false);
 	unset($NSGetRuntimeInfo);

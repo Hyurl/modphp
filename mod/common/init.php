@@ -142,11 +142,6 @@ $NSPreInit = function() use($NSInstalled){
 		if(database::$error) exit(database::$error); //遇到错误，终止程序
 	}
 
-	//HTTP 访问认证
-	if(config('mod.httpAuth')){
-		http_auth_login();
-	}
-
 };
 $NSPreInit();
 
@@ -254,7 +249,10 @@ function init(){
 
 /** 执行客户端请求 */
 if(is_agent()){
-	if(__SCRIPT__ == 'mod.php'){ //通过 URL 传参的方式执行类方法
+		//HTTP 访问认证
+	if(config('mod.httpAuth')){
+		http_auth_login();
+	}elseif(__SCRIPT__ == 'mod.php'){ //通过 URL 传参的方式执行类方法
 		if(is_403() || is_404() || is_500()) goto display; //HTTP 错误跳转到显示页面
 		conv_request_vars(); //转换表单请求参数
 		$reqMd = $_SERVER['REQUEST_METHOD'];

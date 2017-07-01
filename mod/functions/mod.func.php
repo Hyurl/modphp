@@ -1156,23 +1156,21 @@ endif;
  * @return array     操作结果
  */
 function http_auth_login(){
-	if(is_agent() && !is_logined()){
-		if(empty($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])){
-			header('WWW-Authenticate: Basic realm="ModPHP '.MOD_VERSION.'"'); //发送要求验证头部
-			report_401(); //报告 401 并阻止输出
-		}else{
-			$loginKey = config('user.keys.login');
-			$loginKey = strstr($loginKey, '|', true) ?: $loginKey;
-			$arg = array( //登陆参数
-				$loginKey => $_SERVER['PHP_AUTH_USER'], //用户登录字段
-				'user_password' => $_SERVER['PHP_AUTH_PW'] //用户密码
-				);
-			$result = user::login($arg); //登录
-			if(!$result['success']){
-				header('WWW-Authenticate: Basic realm="ModPHP '.MOD_VERSION.'"');
-				report_401();
-			}
-			return $result;
+	if(empty($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])){
+		header('WWW-Authenticate: Basic realm="ModPHP '.MOD_VERSION.'"'); //发送要求验证头部
+		report_401(); //报告 401 并阻止输出
+	}else{
+		$loginKey = config('user.keys.login');
+		$loginKey = strstr($loginKey, '|', true) ?: $loginKey;
+		$arg = array( //登陆参数
+			$loginKey => $_SERVER['PHP_AUTH_USER'], //用户登录字段
+			'user_password' => $_SERVER['PHP_AUTH_PW'] //用户密码
+			);
+		$result = user::login($arg); //登录
+		if(!$result['success']){
+			header('WWW-Authenticate: Basic realm="ModPHP '.MOD_VERSION.'"');
+			report_401();
 		}
+		return $result;
 	}
 }

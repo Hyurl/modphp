@@ -480,7 +480,7 @@ function is_agent($agent = ''){
  * @return boolean
  */
 function is_browser($agent = ''){
-	return is_agent($agent) && !is_curl() && !empty($_SERVER['HTTP_ACCEPT']) && !empty($_SERVER['HTTP_CONNECTION']) && !strcasecmp($_SERVER['HTTP_CONNECTION'], 'keep-alive');
+	return is_agent($agent) && !is_curl() && !empty($_SERVER['HTTP_ACCEPT']) && !empty($_SERVER['HTTP_CONNECTION']) && (!strcasecmp($_SERVER['HTTP_CONNECTION'], 'keep-alive') || is_proxy());
 }
 
 /**
@@ -610,7 +610,7 @@ function set_content_type($type, $encoding = 'UTF-8'){
  */
 function url(){
 	if(!is_agent()) return false;
-	if(is_proxy()) return $_SERVER['REQUEST_URI']; //代理地址
+	if(is_proxy_server()) return $_SERVER['REQUEST_URI']; //代理地址
 	$protocol = strstr(strtolower($_SERVER['SERVER_PROTOCOL']), '/', true);
 	$protocol .= is_ssl() ? 's' : ''; //SSL 使用 https
 	return $protocol.'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];

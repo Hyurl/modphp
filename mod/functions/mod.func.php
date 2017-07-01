@@ -986,11 +986,13 @@ function register_module_functions($module = ''){
 function report_http_error($code, $msg = ''){
 	$uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : (display_file() ?: __SCRIPT__);
 	$status = array(
+		401 => 'Unauthorized',
 		403 => 'Forbidden',
 		404 => 'Not Found',
 		500 => 'Internal Server Error',
 		);
 	$html = array(
+		401 => "<p>This server could not verify that you are authorized to access the document requested.</p><p>Either you supplied the wrong credentials (e.g., bad password), or your browser doesn't understand how to supply the credentials required.</p>",
 		403 => "<p>You don't have permission to access ".$uri." on this server.</p>",
 		404 => "<p>The requested URL ".$uri." was not found on this server.</p>",
 		500 => "<p>The server encountered an internal error or misconfiguration and was unable to complete your request.</p><p>Please contact the server administrator".(isset($_SERVER['SERVER_ADMIN']) ? ", {$_SERVER['SERVER_ADMIN']}" : '')." and inform them of the time the error occurred, and anything you might have done that may have caused the error.</p>\n\t<p>More information about this error may be available in the server error log.</p>",
@@ -1011,7 +1013,7 @@ function report_http_error($code, $msg = ''){
 	if($file && file_exists($file) && !$msg){
 		display_file($file, true);
 	}else{
-		echo $msg ?: "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n\t<title>{$code} {$status[$code]}</title>\n</head>\n<body>\n\t<h1>{$status[$code]}</h1>\n\t{$html[$code]}\n</body>\n</html>";
+		echo $msg ?: "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n<html>\n<head>\n\t<title>{$code} {$status[$code]}</title>\n</head>\n<body>\n\t<h1>{$code} {$status[$code]}</h1>\n\t{$html[$code]}\n</body>\n</html>";
 		if(is_agent()){
 			do_hooks('mod.template.load.complete');
 			exit();
@@ -1024,7 +1026,7 @@ function report_http_error($code, $msg = ''){
  * is_403/404/500() 判断是否为错误页面
  * @param  string $msg 错误提示
  */
-foreach (array(403, 404, 500) as $code) {
+foreach (array(401, 403, 404, 500) as $code) {
 	eval('
 	function report_'.$code.'($msg = ""){
 		report_http_error('.$code.', $msg);
@@ -1136,6 +1138,11 @@ function get_module_funcs($module = ''){
 }
 
 if(!function_exists('mime_content_type')):
+/**
+ * mime_content_type() 获取一个文件的 MIME 类型
+ * @param  string $filename 文件名
+ * @return string           文件的 MIME 类型，如果没有匹配，则返回空字符串
+ */
 function mime_content_type($filename){
 	static $mime = array();
 	if(!$mime) $mime = load_config('mime.ini'); //加载 mime 类型扩展
@@ -1143,3 +1150,29 @@ function mime_content_type($filename){
 	return isset($mime[$ext]) ? $mime[$ext] : "";
 }
 endif;
+
+/**
+ * http_auth_login() 使用 HTTP 访问认证登录账户
+ * @return array     操作结果
+ */
+function http_auth_login(){
+	if(is_agent() && !is_logined()){
+		if(empty($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])){
+			header('WWW-Authenticate: Basic realm="ModPHP '.MOD_VERSION.'"'); //发送要求验证头部
+			report_401(); //报告 401 并阻止输出
+		}else{
+			$loginKey = config('user.keys.login');
+			$loginKey = strstr($loginKey, '|', true) ?: $loginKey;
+			$arg = array( //登陆参数
+				$loginKey => $_SERVER['PHP_AUTH_USER'], //用户登录字段
+				'user_password' => $_SERVER['PHP_AUTH_PW'] //用户密码
+				);
+			$result = user::login($arg); //登录
+			if(!$result['success']){
+				header('WWW-Authenticate: Basic realm="ModPHP '.MOD_VERSION.'"');
+				report_401();
+			}
+			return $result;
+		}
+	}
+}

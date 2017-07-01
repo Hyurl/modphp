@@ -9,7 +9,7 @@ if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 
 	exit('PHP version lower 5.3.0, unable to start ModPHP.');
 
 /** 定义常量 MOD_VERSION, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '2.2.4'); //ModPHP 版本
+define('MOD_VERSION', '2.2.5'); //ModPHP 版本
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true); //网站根目录
 $NSFile = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 define('__SCRIPT__', substr($NSFile, strlen(__ROOT__)) ?: $NSFile, true); //执行脚本
@@ -63,7 +63,7 @@ if(is_browser()){ //开/关调试模式
 foreach (glob(__ROOT__.'mod/functions/*.php') as $NSFile) {
 	if($NSFile == __ROOT__.'mod/functions/console.func.php' && !is_console())
 		continue; //console.func.php 仅在交互式控制台中引入
-	if(!$NSInstalled && isset($NSDatabase[basename($NSFile, '.func.php')]))
+	if(!$NSInstalled && basename($NSFile, '.func.php') != 'user' && isset($NSDatabase[basename($NSFile, '.func.php')]))
 		continue; //模块函数文件仅在系统安装后引入
 	include_once $NSFile;
 }
@@ -141,6 +141,12 @@ $NSPreInit = function() use($NSInstalled){
 				->login($conf['username'], $conf['password']);
 		if(database::$error) exit(database::$error); //遇到错误，终止程序
 	}
+
+	//HTTP 访问认证
+	if(config('mod.httpAuth')){
+		http_auth_login();
+	}
+
 };
 $NSPreInit();
 

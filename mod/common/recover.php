@@ -30,22 +30,22 @@ if(strapos($tmp, __ROOT__) === 0 && !file_exists($file = $tmp.'.htaccess')){
 	file_put_contents($file, "order deny,allow\ndeny from all");
 }
 
-/** 恢复首页 */
+/** 恢复默认首页 */
 if(!file_exists($file = $tpl.config('site.home.template'))){
-	$html = "
-<p>Welcome to ModPHP, you're now able to explore the functionality it carries.<p>
-<p>If you haven't install ModPHP into database, pelease <a href='install.php'>click here</a> to install.</p>";
-	file_put_contents($file, $html);
+	file_put_contents($file, file_get_contents(__DIR__.'/index.php'));
 }
 
 /** 恢复用户配置文件 */
-$lang = str_replace('_', '-', strtolower(config('mod.language')));
-foreach (array('config', 'database', 'static-uri', $lang) as $conf) {
-	$file = ($conf == $lang ? $ldir : $cdir).$conf.'.php';
-	$func = $conf == $lang ? 'lang' : str_replace('-', '', $conf);
-	if(!file_exists($file)){
-		export($func(), $file);
+foreach (scandir(__ROOT__.'mod/config/') as $file) {
+	if($file != '.' && $file != '..' && !file_exists($cdir.$file)){
+		file_put_contents($cdir.$file, file_get_contents(__ROOT__.'mod/config/'.$file));
 	}
+}
+
+/** 恢复语言包文件 */
+$file = strtolower(config('mod.language')).'.php';
+if(!file_exists($ldir.$file)){
+	file_put_contents($cdir.$file, file_get_contents(__ROOT__.'mod/lang/'.$file));
 }
 
 /** 恢复自定义模块类文件 */
@@ -54,10 +54,10 @@ if(config('mod.installed')){
 		$file = 'classes/'.$table.'.class.php';
 		if(!file_exists(__ROOT__.'mod/'.$file) && !file_exists($file = __ROOT__.'user/'.$file)){
 			$data = '<?php
-	final class '.$table.' extends mod{
-		const TABLE = "'.$table.'";
-		const PRIMKEY = "'.get_primkey_by_table($table).'";
-	}';
+final class '.$table.' extends mod{
+	const TABLE = "'.$table.'";
+	const PRIMKEY = "'.get_primkey_by_table($table).'";
+}';
 			file_put_contents($file, $data);
 		}
 	}

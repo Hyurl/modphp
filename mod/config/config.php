@@ -18,6 +18,7 @@ return array(
 		'pathinfoMode' => false, //如果开启, create_url() 创建的路径将包含模板入口文件
 		'jsonSerialize' => true, //使用 JSON 序列化数据
 		'debug' => true, //调试模式，显示错误，2: 在网页中显示运行信息，3: 在浏览器控制台中显示运行信息
+		'httpAuth' => false, //全局 HTTP 访问认证，如果开启，则必须登录才能访问站点
 		'database' => array( //数据库设置
 			'type' => 'mysql', //数据库类型
 			'host' => 'localhost', //主机地址
@@ -53,6 +54,7 @@ return array(
 			'staticURI' => 'page/{page}.html', //伪静态地址
 			),
 		'errorPage' => array( //错误页面设置(相对于模板目录)
+			401 => '401.php', //401 页面
 			403 => '403.php', //403 页面
 			404 => '404.php', //404 页面
 			500 => '500.php', //500 页面
@@ -83,7 +85,7 @@ return array(
 		'level' => array( //级别设置
 			'admin' => 5, //管理员
 			'editor' => 4, //编辑
-			)
+			),
 		),
 	'file' => array( //文件模块设置
 		'keys' => array( //字段设置

@@ -563,9 +563,9 @@ function redirect($url, $code = 302, $time = 0, $msg = ''){
 	if(ob_get_length()) ob_end_clean(); //清空缓冲区
 	if(!$url) $url = url();
 	elseif($url == -1) $url = @$_SERVER['HTTP_REFERER'] ?: url();	
-	if($code == 301) header('HTTP/1.1 301 Moved Permanently'); //永久重定向
-	else header('HTTP/1.1 302 Moved Temporarily');
 	if(!headers_sent()){
+		if($code == 301) header('HTTP/1.1 301 Moved Permanently'); //永久重定向
+		else header('HTTP/1.1 302 Moved Temporarily');
 		header($time ? "Refresh: $time; URL=$url" : "Location: $url"); //使用 HTTP 响应头进行跳转
 	}else{
 		echo "<meta http-equiv=\"Refresh\" content=\"$time; URL=$url\">\n"; //使用 HTML 元信息跳转

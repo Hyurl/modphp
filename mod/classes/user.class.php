@@ -12,22 +12,61 @@ final class user extends mod{
 		}
 	}
 
+	/** setLogin() 设置登录信息 */
+	private static function setLogin($user){
+		if(!session_id()) session_id(md5(uniqid().rand_str(13))); //生成随机 Session ID
+		if(session_status() != PHP_SESSION_ACTIVE) @session_start();
+		$_SESSION['ME_ID'] = (int)$user['user_id']; //保存用户 ID 到 Session 中
+		_user('me_id', (int)$user['user_id']);
+		_user('me_level', (int)$user['user_level']);
+		$expires = !empty($arg['remember_me']) ? time()+ini_get('session.gc_maxlifetime') : null; //Cookie 生存期
+		self::sessCookie(session_id(), $expires); //设置 Cookie
+		if(config('mod.installed'))
+			$user = self::getMe();
+		else
+			$user = success($user, array(session_name() => session_id()));
+		do_hooks('user.login.complete', $user['data']);
+		return $user;
+	}
+
 	/**
 	 * getMe() 获得当前登录用户
 	 * @static
 	 * @return array  当前登录的用户或错误
 	 */
 	static function getMe(){
-		if(session_status() == PHP_SESSION_ACTIVE && !empty($_SESSION['ME_ID']) && ($result = database::open(0)->select('user', '*', "`user_id` = ".$_SESSION['ME_ID'])) && $me = $result->fetch()){
-			_user('me_id', (int)$me['user_id']); //将登录用户 ID 和等级保存到内存中
-			_user('me_level', (int)$me['user_level']);
-			self::handler($me, 'get'); //预处理获取事件
-			do_hooks('user.get', $me); //执行挂钩函数
-			if(error()) return error();
-			return success($me, array(session_name() => session_id())); //将用户信息和 Session ID 一并返回
-		}else{
-			return error(lang('user.notLoggedIn'));
+		if(session_status() == PHP_SESSION_ACTIVE && !empty($_SESSION['ME_ID'])){
+			if(config('mod.installed')){
+				$result = database::open(0)->select('user', '*', "`user_id` = ".$_SESSION['ME_ID']);
+				if($result && $me = $result->fetch()){
+					_user('me_id', (int)$me['user_id']); //将登录用户 ID 和等级保存到内存中
+					_user('me_level', (int)$me['user_level']);
+					self::handler($me, 'get'); //预处理获取事件
+					do_hooks('user.get', $me); //执行挂钩函数
+					if(error()) return error();
+				}
+			}else{
+				foreach(load_config('users.php') as $i => $user){ //遍历用户
+					$user = explode(':', $user);
+					if(count($user) == 3){ //合法的用户描述符
+						$user = array(
+							'user_id' => $i+1,
+							'user_name' => $user[0],
+							'user_level' => (int)$user[2]
+							);
+						if($user['user_id'] == $_SESSION['ME_ID']){
+							$me = $user;
+							_user('me_id', $me['user_id']); //将登录用户 ID 和等级保存到内存中
+							_user('me_level', $me['user_level']);
+							break;
+						}
+					}
+				}
+			}
+			if(isset($me))
+				return success($me, array(session_name() => session_id())); //将用户信息和 Session ID 一并返回
 		}
+		return error(lang('user.notLoggedIn'));
 	}
 
 	/**
@@ -40,35 +79,51 @@ final class user extends mod{
 	static function login(array $arg){
 		do_hooks('user.login', $arg); //执行登录前挂钩函数
 		if(error()) return error();
-		database::open(0);
+		$installed = config('mod.installed');
 		$login = explode('|', config('user.keys.login'));
-		$where = '';
-		foreach($login as $k) { //根据登录字段组合用户信息获取条件
-			if(!empty($arg[$k])){
-				$where = "`{$k}` = ".database::quote($arg[$k]);
-				break;
-			}elseif(count($login) > 1 && !empty($arg['user'])){
-				$where .= " OR `{$k}` = ".database::quote($arg['user']);
-			}
-		}
-		if(!$where || !isset($arg['user_password'])) return error(lang('mod.missingArguments'));
-		$where = ltrim($where, ' OR ');
-		$result = database::select('user', '*', $where); //获取符合条件的用户
+		$httpAuth = isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
+		if($httpAuth) Header("HTTP/1.0 401 Unauthorized"); //清除浏览器的授权信息
 		$hasUser = false;
-		while($result && $user = $result->fetch()){
-			$hasUser = true;
-			if(password_verify($arg['user_password'], $user['user_password'])){ //验证密码
-				if(!session_id()) session_id(strtolower(rand_str(26))); //生成随机 Session ID
-				if(session_status() != PHP_SESSION_ACTIVE) @session_start();
-				$_SESSION['ME_ID'] = (int)$user['user_id']; //保存用户 ID 到 Session 中
-				_user('me_id', (int)$user['user_id']);
-				_user('me_level', (int)$user['user_level']);
-				$expires = !empty($arg['remember_me']) ? time()+ini_get('session.gc_maxlifetime') : null; //Cookie 生存期
-				self::sessCookie(session_id(), $expires); //设置 Cookie
-				$user = self::getMe();
-				do_hooks('user.login.complete', $user['data']);
-				return $user;
+		if($installed){
+			database::open(0);
+			$where = '';
+			foreach($login as $k) { //根据登录字段组合用户信息获取条件
+				if(!empty($arg[$k])){
+					$where = "`{$k}` = ".database::quote($arg[$k]);
+					break;
+				}elseif(count($login) > 1 && !empty($arg['user'])){
+					$where .= " OR `{$k}` = ".database::quote($arg['user']);
+				}
 			}
+			if(!$where || !isset($arg['user_password'])) return error(lang('mod.missingArguments'));
+			$where = ltrim($where, ' OR ');
+			$result = database::select('user', '*', $where); //获取符合条件的用户
+			while($result && $user = $result->fetch()){
+				$hasUser = true;
+				if(password_verify($arg['user_password'], $user['user_password'])){ //验证密码
+					return self::setLogin($user); //设置设置登录信息并返回用户信息
+				}
+			}
+		}elseif($httpAuth){ //HTTP 访问认证
+			foreach(load_config('users.php') as $i => $user){ //遍历用户
+				$user = explode(':', $user);
+				if(count($user) == 3){ //合法的用户描述符
+					$user = array(
+						'user_id' => $i+1,
+						'user_name' => $user[0],
+						'user_password' => $user[1],
+						'user_level' => (int)$user[2]
+						);
+					if($_SERVER['PHP_AUTH_USER'] == $user['user_name']){
+						$hasUser = true;
+						if(password_verify($arg['user_password'], $user['user_password'])){ //验证密码
+							unset($user['user_password']);
+							$loginUser = self::setLogin($user); //设置登录信息
+						}
+					}
+				}
+			}
+			if(isset($loginUser)) return $loginUser; //返回用户信息
 		}
 		return error($hasUser ? lang('user.wrongPassword') : lang('mod.notExists', lang('user.label')));
 	}
@@ -79,6 +134,8 @@ final class user extends mod{
 	 * @return array 操作结果
 	 */
 	static function logout(){
+		if(isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])) //HTTP 访问认证
+			header("HTTP/1.0 401 Unauthorized"); //清除浏览器的授权信息
 		if(session_status() == PHP_SESSION_ACTIVE && get_me()){
 			_user('me_id', false); //清除内存中的用户信息
 			_user('me_level', false);

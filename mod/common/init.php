@@ -9,7 +9,7 @@ if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 
 	exit('PHP version lower 5.3.0, unable to start ModPHP.');
 
 /** 定义常量 MOD_VERSION, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '2.2.5'); //ModPHP 版本
+define('MOD_VERSION', '2.2.6'); //ModPHP 版本
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true); //网站根目录
 $NSFile = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 define('__SCRIPT__', substr($NSFile, strlen(__ROOT__)) ?: $NSFile, true); //执行脚本
@@ -76,59 +76,6 @@ $NSPreInit = function() use($NSInstalled){
 	if(is_agent() && strapos(url(), site_url()) !== 0 && !is_proxy_server() && strapos(str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME'])), __ROOT__) === 0)
 		redirect(site_url().substr(url(), strlen(detect_site_url())), 301);
 
-	/** 配置 Session */
-	$sess = config('mod.session');
-	ini_set('session.gc_maxlifetime', $sess['maxLifeTime']*60); //生存期
-	if($sess['name']) session_name($sess['name']); //Session 名称
-	$path = $sess['savePath'];
-	if($path){
-		if($path[0] != '/' && $path[1] != ':') $path = __ROOT__.$path;
-		session_save_path($path); //会话文件保存目录
-	}
-	if(is_agent()){
-		$url = parse_url(trim(site_url(), '/'));
-		$path = @$url['path'] ?: '/';
-		session_set_cookie_params(0, $path); //客户端 Cookie 作用域
-		$sname = session_name();
-		$sid = @$_COOKIE[$sname] ?: @$_REQUEST[$sname];
-		if($sid){
-			if(empty($_COOKIE[$sname])){ //如果不使用 Cookie 传输 Session ID
-				session_id($sid);
-				ini_set('session.use_cookies', 'off'); //则关闭使用 Cookie 的设置
-			}
-			session_start(); //被动开启 Session
-		}
-	}
-
-	/** 解析 URL 参数并填充 $_GET */
-	if(__SCRIPT__ == 'mod.php'){
-		$url = parse_url(url());
-		if(isset($url['query']) && preg_match('/[_0-9a-zA-Z]+::.*/', $url['query'])){ //形式：obj::act|arg1:value1[|...]
-			array_shift($_GET);
-			$delimiter = strpos($url['query'], '|') ? '|' : '&'; //分隔符
-			$arg = explode($delimiter, $url['query']);
-			$arg[0] = explode('::', $arg[0]);
-			$_GET['obj'] = $arg[0][0];
-			$_GET['act'] = $arg[0][1];
-			$arg = array_slice($arg, 1);
-			foreach ($arg as $param) {
-				$sep = strpos($param, ':') ? ':' : '='; //分隔符
-				$param = explode($sep, $param);
-				$_GET = array_merge($_GET, array($param[0] => @$param[1]));
-			}
-		}elseif(preg_match('/mod.php\/(.+)\/(.+)/i', $url['path'])){ //形式：obj/act/arg1/value1[/...]
-			$url['path'] = substr(url(), strlen(site_url())+8);
-			$url['path'] = explode('/', $url['path']);
-			if(isset($url['path'][0], $url['path'][1])){
-				$_GET['obj'] = $url['path'][0];
-				$_GET['act'] = $url['path'][1];
-				for ($i=2; $i < count($url['path']); $i += 2) { 
-					$_GET = array_merge($_GET, array($url['path'][$i] => @$url['path'][$i+1] ?: ''));
-				}
-			}
-		}
-	}
-
 	/** 连接数据库 */
 	if($NSInstalled){
 		$conf = config('mod.database');
@@ -142,6 +89,65 @@ $NSPreInit = function() use($NSInstalled){
 		if(database::$error) exit(database::$error); //遇到错误，终止程序
 	}
 
+	/** 配置 Session */
+	$sess = config('mod.session');
+	ini_set('session.gc_maxlifetime', $sess['maxLifeTime']*60); //生存期
+	if($sess['name']) session_name($sess['name']); //Session 名称
+	$path = $sess['savePath'];
+	if($path){
+		if($path[0] != '/' && $path[1] != ':') $path = __ROOT__.$path;
+		session_save_path($path); //会话文件保存目录
+	}
+
+	if(is_agent()){
+		/** 设置会话 Cookie */
+		$url = parse_url(trim(site_url(), '/'));
+		$path = @$url['path'] ?: '/';
+		session_set_cookie_params(0, $path); //客户端 Cookie 作用域
+		$sname = session_name();
+		$sid = @$_COOKIE[$sname] ?: @$_REQUEST[$sname];
+		if($sid){
+			if(empty($_COOKIE[$sname])){ //如果不使用 Cookie 传输 Session ID
+				session_id($sid);
+				ini_set('session.use_cookies', 'off'); //则关闭使用 Cookie 的设置
+			}
+			session_start(); //被动开启 Session
+		}
+
+		/** 解析 URL 参数并填充 $_GET */
+		if(__SCRIPT__ == 'mod.php'){
+			$url = parse_url(url());
+			if(isset($url['query']) && preg_match('/[_0-9a-zA-Z]+::.*/', $url['query'])){ //形式：obj::act|arg1:value1[|...]
+				array_shift($_GET);
+				$delimiter = strpos($url['query'], '|') ? '|' : '&'; //分隔符
+				$arg = explode($delimiter, $url['query']);
+				$arg[0] = explode('::', $arg[0]);
+				$_GET['obj'] = $arg[0][0];
+				$_GET['act'] = $arg[0][1];
+				$arg = array_slice($arg, 1);
+				foreach ($arg as $param) {
+					$sep = strpos($param, ':') ? ':' : '='; //分隔符
+					$param = explode($sep, $param);
+					$_GET = array_merge($_GET, array($param[0] => @$param[1]));
+				}
+			}elseif(preg_match('/mod.php\/(.+)\/(.+)/i', $url['path'])){ //形式：obj/act/arg1/value1[/...]
+				$url['path'] = substr(url(), strlen(site_url())+8);
+				$url['path'] = explode('/', $url['path']);
+				if(isset($url['path'][0], $url['path'][1])){
+					$_GET['obj'] = $url['path'][0];
+					$_GET['act'] = $url['path'][1];
+					for ($i=2; $i < count($url['path']); $i += 2) { 
+						$_GET = array_merge($_GET, array($url['path'][$i] => @$url['path'][$i+1] ?: ''));
+					}
+				}
+			}
+		}
+
+		//HTTP 访问认证
+		if((config('mod.httpAuth') && !is_logined()) || (!$NSInstalled && !empty($_SERVER['PHP_AUTH_DIGEST']))){
+			http_auth_login("HTTP Authentication", config('mod.httpAuth'));
+		}
+	}
 };
 $NSPreInit();
 
@@ -249,10 +255,7 @@ function init(){
 
 /** 执行客户端请求 */
 if(is_agent()){
-		//HTTP 访问认证
-	if(config('mod.httpAuth')){
-		http_auth_login();
-	}elseif(__SCRIPT__ == 'mod.php'){ //通过 URL 传参的方式执行类方法
+	if(__SCRIPT__ == 'mod.php'){ //通过 URL 传参的方式执行类方法
 		if(is_403() || is_404() || is_500()) goto display; //HTTP 错误跳转到显示页面
 		conv_request_vars(); //转换表单请求参数
 		$reqMd = $_SERVER['REQUEST_METHOD'];

@@ -1331,7 +1331,6 @@ function decrypt($data, $key){
 	}
 	$expire = substr($str, $klen, 10);
 	if($expire > 0 && $expire < time()){ //判断密文是否过期
-		// trigger_error("The encrypted data is expired.", E_USER_WARNING);
 		return false;
 	}
 	return substr($str, $klen+10);
@@ -1356,4 +1355,58 @@ function is_robot($spider = ''){
  */
 function extname($filename){
 	return strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+}
+
+/**
+ * http_digest_auth() 进行 HTTP 摘要认证
+ * @param  array    $users          保存用户信息的关联数组，格式为 array('username' => 'password')
+ * @param  callable $error_callback [可选]用户取消登录时触发的回调函数
+ * @param  string   $realm          [可选]设置域信息
+ * @return string                   登录的用户名
+ */
+function http_digest_auth(array $users, $error_callback = null, $realm = 'HTTP Digest Authentication'){
+	if(empty($_SERVER['PHP_AUTH_DIGEST'])){
+		$nonce = md5(uniqid()); //随机数
+		$opaque = md5($realm);
+		/** 发送摘要认证响应头 */
+		header('HTTP/1.1 401 Unauthorized');
+		header('WWW-Authenticate: Digest realm="'.$realm.'", qop="auth", nonce="'.$nonce.'", opaque="'.$opaque.'"');
+		if(is_callable($error_callback)){
+			$error_callback(); //用户取消登录则激活回调函数
+		}else{
+			exit("401 Unauthorized");
+		}
+	}else{
+		$digest = array('username'=>'', 'realm'=>'', 'nonce'=>'', 'uri'=>'', 'response'=>'', 'opaque'=>'', 'qop'=>'', 'nc'=>'', 'cnonce'=>'');
+		foreach(explode(',', $_SERVER['PHP_AUTH_DIGEST']) as $part){
+			$part = trim($part);
+			$i = strpos($part, "=");
+			$key = substr($part, 0, $i);
+			$value = trim(substr($part, $i+1), '"\'');
+			if(isset($digest[$key])){
+				$digest[$key] = $value; //获取摘要信息
+			}
+		}
+		foreach($digest as $key => $val){
+			if(!$val || ($key == 'username' && !isset($users[$val]))){ //判断认证信息是否合法以及用户是否存在
+				unset($_SERVER['PHP_AUTH_DIGEST']);
+				return http_digest_auth($users, $error_callback, $realm); //重新认证
+			}
+		}
+		$A1 = $digest['username'].':'.$digest['realm'].':'.$users[$digest['username']];
+		$A2 = $_SERVER['REQUEST_METHOD'].':'.$digest['uri'];
+		$expect = md5(implode(':', array( //认证预期值
+				md5($A1),
+				$digest['nonce'],
+				$digest['nc'],
+				$digest['cnonce'],
+				$digest['qop'],
+				md5($A2)
+			)));
+		if($expect != $digest['response']){ //预期值与客户端响应不同则说明认证失败
+			unset($_SERVER['PHP_AUTH_DIGEST']);
+			return http_digest_auth($users, $error_callback, $realm);
+		}
+		return $digest['username'];
+	}
 }

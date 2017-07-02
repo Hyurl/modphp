@@ -1153,24 +1153,46 @@ endif;
 
 /**
  * http_auth_login() 使用 HTTP 访问认证登录账户
- * @return array     操作结果
+ * @param  string $realm 设置域信息
+ * @param  string $type  认证方式，1：基本认证(默认)，2：摘要认证(仅系统未安装时有效)
+ * @return array         操作结果
  */
-function http_auth_login(){
-	if(empty($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])){
-		header('WWW-Authenticate: Basic realm="ModPHP '.MOD_VERSION.'"'); //发送要求验证头部
-		report_401(); //报告 401 并阻止输出
-	}else{
-		$loginKey = config('user.keys.login');
-		$loginKey = strstr($loginKey, '|', true) ?: $loginKey;
-		$arg = array( //登陆参数
-			$loginKey => $_SERVER['PHP_AUTH_USER'], //用户登录字段
-			'user_password' => $_SERVER['PHP_AUTH_PW'] //用户密码
-			);
-		$result = user::login($arg); //登录
-		if(!$result['success']){
-			header('WWW-Authenticate: Basic realm="ModPHP '.MOD_VERSION.'"');
-			report_401();
+function http_auth_login($realm = "HTTP Authentication", $type = 1){
+	if(!config('mod.installed') && ($type === 2 || !empty($_SERVER['PHP_AUTH_DIGEST']))){
+		$key = config('user.password.encryptKey'); //密码解密密钥
+		$users = array();
+		$userMeta = array();
+		foreach(load_config('users.php') as $i => $user){ //遍历用户
+			$user = explode(':', $user);
+			if(count($user) == 3){ //合法的用户描述符
+				$users[$user[0]] = decrypt($user[1], $key);
+				$userMeta[$user[0]] = array(
+					'user_id' => $i+1,
+					'user_level' => (int)$user[2]
+					);
+			}
 		}
-		return $result;
+		$username = http_digest_auth($users, 'report_401', $realm);
+		_user('me_id', $userMeta[$username]['user_id']); //设置登录信息
+		_user('me_level', $userMeta[$username]['user_level']);
+		return user::getMe();
+	}else{
+		if(empty($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW'])){
+			header('WWW-Authenticate: Basic realm="'.$realm.'"'); //发送要求验证头部
+			report_401(); //报告 401 并阻止输出
+		}else{
+			$loginKey = config('user.keys.login');
+			$loginKey = strstr($loginKey, '|', true) ?: $loginKey;
+			$arg = array( //登陆参数
+				$loginKey => $_SERVER['PHP_AUTH_USER'], //用户登录字段
+				'user_password' => $_SERVER['PHP_AUTH_PW'] //用户密码
+				);
+			$result = user::login($arg); //登录
+			if(!$result['success']){
+				unset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
+				http_auth_login($realm);
+			}
+			return $result;
+		}
 	}
 }

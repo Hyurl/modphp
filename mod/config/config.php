@@ -18,7 +18,7 @@ return array(
 		'pathinfoMode' => false, //如果开启, create_url() 创建的路径将包含模板入口文件
 		'jsonSerialize' => true, //使用 JSON 序列化数据
 		'debug' => true, //调试模式，显示错误，2: 在网页中显示运行信息，3: 在浏览器控制台中显示运行信息
-		'httpAuth' => false, //全局 HTTP 访问认证，如果开启，则必须登录才能访问站点
+		'httpAuth' => false, //全局 HTTP 访问认证，如果开启，则必须登录才能访问站点；也可以将其设置为 2，将基本认证替换为摘要认证(仅系统未安装时有效，如果系统已安装，设置 2 也等于 true)
 		'database' => array( //数据库设置
 			'type' => 'mysql', //数据库类型
 			'host' => 'localhost', //主机地址
@@ -81,6 +81,7 @@ return array(
 		'password' => array( //字段设置
 			'minLength'=>5, //最小长度
 			'maxLength'=>18, //最大长度
+			'encryptKey'=>'MODPHP', //HTTP 摘要认证时，本地用户密码加密/解密的密钥
 			),
 		'level' => array( //级别设置
 			'admin' => 5, //管理员

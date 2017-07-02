@@ -8,12 +8,12 @@ final class user extends mod{
 	private static function sessCookie($val, $expires){
 		if(is_agent()){
 			$params = session_get_cookie_params();
-			setcookie(session_name(), $val,  $expires, $params['path']); //重写客户端 Cookie
+			setcookie(session_name(), $val, $expires, $params['path']); //重写客户端 Cookie
 		}
 	}
 
 	/** setLogin() 设置登录信息 */
-	private static function setLogin($user){
+	private static function setLogin($user, $arg){
 		if(!session_id()) session_id(md5(uniqid().rand_str(13))); //生成随机 Session ID
 		if(session_status() != PHP_SESSION_ACTIVE) @session_start();
 		$_SESSION['ME_ID'] = (int)$user['user_id']; //保存用户 ID 到 Session 中
@@ -35,9 +35,9 @@ final class user extends mod{
 	 * @return array  当前登录的用户或错误
 	 */
 	static function getMe(){
-		if(session_status() == PHP_SESSION_ACTIVE && !empty($_SESSION['ME_ID'])){
+		if((session_status() == PHP_SESSION_ACTIVE && !empty($_SESSION['ME_ID'])) || _user('me_id')){
 			if(config('mod.installed')){
-				$result = database::open(0)->select('user', '*', "`user_id` = ".$_SESSION['ME_ID']);
+				$result = database::open(0)->select('user', '*', "`user_id` = ".(_user('me_id') ?: $_SESSION['ME_ID']));
 				if($result && $me = $result->fetch()){
 					_user('me_id', (int)$me['user_id']); //将登录用户 ID 和等级保存到内存中
 					_user('me_level', (int)$me['user_level']);
@@ -54,7 +54,7 @@ final class user extends mod{
 							'user_name' => $user[0],
 							'user_level' => (int)$user[2]
 							);
-						if($user['user_id'] == $_SESSION['ME_ID']){
+						if($user['user_id'] == (_user('me_id') ?: $_SESSION['ME_ID'])){
 							$me = $user;
 							_user('me_id', $me['user_id']); //将登录用户 ID 和等级保存到内存中
 							_user('me_level', $me['user_level']);
@@ -101,7 +101,7 @@ final class user extends mod{
 			while($result && $user = $result->fetch()){
 				$hasUser = true;
 				if(password_verify($arg['user_password'], $user['user_password'])){ //验证密码
-					return self::setLogin($user); //设置设置登录信息并返回用户信息
+					return self::setLogin($user, $arg); //设置设置登录信息并返回用户信息
 				}
 			}
 		}elseif($httpAuth){ //HTTP 访问认证
@@ -118,7 +118,7 @@ final class user extends mod{
 						$hasUser = true;
 						if(password_verify($arg['user_password'], $user['user_password'])){ //验证密码
 							unset($user['user_password']);
-							$loginUser = self::setLogin($user); //设置登录信息
+							$loginUser = self::setLogin($user, $arg); //设置登录信息
 						}
 					}
 				}
@@ -134,14 +134,17 @@ final class user extends mod{
 	 * @return array 操作结果
 	 */
 	static function logout(){
-		if(isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW'])) //HTTP 访问认证
+		if(isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) || isset($_SERVER['PHP_AUTH_DIGEST'])) //HTTP 访问认证
 			header("HTTP/1.0 401 Unauthorized"); //清除浏览器的授权信息
-		if(session_status() == PHP_SESSION_ACTIVE && get_me()){
+		$sessionActive = session_status() == PHP_SESSION_ACTIVE;
+		if(($sessionActive || _user('me_id')) && get_me()){
 			_user('me_id', false); //清除内存中的用户信息
 			_user('me_level', false);
-			session_unset();
-			session_destroy(); //销毁 Session
-			self::sessCookie('', time()-60); //销毁 Cookie
+			if($sessionActive){
+				session_unset();
+				session_destroy(); //销毁 Session
+				self::sessCookie('', time()-60); //销毁 Cookie
+			}
 			do_hooks('user.logout'); //执行挂钩函数
 			if(error()) return error();
 			return success(lang('user.loggedOut'));

@@ -2,6 +2,7 @@
 if(isset($_GET['action'])){
 	if($_GET['action'] == 'login' && !is_logined()){
 		$result = http_auth_login(); //HTTP 认证登录
+		// $result = http_auth_login("HTTP Authentication", 2); //使用摘要认证登录
 	}elseif($_GET['action'] == 'logout'){
 		$result = user::logout(); //登出
 	}

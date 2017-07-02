@@ -1155,6 +1155,8 @@ endif;
  * http_auth_login() 使用 HTTP 访问认证登录账户
  * @param  string $realm 设置域信息
  * @param  string $type  认证方式，1：基本认证(默认)，2：摘要认证(仅系统未安装时有效)
+ *                       如果使用摘要认证登录，那么程序会自动生成一个全局变量 $digest
+ *                       来保存解析后的认证信息。
  * @return array         操作结果
  */
 function http_auth_login($realm = "HTTP Authentication", $type = 1){
@@ -1172,7 +1174,7 @@ function http_auth_login($realm = "HTTP Authentication", $type = 1){
 					);
 			}
 		}
-		$username = http_digest_auth($users, 'report_401', $realm);
+		$username = http_digest_auth($users, 'report_401', $realm, $GLOBALS['digest']);
 		_user('me_id', $userMeta[$username]['user_id']); //设置登录信息
 		_user('me_level', $userMeta[$username]['user_level']);
 		return user::getMe();

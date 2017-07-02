@@ -1362,9 +1362,11 @@ function extname($filename){
  * @param  array    $users          保存用户信息的关联数组，格式为 array('username' => 'password')
  * @param  callable $error_callback [可选]用户取消登录时触发的回调函数
  * @param  string   $realm          [可选]设置域信息
+ * @param  array    &$digest        [可选]如果设置，将被填充为浏览器发送的摘要信息
  * @return string                   登录的用户名
  */
-function http_digest_auth(array $users, $error_callback = null, $realm = 'HTTP Digest Authentication'){
+function http_digest_auth(array $users, $error_callback = null, $realm = '', &$digest = array()){
+	$realm = $realm ?: 'HTTP Digest Authentication';
 	if(empty($_SERVER['PHP_AUTH_DIGEST'])){
 		$nonce = md5(uniqid()); //随机数
 		$opaque = md5($realm);
@@ -1390,7 +1392,7 @@ function http_digest_auth(array $users, $error_callback = null, $realm = 'HTTP D
 		foreach($digest as $key => $val){
 			if(!$val || ($key == 'username' && !isset($users[$val]))){ //判断认证信息是否合法以及用户是否存在
 				unset($_SERVER['PHP_AUTH_DIGEST']);
-				return http_digest_auth($users, $error_callback, $realm); //重新认证
+				return http_digest_auth($users, $error_callback, $realm, $digest); //重新认证
 			}
 		}
 		$A1 = $digest['username'].':'.$digest['realm'].':'.$users[$digest['username']];
@@ -1405,7 +1407,7 @@ function http_digest_auth(array $users, $error_callback = null, $realm = 'HTTP D
 			)));
 		if($expect != $digest['response']){ //预期值与客户端响应不同则说明认证失败
 			unset($_SERVER['PHP_AUTH_DIGEST']);
-			return http_digest_auth($users, $error_callback, $realm);
+			return http_digest_auth($users, $error_callback, $realm, $digest);
 		}
 		return $digest['username'];
 	}

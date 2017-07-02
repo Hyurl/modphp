@@ -980,7 +980,7 @@ function register_module_functions($module = ''){
 
 /**
  * report_http_error() 报告 HTTP 错误
- * @param string $code 状态码，403，404 或 500
+ * @param string $code 状态码，401，403，404 或 500
  * @param string $msg  [可选]错误提示
  */
 function report_http_error($code, $msg = ''){
@@ -1022,8 +1022,8 @@ function report_http_error($code, $msg = ''){
 }
 
 /**
- * report_403/404/500() 报告 403/404/500 错误
- * is_403/404/500() 判断是否为错误页面
+ * report_401/403/404/500() 报告 401/403/404/500 错误
+ * is_401/403/404/500() 判断是否为错误页面
  * @param  string $msg 错误提示
  */
 foreach (array(401, 403, 404, 500) as $code) {
@@ -1063,7 +1063,7 @@ endif;
  * strapos() 查找字符串中第一次出现的位置，根据操作系统自动决定是否使用大小写敏感
  * @param  string  $str   规定要搜索的字符串
  * @param  string  $find  规定要查找的字符串
- * @param  integer $start 规定在何处开始搜索
+ * @param  integer $start [可选]规定在何处开始搜索
  * @return mixed          返回字符串在另一字符串中第一次出现的位置，如果没有找到字符串则返回 FALSE。
  */
 function strapos($str, $find, $start = 0){
@@ -1153,8 +1153,8 @@ endif;
 
 /**
  * http_auth_login() 使用 HTTP 访问认证登录账户
- * @param  string $realm 设置域信息
- * @param  string $type  认证方式，1：基本认证(默认)，2：摘要认证(仅系统未安装时有效)
+ * @param  string $realm [可选]设置域信息
+ * @param  string $type  [可选]认证方式，1：基本认证(默认)，2：摘要认证(仅系统未安装时有效)
  *                       如果使用摘要认证登录，那么程序会自动生成一个全局变量 $digest
  *                       来保存解析后的认证信息。
  * @return array         操作结果

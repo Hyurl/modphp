@@ -1382,13 +1382,15 @@ function http_digest_auth(array $users, $error_callback = null, $realm = '', &$d
 		}
 	}else{
 		$digest = array('username'=>'', 'realm'=>'', 'nonce'=>'', 'uri'=>'', 'response'=>'', 'opaque'=>'', 'qop'=>'', 'nc'=>'', 'cnonce'=>'');
-		foreach(explode(',', $_SERVER['PHP_AUTH_DIGEST']) as $part){
-			$part = trim($part);
-			$i = strpos($part, "=");
-			$key = substr($part, 0, $i);
-			$value = trim(substr($part, $i+1), '"\'');
-			if(isset($digest[$key])){
-				$digest[$key] = $value; //获取摘要信息
+		if(preg_match_all('/\w+=["\'].*["\']|\w+=[\w\d]+\b/U', $_SERVER['PHP_AUTH_DIGEST'], $matches)){
+			foreach($matches[0] as $part){
+				$part = trim($part);
+				$i = strpos($part, "=");
+				$key = substr($part, 0, $i);
+				$value = trim(substr($part, $i+1), '"\'');
+				if(isset($digest[$key])){
+					$digest[$key] = $value; //获取摘要信息
+				}
 			}
 		}
 		foreach($digest as $key => $val){

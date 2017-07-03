@@ -1399,7 +1399,7 @@ function http_digest_auth(array $users, $error_callback = null, $realm = '', &$d
 				return http_digest_auth($users, $error_callback, $realm, $digest); //重新认证
 			}
 		}
-		$A1 = $digest['username'].':'.$digest['realm'].':'.$users[$digest['username']];
+		$A1 = $digest['username'].':'.$realm.':'.$users[$digest['username']];
 		$A2 = $_SERVER['REQUEST_METHOD'].':'.$digest['uri'];
 		$expect = md5(implode(':', array( //认证预期值
 				md5($A1),

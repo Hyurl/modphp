@@ -207,7 +207,7 @@ final class template{
 	/** hasPHPTag() 判断是否有 PHP 标签 */
 	private static function hasPHPTag($html, &$tagName){
 		$bool = preg_match('/<('.join('|', self::$tags).')\b/Ui', $html, $result);
-		$tagName = @$result[1] ?: '';
+		$tagName = isset($result[1]) ? $result[1] : '';
 		return $bool;
 	}
 

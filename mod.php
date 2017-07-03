@@ -34,7 +34,8 @@ while(true){
 			$STDIN = trim($STDIN);
 			if($ENCODING && strcasecmp($ENCODING, 'UTF-8')) //转换编码
 				$STDIN = iconv($ENCODING, 'UTF-8', $STDIN) ?: $STDIN;
-			$argv = parse_cli_param(parse_cli_str('"'.$_SERVER['argv'][0].'" '.$STDIN));
+			$argv = parse_cli_str('"'.$_SERVER['argv'][0].'" '.$STDIN);
+			$argv = parse_cli_param($argv);
 		}else{ //命令行直接调用
 			$argv = parse_cli_param($_SERVER['argv']);
 		}

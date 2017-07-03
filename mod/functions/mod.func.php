@@ -319,13 +319,13 @@ function is_client_call($obj = '', $act = ''){
 	if((__SCRIPT__ != 'mod.php' && !is_socket()))
 		return false;
 	elseif($obj && $act) //同时比较 obj 和 act
-		return !strcasecmp($obj, @$_GET['obj']) && !strcasecmp($act, @$_GET['act']);
+		return isset($_GET['obj'], $_GET['act']) && !strcasecmp($obj, $_GET['obj']) && !strcasecmp($act, $_GET['act']);
 	elseif($obj) //比较 obj
-		return !strcasecmp($obj, @$_GET['obj']);
+		return isset($_GET['obj']) && !strcasecmp($obj, $_GET['obj']);
 	elseif($act) //比较 act
-		return !strcasecmp($act, @$_GET['act']);
+		return isset($_GET['act']) && !strcasecmp($act, $_GET['act']);
 	else
-		return @$_GET['obj'] || @$_GET['act'];
+		return !empty($_GET['obj']) || !empty($_GET['act']);
 }
 
 /**
@@ -333,7 +333,7 @@ function is_client_call($obj = '', $act = ''){
  * @return boolean
  */
 function is_socket(){
-	return @$_SERVER['SOCKET_SERVER'] == 'on';
+	return isset($_SERVER['SOCKET_SERVER']) && $_SERVER['SOCKET_SERVER'] == 'on';
 }
 function_alias('is_socket', 'is_websocket');
 
@@ -658,8 +658,8 @@ function display_file($url = '', $set = false){
 	if($tpl != $tplPath.$home){ //URL 地址对应一个真实的文件
 		$ext = '.'.extname($tpl);
 		if($ext != '.'){
-			$cts = load_config('mime.ini'); //加载 Mime 类型配置
-			$mime = @$cts[$ext] ?: 'text/plain';
+			$types = load_config('mime.ini'); //加载 Mime 类型配置
+			$mime = isset($types[$ext]) ? $types[$ext] : 'text/plain';
 		}
 		if($isIndex) set_content_type($mime); //设置响应头中的 Mime 类型
 		if(staticuri($tpl) && $args = analyze_url(staticuri($tpl), $uri)){ //尝试解析 URL
@@ -676,7 +676,7 @@ function display_file($url = '', $set = false){
 			$config = config();
 			//尝试获取模块记录
 			foreach(database() as $key => $value){
-				if(!empty($config[$key]['staticURI'])){
+				if(!empty($config[$key]['staticURI']) && !empty($config[$key]['template'])){
 					$URI = $config[$key]['staticURI'];
 					$get = 'get_'.$key;
 					if($args = analyze_url($URI, $uri)){ //解析 URL 地址
@@ -687,7 +687,7 @@ function display_file($url = '', $set = false){
 						}
 						if(isset($where) && ($result = database::open(0)->select($key, "{$key}_id", $where)) && $result->fetchObject()){ //检查记录是否存在
 							if($isIndex) $_GET = array_merge($_GET, $args);
-							$file = $tplPath.@$config[$key]['template'];
+							$file = $tplPath.$config[$key]['template'];
 							if($_file !== $file || $sid !== session_id()){
 								$_file = $file;
 								$sid = session_id(); //更新会话
@@ -700,12 +700,12 @@ function display_file($url = '', $set = false){
 			}
 			//尝试根据自定义永久链接获取记录
 			foreach(database() as $key => $value){
-				if(isset($value[$key.'_link'])){
+				if(isset($value[$key.'_link']) && !empty($config[$key]['template'])){
 					if($link = substr($url, strlen(site_url($index)))){
 						$get = 'get_'.$key;
 						$result = database::open(0)->select($key, "{$key}_id", "`{$key}_link` = '{$link}'"); //检查记录是否存在
 						if($result && $result->fetchObject()){
-							$file = $tplPath.@$config[$key]['template'];
+							$file = $tplPath.$config[$key]['template'];
 							if($_file !== $file || $sid !== session_id()){
 								$_file = $file;
 								$sid = session_id();

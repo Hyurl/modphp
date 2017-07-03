@@ -102,10 +102,10 @@ $NSPreInit = function() use($NSInstalled){
 	if(is_agent()){
 		/** 设置会话 Cookie */
 		$url = parse_url(trim(site_url(), '/'));
-		$path = @$url['path'] ?: '/';
+		$path = isset($url['path']) ? $url['path'] : '/';
 		session_set_cookie_params(0, $path); //客户端 Cookie 作用域
 		$sname = session_name();
-		$sid = @$_COOKIE[$sname] ?: @$_REQUEST[$sname];
+		$sid = !empty($_COOKIE[$sname]) ? $_COOKIE[$sname] : (isset($_REQUEST[$sname]) ? $_REQUEST[$sname] : '');
 		if($sid){
 			if(empty($_COOKIE[$sname])){ //如果不使用 Cookie 传输 Session ID
 				session_id($sid);
@@ -128,7 +128,7 @@ $NSPreInit = function() use($NSInstalled){
 				foreach ($arg as $param) {
 					$sep = strpos($param, ':') ? ':' : '='; //分隔符
 					$param = explode($sep, $param);
-					$_GET = array_merge($_GET, array($param[0] => @$param[1]));
+					$_GET = array_merge($_GET, array($param[0] => isset($param[1]) ? $param[1] : ''));
 				}
 			}elseif(preg_match('/mod.php\/(.+)\/(.+)/i', $url['path'])){ //形式：obj/act/arg1/value1[/...]
 				$url['path'] = substr(url(), strlen(site_url())+8);
@@ -137,7 +137,7 @@ $NSPreInit = function() use($NSInstalled){
 					$_GET['obj'] = $url['path'][0];
 					$_GET['act'] = $url['path'][1];
 					for ($i=2; $i < count($url['path']); $i += 2) { 
-						$_GET = array_merge($_GET, array($url['path'][$i] => @$url['path'][$i+1] ?: ''));
+						$_GET = array_merge($_GET, array($url['path'][$i] => isset($url['path'][$i+1]) ? $url['path'][$i+1] : ''));
 					}
 				}
 			}

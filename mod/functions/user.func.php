@@ -37,7 +37,7 @@ function get_me($key = ''){
 	else if(isset($result[$key])) return $result[$key];
 	else if(strpos($key, 'user_') !== 0){
 		$key = 'user_'.$key;
-		return @$result[$key];
+		return isset($result[$key]) ? $result[$key] : null;
 	}
 }
 
@@ -93,7 +93,7 @@ foreach (database('user') as $key) {
 		elseif(isset($result[$key])) return $result[$key];
 		elseif(strpos($key, "user_") !== 0){
 			$key = "user_".$key;
-			return @$result[$key];
+			return isset($result[$key]) ? $result[$key] : null;
 		}
 	}';
 	eval($code); //计算并运行代码

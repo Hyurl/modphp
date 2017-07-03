@@ -59,8 +59,8 @@ SocketServer::on('open', function($event){ //绑定连接事件
 			'file'=>"data:{$type},{$event['data']}",
 			);
 	}
-	$_GET['obj'] = @$data['obj'];
-	$_GET['act'] = @$data['act'];
+	$_GET['obj'] = isset($data['obj']) ? $data['obj'] : '';
+	$_GET['act'] = isset($data['act']) ? $data['act'] : '';
 	$obj = strtolower($_GET['obj']);
 	$act = $_GET['act'];
 	unset($data['obj'], $data['act']);
@@ -77,7 +77,7 @@ SocketServer::on('open', function($event){ //绑定连接事件
 				$data['HTTP_REFERER'] = $scheme.'://'.$host.$port.$header[1];
 			}
 		}
-		$_SERVER['HTTP_REFERER'] = @$data['HTTP_REFERER'] ?: ''; //设置来路页面
+		$_SERVER['HTTP_REFERER'] = isset($data['HTTP_REFERER']) ? $data['HTTP_REFERER'] : ''; //设置来路页面
 		$init = array('__DISPLAY__' => null);
 		if($installed){
 			do_hooks('mod.init', $init); //系统初始化接口
@@ -137,7 +137,7 @@ SocketServer::on('open', function($event){ //绑定连接事件
 			$SOCKET_INFO[$srcId]['session_id'] = session_id();
 			$SOCKET_INFO[$srcId]['user_id'] = me_id();
 		}
-	}elseif($installed && !$obj && !$act && @$data[$sname] == session_id()){
+	}elseif($installed && !$obj && !$act && isset($data[$sname]) && $data[$sname] == session_id()){
 		SocketServer::send(json_encode(user::getMe())); //重现会话操作，将登录用户的信息发送给客户端
 	}else{
 		forbidden:
@@ -167,7 +167,7 @@ if(!SocketServer::server()){
 		is_agent() ? report_500($STDOUT) : exit($STDOUT."\n");
 	}
 	//启动监听
-	SocketServer::listen(@$_SERVER['argv'][1] ?: config('mod.SocketServer.port'), function($socket) use($STDOUT){
+	SocketServer::listen(isset($_SERVER['argv'][1]) ? $_SERVER['argv'][1] : config('mod.SocketServer.port'), function($socket) use($STDOUT){
 		if(!is_agent()) fwrite(STDOUT, $STDOUT."\n");
 	});
 }

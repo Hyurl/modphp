@@ -22,7 +22,7 @@ class SocketServerThread extends Thread{
 include 'mod/classes/socketserver.class.php'; //引入 SocketServer 扩展
 
 /** 监听端口 */
-$port = @$_SERVER['argv'][1] ?: 8080;
+$port = isset($_SERVER['argv'][1]) ? $_SERVER['argv'][1] : 8080;
 $server = SocketServer::listen($port, function($server, $port){
 	$tip = "SocketServer $server started on $port at ".date('D M d H:i:s Y');
 	fwrite(STDOUT, $tip.PHP_EOL.PHP_EOL);
@@ -31,7 +31,7 @@ $server = SocketServer::listen($port, function($server, $port){
 $threads = array(); //线程组
 
 /** 创建若干个线程并加入线程组 */
-for ($i=0; $i < (@$_SERVER['argv'][2] ?: 5); $i++) {
+for ($i=0; $i < (isset($_SERVER['argv'][2]) ? $_SERVER['argv'][2] : 5); $i++) {
 	$threads[$i] = new SocketServerThread($server);
 	$threads[$i]->start();
 }

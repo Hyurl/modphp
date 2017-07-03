@@ -113,7 +113,8 @@ final class mail{
 		}
 		$body = trim(imap_fetchbody(self::$imap, $num, $sec));
 		$func = array('imap_utf7_decode', 'imap_utf8', 'imap_binary', 'base64_decode', 'imap_qprint', 'imap_utf8');
-		if(isset($func[$encoding]) && is_callable($func[$encoding])) $body = @$func[$encoding]($body); //解码邮件
+		if(isset($func[$encoding]) && is_callable($func[$encoding]))
+			$body = @$func[$encoding]($body); //解码邮件
 		return self::imapResult($body);
 	}
 

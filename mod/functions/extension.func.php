@@ -96,7 +96,7 @@ function get_uploaded_files($key = ''){
 			$file = $_files;
 		}
 	}
-	return $key ? (@$files[$key] ?: false) : $files;
+	return $key ? (isset($files[$key]) ? $files[$key] : false) : $files;
 }
 
 /**
@@ -480,7 +480,7 @@ function is_agent($agent = ''){
  * @return boolean
  */
 function is_browser($agent = ''){
-	return is_agent($agent) && !is_curl() && !empty($_SERVER['HTTP_ACCEPT']) && !empty($_SERVER['HTTP_CONNECTION']) && (!strcasecmp($_SERVER['HTTP_CONNECTION'], 'keep-alive') || is_proxy());
+	return is_agent($agent) && !is_curl() && !empty($_SERVER['HTTP_ACCEPT']) && !empty($_SERVER['HTTP_CONNECTION']) && (strtolower($_SERVER['HTTP_CONNECTION']) == 'keep-alive' || is_proxy());
 }
 
 /**
@@ -499,7 +499,7 @@ function is_mobile($agent = ''){
  * @return boolean
  */
 function is_ajax(){
-	return is_browser() && !strcasecmp(@$_SERVER["HTTP_X_REQUESTED_WITH"], 'XMLHttpRequest');
+	return is_browser() && isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && strtolower($_SERVER["HTTP_X_REQUESTED_WITH"]) == 'xmlhttprequest';
 }
 
 /**
@@ -531,7 +531,7 @@ function is_get(){
  * @return boolean
  */
 function is_ssl(){
-	return isset($_SERVER['HTTPS']) && !strcasecmp($_SERVER['HTTPS'], 'on');
+	return isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on';
 }
 
 /**
@@ -562,7 +562,7 @@ function redirect($url, $code = 302, $time = 0, $msg = ''){
 	if(!is_agent()) return;
 	if(ob_get_length()) ob_end_clean(); //清空缓冲区
 	if(!$url) $url = url();
-	elseif($url == -1) $url = @$_SERVER['HTTP_REFERER'] ?: url();	
+	elseif($url == -1) $url = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : url();	
 	if(!headers_sent()){
 		if($code == 301) header('HTTP/1.1 301 Moved Permanently'); //永久重定向
 		else header('HTTP/1.1 302 Moved Temporarily');
@@ -1066,7 +1066,7 @@ function parse_cli_param(array $argv, $i = 0, $isArg = false, $args = array()){
 		$argv = array_slice($argv, 1);
 	}
 	if(!$argv) return $args;
-	if(@$argv[0][0] == '-'){
+	if(isset($argv[0][0]) && $argv[0][0] == '-'){
 		if(isset($argv[0][1]) && $argv[0][1] != '-' && !isset($argv[0][2])){ //-k 短键名参数
 			$key = $argv[0][1];
 		}elseif(isset($argv[0][1]) && $argv[0][1] == '-' && isset($argv[0][2]) && $argv[0][2] != '-'){ //--key 长键名参数
@@ -1096,7 +1096,8 @@ function parse_cli_param(array $argv, $i = 0, $isArg = false, $args = array()){
 		elseif($argv[0] != ';') //下一个命令开始
 			$args['param'][$i]['args'][] = rtrim($value, ';');
 	}
-	if(@$argv[$_i-1][strlen($argv[$_i-1])-1] == ';'){ //多命令分句
+	$last = strlen($argv[$_i-1])-1;
+	if(isset($argv[$_i-1][$last]) && $argv[$_i-1][$last] == ';'){ //多命令分句
 		$i += 1;
 		$isArg = false;
 	}else{
@@ -1112,7 +1113,7 @@ function parse_cli_param(array $argv, $i = 0, $isArg = false, $args = array()){
 /**
  * parse_cli_str() 解析命令行格式的字符串为数组
  * @param  string $str 输入字符串
- * @return array       解析后的字符串
+ * @return array       解析后的命令
  */
 function parse_cli_str($str){
 	if(preg_match_all('/(["].+["].*)[\s]|(.+)[\s]|([\'].+)\b[\']/U', $str." ", $matches)){
@@ -1189,6 +1190,7 @@ endif;
  */
 function doc($name = '', $return = false){
 	$name = $_name = $name ?: __function__;
+	$class = '';
 	$isClass = false; //是否为类
 	if($isMd = strpos($name, '::')){ //判断是否为方法
 		$class = substr($name, 0, $isMd);
@@ -1227,7 +1229,7 @@ function doc($name = '', $return = false){
 	}
 	$doc = '';
 	$includes = get_included_files(); //获取引入的所有文件
-	$classReg = "/(\/\*\*[\s\S]*\/)[\r\n\sa-zA-Z]+class[\s]+".ltrim(@$class, '\\').'[\s\S]*\{/iU'; //类定义格式
+	$classReg = "/(\/\*\*[\s\S]*\/)[\r\n\sa-zA-Z]+class[\s]+".ltrim($class, '\\').'[\s\S]*\{/iU'; //类定义格式
 	$funcReg = "/(\/\*\*[\s\S]*\/)[\r\n\sa-zA-Z]+function[\s]+".ltrim($name, '\\').'\([\s\S]*\)/iU'; //函数定义格式
 	$getDoc = function($code) use ($classReg, $funcReg, $isClass, $isMd, $hasNs, &$getDoc){
 		if((!$isClass && preg_match($funcReg, $code, $match)) || ($isClass && preg_match($classReg, $code, $match))){

@@ -1,8 +1,12 @@
 <?php 
-require_once("mod/common/init.php");
+// ModPHP 压缩包名称，如果设置，ModPHP 将从 ZIP 中加载内核
+defined('MOD_ZIP') or define('MOD_ZIP', '');
+
+require_once (MOD_ZIP ? 'zip://'.__DIR__.'/'.MOD_ZIP.'#' : '').'mod/common/init.php'; //引入初始化程序
+
 if(is_agent()){
 	/** 浏览器安装 */
-	require("mod/common/install.php");
+	require_once (MOD_ZIP ? 'zip://'.__DIR__.'/'.MOD_ZIP.'#' : '')."mod/common/install.php";
 }else{
 	/** 控制台安装 */
 	$result = mod::install(array(

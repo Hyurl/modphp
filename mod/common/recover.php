@@ -12,7 +12,7 @@ if(!is_dir($cdir = __ROOT__.'user/config/')) mkdir($cdir); //用户配置目录
 if(!is_dir($ldir = __ROOT__.'user/lang/')) mkdir($ldir); //用于语言包目录
 
 /** 恢复所有文件 */
-if(file_exists($zip = __ROOT__.'modphp.zip') && extension_loaded('zip')){
+if(!MOD_ZIP && file_exists($zip = __ROOT__.'modphp.zip') && extension_loaded('zip')){
 	foreach(zip_list($zip, false) as $file){
 		if(!file_exists(__ROOT__.$file)){
 			file_put_contents(__ROOT__.$file, file_get_contents('zip://'.$zip.'#'.$file));
@@ -27,33 +27,34 @@ if(strapos($tmp, __ROOT__) === 0 && !file_exists($file = $tmp.'.htaccess')){
 
 /** 恢复默认首页 */
 if(!file_exists($file = $tpl.config('site.home.template'))){
-	file_put_contents($file, file_get_contents(__DIR__.'/index.php'));
+	file_put_contents($file, file_get_contents(__CORE__.'common/index.php'));
 }
 
 /** 恢复用户配置文件 */
-foreach (scandir(__ROOT__.'mod/config/') as $file) {
-	if($file != '.' && $file != '..' && !file_exists($cdir.$file)){
-		file_put_contents($cdir.$file, file_get_contents(__ROOT__.'mod/config/'.$file));
+foreach ($GLOBALS['CORE'.INIT_TIME] as $file) {
+	if(strpos($file, 'config/') === 0 && !file_exists($cdir.basename($file))){
+		file_put_contents($cdir.basename($file), file_get_contents(__CORE__.$file));
 	}
 }
 
 /** 恢复语言包文件 */
 $file = strtolower(config('mod.language')).'.php';
 if(!file_exists($ldir.$file)){
-	file_put_contents($cdir.$file, file_get_contents(__ROOT__.'mod/lang/'.$file));
+	file_put_contents($cdir.$file, file_get_contents(__CORE__.'lang/'.$file));
 }
 
 /** 恢复自定义模块类文件 */
 if(config('mod.installed')){
 	foreach (array_keys(database()) as $table) {
-		$file = 'classes/'.$table.'.class.php';
-		if(!file_exists(__ROOT__.'mod/'.$file) && !file_exists($file = __ROOT__.'user/'.$file)){
+		$coreFile = 'classes/'.$table.'.class.php';
+		$userFile = __ROOT__.'user/classes/'.$table.'.class.php';
+		if(!in_array($coreFile, $GLOBALS['CORE'.INIT_TIME]) && !file_exists($userFile)){
 			$data = '<?php
 final class '.$table.' extends mod{
 	const TABLE = "'.$table.'";
 	const PRIMKEY = "'.get_primkey_by_table($table).'";
 }';
-			file_put_contents($file, $data);
+			file_put_contents($userFile, $data); //写出类文件
 		}
 	}
 }

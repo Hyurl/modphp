@@ -1,17 +1,22 @@
 <?php
+// ModPHP 压缩包名称，如果设置，ModPHP 将从 ZIP 中加载内核
+defined('MOD_ZIP') or define('MOD_ZIP', '');
+
 /** PHP 内置服务器，使用 php -S 0.0.0.0:80 index.php 的方式开启服务器 */
 if(PHP_SAPI == "cli-server"){
-	$dir = $_SERVER["DOCUMENT_ROOT"].DIRECTORY_SEPARATOR;
+	$dir = realpath($_SERVER["DOCUMENT_ROOT"]).DIRECTORY_SEPARATOR;
 	$file = explode("?", $_SERVER["REQUEST_URI"]);
-	$file = $dir.urldecode(substr($file[0], 1));
+	$file = lcfirst($dir.urldecode(substr($file[0], 1)));
 	if(!file_exists($file)){
 		$_SERVER["SCRIPT_FILENAME"] = $dir."index.php";
-	}elseif($file != __FILE__ && $file != __DIR__.DIRECTORY_SEPARATOR){
+	}elseif($file != lcfirst(__FILE__) && $file != lcfirst(__DIR__.DIRECTORY_SEPARATOR)){
 		return false;
 	}
 	unset($dir, $file);
 }
-require_once("mod/common/init.php");
+
+require_once (MOD_ZIP ? 'zip://'.__DIR__.'/'.MOD_ZIP.'#' : '').'mod/common/init.php'; //引入初始化程序
+
 /**
  * 模板加载说明：
  * 默认地，ModPHP 会通过模板入口文件(index.php)来调用模板目录中对应的文件。

@@ -1276,7 +1276,8 @@ function doc($name = '', $return = false){
 		}
 	};
 	foreach ($includes as $file) {
-		$code = file_get_contents($file); //文件内容
+		$inZip = stripos($file, '.zip#'); //是否为 ZIP 中的文件
+		$code = file_get_contents($inZip ? 'zip://'.$file : $file); //文件内容
 		if($hasNs){ //处理命名空间
 			if(!preg_match($nsReg, $code, $match))
 				continue;
@@ -1446,15 +1447,12 @@ function http_digest_auth(array $users, $error_callback = null, $realm = '', &$d
  */
 function load_config($file){
 	$ext = extname($file);
-	if(file_exists($file)){
-		if($ext == 'ini') //载入 ini
-			return parse_ini_file($file);
-		elseif($ext == 'json') //载入 json
-			return json_decode(file_get_contents($file));
-		elseif($ext == 'xml') //载入 XML
-			return xml2array(file_get_contents($file));
-		else //载入 php
-			return include $file;
-	}
-	return false;
+	if($ext == 'ini') //载入 ini
+		return parse_ini_file($file) ?: false;
+	elseif($ext == 'json') //载入 json
+		return json_decode(file_get_contents($file)) ?: false;
+	elseif($ext == 'xml') //载入 XML
+		return xml2array(file_get_contents($file)) ?: false;
+	else //载入 php
+		return include($file) ?: false;
 }

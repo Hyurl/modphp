@@ -1,5 +1,9 @@
 <?php
-require_once('mod/common/init.php');
+// ModPHP 压缩包名称，如果设置，ModPHP 将从 ZIP 中加载内核
+defined('MOD_ZIP') or define('MOD_ZIP', '');
+
+require_once (MOD_ZIP ? 'zip://'.__DIR__.'/'.MOD_ZIP.'#' : '').'mod/common/init.php'; //引入初始化程序
+
 /*
  * URL 请求使说明：
  * 可以通过 URL 携带参数访问 mod.php 文件直接访问模块类方法，通常在 AJAX 中使用。

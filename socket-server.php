@@ -1,8 +1,13 @@
 <?php
+// ModPHP 压缩包名称，如果设置，ModPHP 将从 ZIP 中加载内核
+defined('MOD_ZIP') or define('MOD_ZIP', '');
+
 set_time_limit(0); //设置脚本永不超时
 if(!extension_loaded('sockets'))
 	exit("Extension 'sockets' is not loaded, cannot start socket server.");
-require_once('mod/common/init.php');
+
+require_once (MOD_ZIP ? 'zip://'.__DIR__.'/'.MOD_ZIP.'#' : '').'mod/common/init.php'; //引入初始化程序
+
 /**
  * SocketServer 说明：
  * 直接执行 socket-server.php 将 ModPHP 运行于 Socket 服务器模式。

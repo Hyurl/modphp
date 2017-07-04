@@ -280,7 +280,7 @@ class mod{
 			$password = $arg['user_password'];
 			static::configFilter($arg);
 			config($arg); //更新配置
-			include __ROOT__.'mod/common/update.php'; //调用执行数据库更新程序
+			include __CORE__.'common/update.php'; //调用执行数据库更新程序
 			if(error()) return error();
 			/** 切换至用户模块以添加管理员用户 */
 			$user = array(
@@ -393,7 +393,7 @@ class mod{
 			if(!empty($arg['upgrade'])){ //升级 ModPHP 版本
 				if(empty($arg['src']) || empty($arg['md5']))
 					return error(lang('mod.missingArguments'));
-				$file = __ROOT__.'modphp.zip';
+				$file = __ROOT__.(MOD_ZIP ?: 'modphp.zip');
 				//尝试获取安装包
 				$tmp = @file_get_contents($arg['src']);
 				if(!$tmp && function_exists('curl')){
@@ -402,12 +402,12 @@ class mod{
 						$tmp = "";
 				}
 				$len = @file_put_contents($file, $tmp);
-				if($len && md5_file($file) == $arg['md5'] && function_exists('zip_extract')){ //通过 MD5 验证安装包完整性
-					$ok = zip_extract($file, __ROOT__); //解压安装包
+				if($len && md5_file($file) == $arg['md5']){ //通过 MD5 验证安装包完整性
+					$ok = MOD_ZIP ? true : (function_exists('zip_extract') && zip_extract($file, __ROOT__)); //解压安装包
 					export(load_config_file('config.php'), __ROOT__.'user/config/config.php'); //更新配置
 				}
 			}else{ //更新数据库
-				include __ROOT__.'mod/common/update.php'; //调用执行数据库更新程序
+				include __CORE__.'common/update.php'; //调用执行数据库更新程序
 				if(error()) return error();
 				$ok = true;
 			}

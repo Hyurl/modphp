@@ -30,7 +30,7 @@ add_hook('mod.template.load', function(){
 
 //输出运行信息
 if(config('mod.debug') === 2 || config('mod.debug') === 3){
-	$NSGetRuntimeInfo = function(){
+	$getRuntimeInfo = function(){
 		return array(
 			'Time Usage'=>round(microtime(true) - INIT_TIME, 3).' s', //程序耗时
 			'Memory Usage'=>round((memory_get_usage() - INIT_MEMORY)/1024/1024, 3).' MB', //内存占用
@@ -38,23 +38,23 @@ if(config('mod.debug') === 2 || config('mod.debug') === 3){
 			'Database Queries'=>database::set('queries'), //数据库查询次数
 			);
 	};
-	add_action('mod.template.load.complete.show_runtime_info', function() use($NSGetRuntimeInfo){
+	add_action('mod.template.load.complete.show_runtime_info', function() use($getRuntimeInfo){
 		if(strpos(get_response_headers('Content-Type'), 'text/html') === 0){
 			if(config('mod.debug') === 2){
 				echo '<fieldset style="display: inline-block;padding-right: 40px;"><legend>Runtime Info</legend>';
-				foreach ($NSGetRuntimeInfo() as $key => $value) {
+				foreach ($getRuntimeInfo() as $key => $value) {
 					echo '<strong>'.$key.'</strong>: <em>'.$value.'</em><br/>';
 				}
 				echo '</fieldset>';
 			}else{
-				$json = json_encode(array('Runtime Info'=>$NSGetRuntimeInfo()));
+				$json = json_encode(array('Runtime Info'=>$getRuntimeInfo()));
 				echo '<script type="application/javascript">console.log(JSON.parse(\''.$json.'\'))</script>';
 			}
 		}
 	}, false);
-	add_action('mod.client.call.complete.show_runtime_info', function($result) use($NSGetRuntimeInfo){
-		$result['Runtime Info'] = $NSGetRuntimeInfo();
+	add_action('mod.client.call.complete.show_runtime_info', function($result) use($getRuntimeInfo){
+		$result['Runtime Info'] = $getRuntimeInfo();
 		return $result;
 	}, false);
-	unset($NSGetRuntimeInfo);
+	unset($getRuntimeInfo);
 }

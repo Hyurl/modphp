@@ -38,9 +38,9 @@ function conv_request_vars(&$input = null, $config = array()){
 function load_config_file($file){
 	$config = load_config(__ROOT__.'user/config/'.$file) ?: array();
 	if($config && $file == 'config.php'){
-		$config = array_xmerge(load_config(__ROOT__.'mod/config/'.$file) ?: array(), $config);
+		$config = array_xmerge(load_config(__CORE__.'config/'.$file) ?: array(), $config);
 	}elseif(!$config){
-		$config = load_config(__ROOT__.'mod/config/'.$file) ?: array();
+		$config = load_config(__CORE__.'config/'.$file) ?: array();
 	}
 	return $config;
 }
@@ -217,7 +217,7 @@ function lang($key = ''){
 	$args = array_slice(func_get_args(), 1);
 	if(!$lang){
 		$file = strtolower(config('mod.language')).'.php'; //对应示例： zh-CN => zh-cn.php
-		$lang = load_config(__ROOT__.'user/lang/'.$file) ?: load_config(__ROOT__.'mod/lang/'.$file) ?: load_config(__ROOT__.'mod/lang/en-us.php') ?: array(); //载入语言包
+		$lang = load_config(__ROOT__.'user/lang/'.$file) ?: load_config(__CORE__.'lang/'.$file) ?: load_config(__CORE__.'lang/en-us.php') ?: array(); //载入语言包
 	}
 	if(!$key) return $lang;
 	if(is_assoc($key)){ //设置语言提示

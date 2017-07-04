@@ -273,7 +273,7 @@ function zip_extract($file, $path){
 /**
  * zip_list() 列出一个 ZIP 压缩文件夹中的所有文件
  * @param  string $filename ZIP 文件名
- * @param  bool   $noFolder 不包含文件夹，默认 false
+ * @param  bool   $noFolder [可选]不包含文件夹，默认 false
  * @return array            包含所有文件名的数组
  */
 function zip_list($filename, $noFolder = false){

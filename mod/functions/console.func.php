@@ -80,7 +80,7 @@ add_action('console.open.check_update', function(){
 	$opt = array('http'=>array('method'=>'GET', 'timeout'=>1));
 	$arg = array('url'=>$url, 'parseJSON'=>false, 'timeout'=>1);
 	try{
-		$file = __ROOT__.'modphp.zip';
+		$file = __ROOT__.(MOD_ZIP ?: 'modphp.zip');
 		$json = @file_get_contents($url, false, stream_context_create($opt)); //获取版本信息
 		if(!$json && function_exists('curl')){
 			$result = curl($arg); //通过 CURL 获取版本信息

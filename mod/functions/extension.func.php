@@ -269,6 +269,24 @@ function zip_extract($file, $path){
 	$zip->close();
 	return $ok;
 }
+
+/**
+ * zip_list() 列出一个 ZIP 压缩文件夹中的所有文件
+ * @param  string $filename ZIP 文件名
+ * @param  bool   $noFolder 不包含文件夹，默认 false
+ * @return array            包含所有文件名的数组
+ */
+function zip_list($filename, $noFolder = false){
+	$list = array();
+	$zip = zip_open($filename);
+	while ($zip && $entry = zip_read($zip)) {
+		$name = zip_entry_name($entry);
+		if(!$noFolder || $name[strlen($name)-1] != '/'){
+			$list[] = $name;
+		}
+	}
+	return $list;
+}
 endif;
 
 /**
@@ -338,8 +356,12 @@ function export($var, $path = ''){
  */
 function function_alias($original, $alias){
 	if(!function_exists($original) || function_exists($alias)) return false;
-	$code = 'function '.$alias.'(){return call_user_func_array("'.$original.'", func_get_args());}';
-	eval($code); //运行代码创建函数
+	$i = strrpos($alias, '\\');
+	$ns = substr($alias, 0, $i); //命名空间
+	$alias = substr($alias, $i !== false ? $i+1 : 0);
+	$original = var_export($original, true);
+	$code = "namespace $ns{function $alias(){return call_user_func_array($original, func_get_args());}}"; //运行代码创建函数
+	eval($code);
 	return true;
 }
 
@@ -649,8 +671,8 @@ function array2xml(array $array, $cdata = false){
 	$createXML = function($xml, $arr) use (&$createXML, $cdata){ //use 匿名函数自身的引用，就可以在内部进行递归运算
 		foreach($arr as $key => $value){
 			if(is_assoc($value)){ //处理关联数组
-				$xml = $xml->addChild($key);
-				$createXML($xml, $value); //递归
+				$child = $xml->addChild($key);
+				$createXML($child, $value); //递归
 			}elseif(is_array($value)){ //处理索引数组
 				foreach ($value as $item) {
 					$createXML($xml, array($key=>$item)); //索引数组使用相同的键名
@@ -1415,4 +1437,24 @@ function http_digest_auth(array $users, $error_callback = null, $realm = '', &$d
 		}
 		return $digest['username'];
 	}
+}
+
+/**
+ * load_config() 加载配置
+ * @param  string $file 配置文件名，支持 php, ini, json 和 xml
+ * @return array        配置构成的多维数组，加载失败则返回 false
+ */
+function load_config($file){
+	$ext = extname($file);
+	if(file_exists($file)){
+		if($ext == 'ini') //载入 ini
+			return parse_ini_file($file);
+		elseif($ext == 'json') //载入 json
+			return json_decode(file_get_contents($file));
+		elseif($ext == 'xml') //载入 XML
+			return xml2array(file_get_contents($file));
+		else //载入 php
+			return include $file;
+	}
+	return false;
 }

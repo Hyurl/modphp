@@ -46,7 +46,7 @@ final class user extends mod{
 					if(error()) return error();
 				}
 			}else{
-				foreach(load_config('users.php') as $i => $user){ //遍历用户
+				foreach(load_config_file('users.php') as $i => $user){ //遍历用户
 					$user = explode(':', $user);
 					if(count($user) == 3){ //合法的用户描述符
 						$user = array(
@@ -105,7 +105,7 @@ final class user extends mod{
 				}
 			}
 		}elseif($httpAuth){ //HTTP 访问认证
-			foreach(load_config('users.php') as $i => $user){ //遍历用户
+			foreach(load_config_file('users.php') as $i => $user){ //遍历用户
 				$user = explode(':', $user);
 				if(count($user) == 3){ //合法的用户描述符
 					$user = array(

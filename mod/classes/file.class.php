@@ -56,7 +56,7 @@ final class file extends mod{
 			if($keepName){
 				if($dataURIScheme){
 					if(empty($file['file_name'])){
-						$mime = load_config('mime.ini');
+						$mime = load_config_file('mime.ini');
 						$ext = array_search($file['type'], $mime);
 						$saveName = $md5Name.$ext;
 					}else{
@@ -69,7 +69,7 @@ final class file extends mod{
 				}
 			}else{
 				if($dataURIScheme){
-					$mime = load_config('mime.ini');
+					$mime = load_config_file('mime.ini');
 					$ext = array_search($file['type'], $mime);
 					$saveName = $md5Name.$ext;
 				}else{

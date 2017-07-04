@@ -2,27 +2,22 @@
 /** 自动修复程序 */
 /** 恢复目录 */
 $tmp = session_save_path();
-if(config("mod.session.savePath") && !is_dir($tmp)) mkdir($tmp, 0777, true);
-if(!is_dir($tpl = template_path())) mkdir($tpl, 0777, true);
-if(!is_dir($upl = __ROOT__.config('file.upload.savePath'))) mkdir($upl, 0777, true);
-if(!is_dir($dir = __ROOT__.'user/')) mkdir($dir);
+if(config("mod.session.savePath") && !is_dir($tmp)) mkdir($tmp, 0777, true); //Session 目录
+if(!is_dir($tpl = template_path())) mkdir($tpl, 0777, true); //模板目录
+if(!is_dir($upl = __ROOT__.config('file.upload.savePath'))) mkdir($upl, 0777, true); //文件上传目录
+if(!is_dir($dir = __ROOT__.'user/')) mkdir($dir); //用户目录
 if(!is_dir($dir = __ROOT__.'user/classes/')) mkdir($dir); //用户类库目录
 if(!is_dir($dir = __ROOT__.'user/functions/')) mkdir($dir); //用户函数目录
 if(!is_dir($cdir = __ROOT__.'user/config/')) mkdir($cdir); //用户配置目录
 if(!is_dir($ldir = __ROOT__.'user/lang/')) mkdir($ldir); //用于语言包目录
 
-/** 恢复 .htacess */
-if(!file_exists($file = __ROOT__.'.htaccess')){
-	$data = "<Files ~ '^.(htaccess|htpasswd)$|.db$'>
-deny from all
-</Files>
-Options -Indexes
-RewriteEngine on
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule . index.php
-order deny,allow";
-	file_put_contents($file, $data);
+/** 恢复所有文件 */
+if(file_exists($zip = __ROOT__.'modphp.zip') && extension_loaded('zip')){
+	foreach(zip_list($zip, false) as $file){
+		if(!file_exists(__ROOT__.$file)){
+			file_put_contents(__ROOT__.$file, file_get_contents('zip://'.$zip.'#'.$file));
+		}
+	}
 }
 
 //Session 保存目录的 .htaccess，禁止客户端访问该目录

@@ -393,7 +393,7 @@ class mod{
 			if(!empty($arg['upgrade'])){ //升级 ModPHP 版本
 				if(empty($arg['src']) || empty($arg['md5']))
 					return error(lang('mod.missingArguments'));
-				$file = 'modphp.zip';
+				$file = __ROOT__.'modphp.zip';
 				//尝试获取安装包
 				$tmp = @file_get_contents($arg['src']);
 				if(!$tmp && function_exists('curl')){

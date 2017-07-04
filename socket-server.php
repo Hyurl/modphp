@@ -39,7 +39,7 @@ SocketServer::on('open', function($event){ //绑定连接事件
 		'user_id' => config('mod.installed') ? me_id() : 0, //用户 ID
 		);
 })->on('message', function($event){ //绑定消息事件
-	global $SOCKET_INFO, $SOCKET_USER, ${'DENIES'.__TIME__};
+	global $SOCKET_INFO, $SOCKET_USER, ${'DENIES'.INIT_TIME};
 	$installed = config('mod.installed');
 	do_hooks('socket.message', $event);
 	if(error()) goto sendResult;
@@ -113,7 +113,7 @@ SocketServer::on('open', function($event){ //绑定连接事件
 		report_404();
 	}elseif(is_500()){
 		report_500();
-	}elseif(($obj == 'mod' || is_subclass_of($obj, 'mod')) && (method_exists($obj, $act) || is_callable(hooks($obj.'.'.$act))) && !in_array($obj.'::'.strtolower($act), ${'DENIES'.__TIME__})){
+	}elseif(($obj == 'mod' || is_subclass_of($obj, 'mod')) && (method_exists($obj, $act) || is_callable(hooks($obj.'.'.$act))) && !in_array($obj.'::'.strtolower($act), ${'DENIES'.INIT_TIME})){
 		$uid = $installed ? me_id() : 0;
 		sendResult:
 		if(!error()) do_hooks('mod.client.call', $data);

@@ -31,36 +31,19 @@ function conv_request_vars(&$input = null, $config = array()){
 }
 
 /**
- * load_config() 加载配置文件，用户配置优先
- * @param  string $file 配置文件名
- * @param  string $dir  [可选]所在文件夹
- * @return array|false
+ * load_config_file() 载入 ModPHP 配置目录中的配置文件
+ * @param  string $file 文件名
+ * @return array        配置数组
  */
-function load_config($file, $dir = ''){
-	$config = array();
-	$import = function($file){
-		$ext = extname($file);
-		if($ext == 'ini') //载入 ini
-			return parse_ini_file($file);
-		elseif($ext == 'json') //载入 json
-			return json_decode(file_get_contents($file));
-		else //载入 php
-			return include $file;
-	};
-	$file1 = __ROOT__.'mod/config/'.$file;
-	$file2 = $dir ? $dir.$file : __ROOT__.'user/config/'.$file;
-	if(file_exists($file2)){ //从用户目录加载
-		$config = $import($file2);
-		if(!$dir && $file == 'config.php' && file_exists($file1)){ //从内核目录加载 config.php
-			$_config = $import($file1);
-			$config = array_xmerge($_config, $config);
-		}
-	}elseif(!$dir && file_exists($file1)){ //从内核目录加载
-		$config =$import($file1);
+function load_config_file($file){
+	$config = load_config(__ROOT__.'user/config/'.$file) ?: array();
+	if($config && $file == 'config.php'){
+		$config = array_xmerge(load_config(__ROOT__.'mod/config/'.$file) ?: array(), $config);
+	}elseif(!$config){
+		$config = load_config(__ROOT__.'mod/config/'.$file) ?: array();
 	}
 	return $config;
 }
-function_alias('load_config', 'load_config_file');
 
 /**
  * hooks() 存储 Api Hook 回调函数
@@ -165,7 +148,7 @@ function_alias('do_hooks', 'do_actions');
  */
 function config($key = '', $value = null){
 	static $config = array();
-	if(!$config) $config = load_config('config.php'); //从文件载入配置
+	if(!$config) $config = load_config_file('config.php');
 	if(!$key) return $config;
 	if($value === null && is_string($key)){
 		$key = "['".str_replace('.', "']['", $key)."']";
@@ -189,7 +172,7 @@ function config($key = '', $value = null){
  */
 function database($key = '', $withAttr = false){
 	static $db = array();
-	if(!$db) $db = load_config('database.php');
+	if(!$db) $db = load_config_file('database.php');
 	if(!$key) return $db;
 	return isset($db[$key]) ? ($withAttr ? $db[$key] : array_keys($db[$key])) : null;
 }
@@ -204,7 +187,7 @@ function database($key = '', $withAttr = false){
  */
 function staticuri($file = '', $format = ''){
 	static $uri = array();
-	if(!$uri) $uri = load_config('static-uri.php');
+	if(!$uri) $uri = load_config_file('static-uri.php');
 	if(!$file) return $uri;
 	if(is_string($file) && strapos($file, __ROOT__) === 0) //替换为相对于 __ROOT__ 的路径
 		$file = substr($file, strlen(__ROOT__));
@@ -234,7 +217,7 @@ function lang($key = ''){
 	$args = array_slice(func_get_args(), 1);
 	if(!$lang){
 		$file = strtolower(config('mod.language')).'.php'; //对应示例： zh-CN => zh-cn.php
-		$lang = load_config($file, __ROOT__.'user/lang/') ?: load_config($file, __ROOT__.'mod/lang/') ?: load_config('en-us.php', __ROOT__.'mod/lang/'); //载入语言包
+		$lang = load_config(__ROOT__.'user/lang/'.$file) ?: load_config(__ROOT__.'mod/lang/'.$file) ?: load_config(__ROOT__.'mod/lang/en-us.php') ?: array(); //载入语言包
 	}
 	if(!$key) return $lang;
 	if(is_assoc($key)){ //设置语言提示
@@ -657,10 +640,10 @@ function display_file($url = '', $set = false){
 		return $file = $tplPath.config('site.errorPage.404'); //无模板则报告 404 错误
 	if($tpl != $tplPath.$home){ //URL 地址对应一个真实的文件
 		$ext = '.'.extname($tpl);
-		if($ext != '.'){
-			$types = load_config('mime.ini'); //加载 Mime 类型配置
-			$mime = isset($types[$ext]) ? $types[$ext] : 'text/plain';
-		}
+        if($ext != '.'){
+            $types = load_config_file('mime.ini'); //加载 Mime 类型配置
+            $mime = isset($types[$ext]) ? $types[$ext] : 'text/plain';
+        }
 		if($isIndex) set_content_type($mime); //设置响应头中的 Mime 类型
 		if(staticuri($tpl) && $args = analyze_url(staticuri($tpl), $uri)){ //尝试解析 URL
 			if($isIndex) $_GET = array_merge($_GET, $args);
@@ -1145,7 +1128,7 @@ if(!function_exists('mime_content_type')):
  */
 function mime_content_type($filename){
 	static $mime = array();
-	if(!$mime) $mime = load_config('mime.ini'); //加载 mime 类型扩展
+	if(!$mime) $mime = load_config_file('mime.ini'); //加载 mime 类型扩展
 	$ext = '.'.extname($filename);
 	return isset($mime[$ext]) ? $mime[$ext] : "";
 }
@@ -1164,7 +1147,7 @@ function http_auth_login($realm = "HTTP Authentication", $type = 1){
 		$key = config('user.password.encryptKey'); //密码解密密钥
 		$users = array();
 		$userMeta = array();
-		foreach(load_config('users.php') as $i => $user){ //遍历用户
+		foreach(load_config_file('users.php') as $i => $user){ //遍历用户
 			$user = explode(':', $user);
 			if(count($user) == 3){ //合法的用户描述符
 				$users[$user[0]] = decrypt($user[1], $key);

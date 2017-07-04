@@ -9,11 +9,10 @@ if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 
 	exit('PHP version lower 5.3.0, unable to start ModPHP.');
 
 /** 定义常量 MOD_VERSION, __ROOT_, __SCRIPT__ */
-define('MOD_VERSION', '2.2.6'); //ModPHP 版本
+define('MOD_VERSION', '2.2.7'); //ModPHP 版本
 define('__ROOT__', str_replace('\\', '/', dirname(dirname(__DIR__))).'/', true); //网站根目录
 $NSFile = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 define('__SCRIPT__', substr($NSFile, strlen(__ROOT__)) ?: $NSFile, true); //执行脚本
-define('__TIME__', time(), true); //系统运行时间，不再建议使用，将在未来版本中删除
 
 /** 补全系统常量 */
 if(!defined('STDIN')) define('STDIN', fopen('php://stdin','r'));
@@ -155,6 +154,7 @@ $NSPreInit();
 foreach (glob(__ROOT__.'user/functions/*.php') as $NSFile) {
 	include_once $NSFile;
 }
+
 unset($NSInstalled, $NSDatabase, $NSFile, $NSPreInit); //释放变量
 
 /** 加载模板函数文件 */
@@ -177,7 +177,7 @@ function init(){
 		);
 
 	/** 加载自动恢复程序 */
-	include_once __ROOT__.'mod/common/recover.php';
+	if(config('mod.debug')) include_once __DIR__.'/recover.php';
 
 	/** 配置模板引擎 */
 	template::$rootDir = __ROOT__;

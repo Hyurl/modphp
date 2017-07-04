@@ -47,7 +47,7 @@ while(true){
 			ob_start();
 			if(!strpos($PARAM['cmd'], '(') && (is_callable($PARAM['cmd']) || strpos($PARAM['cmd'], '::'))) {
 				//将输入按 shell 命令来运行
-				${'SHELL'.__TIME__} = true;
+				${'SHELL'.INIT_TIME} = true;
 				array_walk($PARAM['args'], function(&$v){ //转换参数
 					if($v === 'true') $v = true;
 					elseif($v === 'false') $v = false;
@@ -71,8 +71,8 @@ while(true){
 				echo $STDOUT.PHP_EOL; //输出代命令行
 			}else{ //交互式控制台
 				if($STDIN && $STDOUT) fwrite(STDOUT, $STDOUT.PHP_EOL); //输出到交互式控制台
-				if(!isset(${'SHELL'.__TIME__})) break;
-				unset(${'SHELL'.__TIME__});
+				if(!isset(${'SHELL'.INIT_TIME})) break;
+				unset(${'SHELL'.INIT_TIME});
 			}
 		}
 		if($STDIN === null) break;

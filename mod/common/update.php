@@ -23,6 +23,7 @@ $key = 'Tables_in_'.$dbconf['name'];
 $result = database::query($sql);
 while($result && $table = $result->fetchObject()){
 	$name = $sqlite ? $table->name : $table->$key;
+	if($sqlite && $name == 'sqlite_sequence') continue; //跳过 SQLite 信息表
 	if(strpos($name, $dbconf['prefix']) === 0){
 		$tables[] = $name;
 	}

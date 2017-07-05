@@ -87,7 +87,7 @@ if($installed) register_module_functions(); //注册模块函数
 //预初始化
 $preinit = function() use($installed){
 	/** 自动重定向至固定网站地址 */
-	if(is_agent() && strapos(url(), site_url()) !== 0 && !is_proxy_server() && strapos(str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME'])), __ROOT__) === 0)
+	if(is_agent() && strpos(url(), site_url()) !== 0 && !is_proxy_server() && strapos(str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME'])), __ROOT__) === 0)
 		redirect(site_url().substr(url(), strlen(detect_site_url())), 301);
 
 	/** 连接数据库 */

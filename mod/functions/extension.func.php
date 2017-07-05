@@ -561,7 +561,7 @@ function is_ssl(){
  * @return boolean
  */
 function is_proxy_server(){
-	return !empty($_SERVER['HTTP_PROXY_CONNECTION']) || stripos($_SERVER['REQUEST_URI'], 'http://') === 0 || stripos($_SERVER['REQUEST_URI'], 'https://') === 0;
+	return !empty($_SERVER['HTTP_PROXY_CONNECTION']) || (!empty($_SERVER['REQUEST_URI']) && (stripos($_SERVER['REQUEST_URI'], 'http://') === 0 || stripos($_SERVER['REQUEST_URI'], 'https://') === 0));
 }
 
 /**

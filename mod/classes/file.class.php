@@ -265,7 +265,7 @@ final class file extends mod{
 			else
 				$deleted = @unlink($src);
 			if($deleted){ //删除更多副本
-				self::moreImage($savepath, 'delete'); //删除图片副本
+				self::moreImage($src, 'delete'); //删除图片副本
 				$dir = dirname($src);
 				if(is_empty_dir($dir)) rmdir($dir); //移除空目录
 			}

@@ -43,7 +43,7 @@ foreach($tables as $table){
 $createTable = function($table, $fields) use($sqlite){
 	$sql = "CREATE TABLE `{$table}` (\n";
 	foreach ($fields as $field => $attr) {
-		if($sqlite) $attr = str_ireplace(' AUTO_INCREMENT', '', $attr);
+		if($sqlite) $attr = str_ireplace('AUTO_INCREMENT', 'AUTOINCREMENT', $attr);
 		$sql .= "`{$field}` {$attr},\n";
 	}
 	$sql .= ")";

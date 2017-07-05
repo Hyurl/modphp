@@ -36,7 +36,7 @@ function conv_request_vars(&$input = null, $config = array()){
  * @return array        配置数组
  */
 function load_config_file($file){
-	$config = load_config(__ROOT__.'user/config/'.$file) ?: array();
+	$config = @load_config(__ROOT__.'user/config/'.$file) ?: array();
 	if($config && $file == 'config.php'){
 		$config = array_xmerge(load_config(__CORE__.'config/'.$file) ?: array(), $config);
 	}elseif(!$config){

@@ -40,7 +40,7 @@ foreach ($GLOBALS['CORE'.INIT_TIME] as $file) {
 /** 恢复语言包文件 */
 $file = strtolower(config('mod.language')).'.php';
 if(!file_exists($ldir.$file)){
-	file_put_contents($cdir.$file, file_get_contents(__CORE__.'lang/'.$file));
+	file_put_contents($ldir.$file, file_get_contents(__CORE__.'lang/'.$file));
 }
 
 /** 恢复自定义模块类文件 */

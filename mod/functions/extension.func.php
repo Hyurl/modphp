@@ -23,9 +23,9 @@ function underline2camelcase($str, $ucfirst = false){
 }
 
 /** 
- * str2bin() 将普通字符串转换为二进制字符串
+ * str2bin() 将字符串转换为二进制数字
  * @param  string $str 字符串
- * @return string      二进制数
+ * @return string      二进制数字
  */
 function str2bin($str){
 	$arr = preg_split('/(?<!^)(?!$)/u', $str);
@@ -37,8 +37,8 @@ function str2bin($str){
 }
 
 /**
- * bin2str() 将二进制字符串转换为普通字符串
- * @param  string $str 二进制数
+ * bin2str() 将二进制数字转换为字符串
+ * @param  string $str 二进制数字
  * @return string      字符串
  */
 function bin2str($str){
@@ -296,7 +296,7 @@ endif;
  * @return string         随机的字符串
  */
 function rand_str($len = 4, $chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'){
-	for($i=0, $str="",$end=strlen($chars)-1; $i<$len; $i++){
+	for($i=0, $str="", $end=strlen($chars)-1; $i<$len; $i++){
 		$str .= $chars[rand(0, $end)];
 	}
 	return $str;
@@ -1059,15 +1059,15 @@ endif;
 
 if(!function_exists('hex2bin')):
 /**
- * hex2bin() 将十六进制字符串转换为 ASCII，该函数自 PHP5.4 起为内置函数
+ * hex2bin() 转换十六进制字符串为二进制字符串，该函数自 PHP5.4 起为内置函数
  * @param  string $hex 十六进制字符串
  * @return string      ASCII 字符串
  */
 function hex2bin($hex){
 	if(strlen($hex) % 2) return false;
-	$bin = array_map(function($v){
-		return chr(hexdec($v));
-	}, str_split($hex, 2));
+	foreach (str_split($hex, 2) as $v) {
+		$bin[] = chr(hexdec($v));
+	}
 	return join('', $bin);
 }
 endif;

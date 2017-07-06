@@ -68,14 +68,15 @@ class mod{
 	 * @return array          返回填充后的数组
 	 */
 	final protected static function relateWhere($tables, $where = array()){
-		$tables = explode(',', str_replace(' ','',$tables));
-		for($i=1; $i < count($tables); $i++){ 
+		$tables = explode(',', str_replace(' ', '', $tables));
+		$count = count($tables);
+		for ($i=1; $i < $count; $i++) { 
 			foreach(database($tables[$i], true) as $k => $v){
-				if(stripos($v, 'PRIMARY KEY')){
-					$where[$tables[$i].'.'.$k] = '{'.$tables[0].'.'.$k.'}';
-					break;
-				}
-			}
+                if(stripos($v, 'PRIMARY KEY')){
+                    $where[$tables[$i].'.'.$k] = '{'.$tables[0].'.'.$k.'}';
+                    break;
+                }
+            }
 		}
 		return $where;
 	}
@@ -445,8 +446,8 @@ class mod{
 		if(error()) return error();
 		database::open(0);
 		$tables = explode(',', static::tableRelated()); //获取从表
-		for($i=0; $i<count($tables); $i++){ //依次删除从表中的记录
-			if(!database::delete($tables[$i], "`$primkey` = ".database::quote($id)) && $i == 0)
+		foreach ($tables as $table) {
+			if(!database::delete($table, "`$primkey` = ".database::quote($id)) && $i == 0)
 				return error(lang('mod.deleteFailed', lang($tb.'.label')));
 		}
 		do_hooks($tb.'.delete.complete', $arg); //执行模块删除记录完成后挂钩函数
@@ -516,7 +517,7 @@ class mod{
 		$where = array();
 		foreach($arg as $k => $v){
 			if(in_array($k, database($tb)) && $v !== null){
-				$where[$tb.'.'.$k] = $extra[$k] = $v; //组合 where 查询条件
+				$where[$tb.'.'.$k] = $extra[$k] = trim($v, '{}'); //组合 where 查询条件
 			}
 		}
 		$_where = $where;
@@ -571,21 +572,22 @@ class mod{
 		$where = array();
 		foreach($arg as $k => $v){
 			if(in_array($k, database($tb)) && $v !== null){
-				$where[$tb.'.'.$k] = $extra[$k] = $v; //设置 where 条件
+				$where[$tb.'.'.$k] = $extra[$k] = trim($v, '{}'); //设置 where 条件
 			}
 		}
 		$keyword = $arg['keyword'];
 		if(is_string($keyword)) $keyword = array($keyword); //始终使用多关键字查询
 		$a = $b = array();
 		$keys = explode('|', str_replace(' ', '', config($tb.'.keys.search')));
+		$count = count($keys);
 		foreach($keyword as $v){
 			$v = str_replace('%', '[%]', $v); //转义 %
-			for($i=0; $i < count($keys); $i++){ 
+			for($i=0; $i < $count; $i++){ 
 				$a[$i][] = "`{$keys[$i]}` LIKE ".database::quote("%{$v}%"); //组合 like 条件
 			}
 		}
-		for($i=0; $i < count($a); $i++){ 
-			$b[] = '('.implode(' AND ', $a[$i]).')'; //组合 AND 语句
+		foreach ($a as $_a) {
+			$b[] = '('.implode(' AND ', $_a).')'; //组合 AND 语句
 		}
 		$_where = '('.implode(' OR ', $b).')'; //组合 OR 语句
 		$_where = $where = $where ? $_where.' AND '.database::parseWhere($where) : $_where; //解析并组合 where 条件
@@ -652,7 +654,7 @@ class mod{
 		$orderby = "`$primkey` $sign $id, {$arg['orderby']} $sequence";
 		foreach($arg as $k => $v){
 			if(in_array($k, database($tb)) && $v !== null){
-				$where[$tb.'.'.$k] = $extra[$k] = $v; //组合 where 条件
+				$where[$tb.'.'.$k] = $extra[$k] = trim($v, '{}'); //组合 where 条件
 			}
 		}
 		if(!isset($where)) $where = array();
@@ -694,15 +696,15 @@ class mod{
 		$invalidId = array();
 		$tables = explode(',', static::relateTables());
 		while($result && $single = $result->fetch()){
-			for($i=1; $i<count($tables); $i++){
-				$table = database($tables[$i]); //从表结构
-				$primkey = get_primkey_by_table($tables[$i]); //从表主键
+			foreach ($tables as $table) {
+				$keys = database($table); //从表结构
+				$primkey = get_primkey_by_table($table); //从表主键
 				$where = array();
 				foreach($single as $key => $value){
-					if(in_array($key, $table) && $key == $primkey && $value)
-						$where[$tables[$i].'.'.$key] = $value; //组合每一个从表的 where 条件
+					if(in_array($key, $keys) && $key == $primkey && $value)
+						$where[$table.'.'.$key] = trim($value, '{}'); //组合每一个从表的 where 条件
 				}
-				$valid = database::select($tables[$i], 'count(*)', $where)
+				$valid = database::select($table, 'count(*)', $where)
 								 ->fetchColumn(); //判断记录的外键值是否有效
 				if(!$valid && !in_array($single[static::PRIMKEY], $invalidId)){
 					//外键值无效，则该记录无效

@@ -91,6 +91,7 @@ final class database{
 			'dsn'     => '', //自定义连接标识
 			'prefix'  => '', //默认表前缀
 			'debug'   => false, //调试模式
+			'timeout' => 5, //超时秒数
 			'options' => array(), //其他选项
 			'queries' => 0, //记录查询次数
 		   );
@@ -241,6 +242,7 @@ final class database{
 		try{
 			$dsn = $set['dsn'];
 			if($set['host'] && $set['charset']) $dsn .= ';charset='.$set['charset']; //设置字符集
+			if($set['timeout']) $set['options'][PDO::ATTR_TIMEOUT] = $set['timeout']; //设置超时
 			$link = new PDO($dsn, $set['username'], $set['password'], $set['options']); //创建 PDO 实例
 			$error = $link->errorInfo();
 		}catch(PDOException $e){
@@ -301,16 +303,18 @@ final class database{
 	 */
 	static function insert($table, array $input, &$id = 0){
 		if(!$input) return false;
-		$table = explode(',', str_replace(' ', '', $table));
-		for ($i=0, $tables=''; $i < count($table); $i++) { 
-			$tables .= self::set('prefix').$table[$i].','; //自动添加数据表前缀(如果有)
+		$prefix = self::set('prefix');
+		$tables = explode(',', str_replace(' ', '', $table));
+		foreach ($tables as &$table) {
+			$table = "`{$prefix}{$table}`"; //自动添加数据表前缀(如果有)
 		}
+		$tables = implode(',', $tables);
 		$ks = $vs = '';
 		foreach ($input as $k => $v) {
 			$ks .= "`$k`,"; //组合字段
 			$vs .= self::quote($v).","; //组合值
 		}
-		$sql = 'INSERT INTO '.rtrim($tables, ',').' ('.rtrim($ks, ',').') VALUES ('.rtrim($vs, ',').')'; //组合查询语句
+		$sql = "INSERT INTO $tables (".rtrim($ks, ',').') VALUES ('.rtrim($vs, ',').')'; //组合查询语句
 		$result = self::query($sql); //执行查询
 		$id = self::$link[self::$name]->lastInsertId(); //获取插入 ID
 		return $result != false;
@@ -328,12 +332,14 @@ final class database{
 	 */
 	static function update($table, $input, $where, $limit = 0, $orderby = ''){
 		if(!$input) return false;
-		$table = explode(',', str_replace(' ', '', $table));
+		$prefix = self::set('prefix');
 		$where = self::parseWhere($where);
-		for ($i=0, $tables=''; $i < count($table); $i++) { //自动添加数据表前缀(如果有)
-			$tables .= self::set('prefix').$table[$i].',';
-			$where = preg_replace('/\b'.$table[$i].'\./', self::set('prefix').$table[$i], $where);
+		$tables = explode(',', str_replace(' ', '', $table));
+		foreach ($tables as &$table) { //自动添加数据表前缀(如果有)
+			if($prefix) $where = preg_replace('/\b'.$table.'\./', $prefix.$table, $where);
+			$table = "`{$prefix}{$table}`";
 		}
+		$tables = implode(',', $tables);
 		$kvs = '';
 		if(!is_array($input)){
 			$kvs = $input;
@@ -342,7 +348,7 @@ final class database{
 				$kvs .= "`$k` = ".self::quote(trim($v)).","; //组合键值对
 			}
 		}
-		$sql = 'UPDATE '.rtrim($tables, ',').' SET '.rtrim($kvs, ',')." WHERE $where".($orderby ? " ORDER BY $orderby" : '').($limit ? " LIMIT $limit" : '');
+		$sql = "UPDATE $tables SET ".rtrim($kvs, ',')." WHERE $where".($orderby ? " ORDER BY $orderby" : '').($limit ? " LIMIT $limit" : '');
 		return self::query($sql) != false;
 	}
 	/**
@@ -356,19 +362,24 @@ final class database{
 	 * @return object                    PDOStatement 对象
 	 */
 	static function select($table, $key = '*', $where = 1, $limit = 0, $orderby = ''){
-		$table = explode(',', str_replace(' ', '', $table));
+		$prefix = self::set('prefix');
 		$where = self::parseWhere($where); //解析 where 条件
-		for ($i=0, $tables=''; $i < count($table); $i++) { //自动添加数据表前缀(如果有)
-			$tables .= self::set('prefix').$table[$i].',';
-			$where = preg_replace('/\b'.$table[$i].'\./', self::set('prefix').$table[$i].'.', $where);
-			$key = preg_replace('/\b'.$table[$i].'\./', self::set('prefix').$table[$i].'.', $key);
+		$tables = explode(',', str_replace(' ', '', $table));
+		foreach ($tables as &$table) { //自动添加数据表前缀(如果有)
+			if($prefix){
+				$where = preg_replace('/\b'.$table.'\./', $prefix.$table.'.', $where);
+				$key = preg_replace('/\b'.$table.'\./', $prefix.$table.'.', $key);
+			}
+			$table = "`{$prefix}{$table}`";
 		}
+		$tables = implode(',', $tables);
 		$keys = explode(',', $key);
-		array_walk($keys, function(&$v){ //自动决定 select 的对象是否需要加反引号
+		foreach ($keys as &$v) { //自动决定 select 的对象是否需要加反引号
 			$v = trim($v);
-			$v = (strpos($v, '.') !== false || strpos($v, '(') !== false || stripos($v, 'as') !== false || $v[0] == '`' || $v == '*') ? $v : "`$v`";
-		});
-		$sql = "SELECT ".implode(',', $keys).($table ? ' FROM '.rtrim($tables, ',')." WHERE $where".($orderby ? " ORDER BY $orderby" : '').($limit ? " LIMIT $limit" : '') : '');
+			$v = (strpos($v, '.') || strpos($v, '(') || stripos($v, 'as') || $v[0] == '`' || $v == '*') ? $v : "`$v`";
+		}
+		$keys = implode(',', $keys);
+		$sql = "SELECT $keys".($tables ? " FROM $tables WHERE $where".($orderby ? " ORDER BY $orderby" : '').($limit ? " LIMIT $limit" : '') : '');
 		return self::query($sql); //返回查询结果 PDOStatement
 	}
 
@@ -382,13 +393,14 @@ final class database{
 	 * @return boolean
 	 */
 	static function delete($table, $where, $limit = 0, $orderby = ''){
-		$table = explode(',', str_replace(' ', '', $table));
+		$prefix = self::set('prefix');
 		$where = self::parseWhere($where); //解析 where 条件
-		for ($i=0, $tables=''; $i < count($table); $i++) { //自动添加数据表前缀(如果有)
-			$tables .= self::set('prefix').$table[$i].',';
-			$where = preg_replace('/\b'.$table[$i].'\./', self::set('prefix').$table[$i], $where);
+		$tables = explode(',', str_replace(' ', '', $table));
+		foreach ($tables as &$table) { //自动添加数据表前缀(如果有)
+			if($prefix) $where = preg_replace('/\b'.$table.'\./', $prefix.$table, $where);
+			$table = "`{$prefix}{$table}`";
 		}
-		$tables = rtrim($tables, ',');
+		$tables = implode(',', $tables);
 		$sql = "DELETE FROM $tables WHERE $where".($orderby ? " ORDER BY $orderby" : '').($limit ? " LIMIT $limit" : '');
 		return self::query($sql) != false;
 	}
@@ -418,8 +430,8 @@ final class database{
 			if($and || $or){ //OR 语句，多键共用值
 				$ks = explode(($and ? '&' : '|'), $k);
 				$aWhere = array();
-				for($i=0; $i < count($ks); $i++){
-					$aWhere[] = (preg_match($regex, $ks[$i]) ? $ks[$i] : "`{$ks[$i]}`")." = ".$v;
+				foreach ($ks as $_k) {
+					$aWhere[] = (preg_match($regex, $_k) ? $_k : "`{$_k}`")." = ".$v;
 				}
 				$where .= '('.implode(($and ? ' AND ' : ' OR '), $aWhere).') AND '; //组合条件
 			}else{

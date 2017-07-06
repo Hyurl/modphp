@@ -16,10 +16,8 @@ final class file extends mod{
 	private static function checkFileType(&$file = array()){
 		$fileType = explode('|', strtolower(config('file.upload.acceptTypes'))); //获取配置
 		$name = !empty($file['file_name']) ? $file['file_name'] : $file['name'];
-		for ($i=0; $i < count($fileType); $i++) { 
-			if(!in_array(extname($name), $fileType)){
-				$file['error'] = lang('file.invalidType'); //不可用的类型作为错误处理并反馈给客户端
-			}
+		if(!in_array(extname($name), $fileType)){
+			$file['error'] = lang('file.invalidType'); //不可用的类型作为错误处理并反馈给客户端
 		}
 	}
 
@@ -111,16 +109,15 @@ final class file extends mod{
 	private static function moreImage($src, $action){
 		if(class_exists('image') && is_img($src)){
 			$ext = '.'.extname($src);
-			$filename = substr($src, 0, -strlen($ext));
-			$pxes = config('file.upload.imageSizes'); //获取配置尺寸
+			$basename = substr($src, 0, -strlen($ext));
+			$pxes = str_replace(' ', '', config('file.upload.imageSizes')); //获取配置尺寸
 			if($pxes){
-				$pxes = explode('|', $pxes);
-				for ($i=0; $i < count($pxes); $i++) { //为每个尺寸创建/删除副本，副本命名如 src_64.png
+				foreach (explode('|', $pxes) as $px) { //为每个尺寸创建/删除副本，副本命名如 src_64.png
 					if($action == 'copy'){ //创建
-						Image::open($src)->resize((int)trim($pxes[$i]))->save($filename.'_'.$pxes[$i].$ext);
+						Image::open($src)->resize((int)$px)->save($basename.'_'.$px.$ext);
 					}elseif($action == 'delete'){ //删除
-						if(file_exists($filename.'_'.trim($pxes[$i]).$ext))
-							unlink($filename.'_'.trim($pxes[$i]).$ext);
+						if(file_exists($file = $basename.'_'.$px.$ext))
+							unlink($file);
 					}
 				}
 			}
@@ -174,18 +171,18 @@ final class file extends mod{
 		if($src && strapos($src, __ROOT__) === 0)
 			$src = substr($src, strlen(__ROOT__));
 		$data = array();
-		foreach ($_FILES as $key => $file) { //遍历 $_FILES 并执行文件保存操作
-			if(is_assoc($file)) $file = array($file);
-			for ($i=0; $i < count($file); $i++) {
-				if($fname) $file[$i]['file_name'] = $fname;
-				if($src) $file[$i]['file_src'] = $src;
-				self::uploadChecker($file[$i]);
+		foreach ($_FILES as $files) { //遍历 $_FILES 并执行文件保存操作
+			if(is_assoc($files)) $files = array($files);
+			foreach ($files as &$file) {
+				if($fname) $file['file_name'] = $fname;
+				if($src) $file['file_src'] = $src;
+				self::uploadChecker($file);
 				if(error()) return error(); //遇到错误则停止上传操作
-				if(!$file[$i]['error']){
-					if($savepath = self::saveUpload($file[$i], $encoding)){
+				if(!$file['error']){
+					if($savepath = self::saveUpload($file, $encoding)){
 						self::moreImage($savepath, 'copy'); //复制更多图片
 						if(empty($arg['file_name']))
-							$arg['file_name'] = $file[$i]['name'];
+							$arg['file_name'] = $file['name'];
 						if($encoding) $savepath = iconv($encoding, 'UTF-8', $savepath);
 						$arg['file_src'] = $savepath;
 						if($installed && !$src){
@@ -201,18 +198,18 @@ final class file extends mod{
 							do_hooks('file.add.complete', $result['data']); //执行上传文件后的回调函数
 							$data[] = array_merge($arg, $result['data']);
 						}else{
-							$data[] = array_merge($arg, $file[$i]);
+							$data[] = array_merge($arg, $file);
 						}
 					}else{
 						$error = error();
-						$file[$i]['error'] = $error ? $error['data'] : lang('file.uploadFailed');
+						$file['error'] = $error ? $error['data'] : lang('file.uploadFailed');
 					}
 				}
-				if($file[$i]['error']) $data[] = $file[$i];
+				if($file['error']) $data[] = $file;
 			}
 		}
-		for ($i=0; $i < count($data); $i++) { 
-			if(($installed && (isset($data[$i]['file_id']) || ($src && empty($data[$i]['error'])))) || (!$installed && empty($data[$i]['error'])))
+		foreach ($data as $datum) {
+			if(($installed && (isset($datum['file_id']) || ($src && empty($datum['error'])))) || (!$installed && empty($datum['error'])))
 				return success($data); //只要有一个文件上传成功则返回成功
 		}
 		return error($data);

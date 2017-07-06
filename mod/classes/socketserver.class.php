@@ -77,8 +77,8 @@ class SocketServer{
 				$msg = self::encode($msg, $type); //编码数据
 			}
 			$data = str_split($msg, 1024); //分片发送
-			for ($i=0; $i < count($data); $i++) { 
-				socket_write($recv, $data[$i]);
+			foreach ($data as $datum) {
+				socket_write($recv, $datum);
 			}
 			$error = self::handleError($recv);
 			if(!$error && !$ok) $ok = true;

@@ -16,6 +16,7 @@ function _user($key = "", $value = null){
 		return $user[$key] = $value;
 	}
 }
+
 /**
  * get_me() 当前登录用户信息获取函数
  * @param  string $key  [可选]数组键名
@@ -29,7 +30,7 @@ function get_me($key = ''){
 		$sid = session_id();
 		$result = array();
 		$_result = user::getMe();
-		error(null);
+		error(null); //清空错误消息（如果有）
 		if(!$_result['success']) return null;
 		else $result = $_result['data'];
 	}

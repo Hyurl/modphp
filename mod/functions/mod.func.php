@@ -392,10 +392,11 @@ function create_url($format, $args){
 	$args = is_array($args) ? $args : array_slice(func_get_args(), 1); //参数值列表
 	$index = config('mod.pathinfoMode') ? 'index.php/' : '';
 	if(is_assoc($args)){
-		$keys = array_map(function($k){ //关键字
-			return '{'.$k.'}';
-		}, array_keys($args));
+		$keys = array_keys($args);
 		$values = array_values($args); //替换值
+		foreach ($keys as &$key) {
+			$key = '{'.$key.'}';
+		}
 		return site_url($index).@str_replace($keys, $values, $format);
 	}elseif(preg_match_all('/{(.+)}/U', $format, $matches)){
 		return site_url($index).str_replace($matches[0], $args, $format); //将除了第一个参数外的其他参数作为替换值
@@ -421,7 +422,8 @@ function analyze_url($format, $url = ''){
 	$uri = explode('/', trim($uri, '/'));
 	$end = count($format)-1;
 	$args = array();
-	for ($i=0; $i < count($format); $i++) {
+	$count = count($format);
+	for ($i=0; $i < $count; $i++) {
 		if(!isset($uri[$i])) continue;
 		if($i == $end){
 			$ext1 = strrchr($format[$i], '.'); //伪静态后缀
@@ -887,14 +889,14 @@ function register_module_functions($module = ''){
 		}
 	}';
 	eval($code); //运行代码
-	for ($i=0; $i < count($keys); $i++) { 
-		if(strpos($keys[$i], $module) === 0){
-			$func = $keys[$i];
-			if(stripos($keys[$i], '_parent') === false){
+	foreach ($keys as $k) {
+		if(strpos($k, $module) === 0){
+			$func = $k;
+			if(stripos($k, '_parent') === false){
 				$code = '
 				if(!function_exists("'.$func.'")){
 					function '.$func.'($key = ""){
-						$result = the_'.$module.'("'.$keys[$i].'");
+						$result = the_'.$module.'("'.$k.'");
 						if(!$key) return $result ?: null;
 						else if(isset($result[$key])) return $result[$key];
 						else if(strpos($key, "'.$module.'_") !== 0){
@@ -931,7 +933,7 @@ function register_module_functions($module = ''){
 				}';
 			}
 		}else{
-			if($_table = get_table_by_primkey($keys[$i])){
+			if($_table = get_table_by_primkey($k)){
 				$code = '
 				if(!function_exists("'.$module.'_'.$_table.'")){
 					function '.$module.'_'.$_table.'($key = ""){

@@ -52,12 +52,12 @@ while(true){
 			if(!strpos($PARAM['cmd'], '(') && (is_callable($PARAM['cmd']) || strpos($PARAM['cmd'], '::'))) {
 				//将输入按 shell 命令来运行
 				${'SHELL'.INIT_TIME} = true;
-				array_walk($PARAM['args'], function(&$v){ //转换参数
+				foreach($PARAM['args'] as &$v){ //转换参数
 					if($v === 'true') $v = true;
 					elseif($v === 'false') $v = false;
 					elseif($v === 'undefined' || $v === 'null') $v = null;
 					elseif(is_numeric($v) && (int)$v < 2147483647) $v = (int)$v;
-				});
+				};
 				if(is_assoc($PARAM['args'])){ //关联数组参数
 					print_r(call_user_func($PARAM['cmd'], $PARAM['args']));
 				}elseif(is_array($PARAM['args'])){ //索引数组参数

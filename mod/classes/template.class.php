@@ -119,7 +119,7 @@ final class template{
 				return eval("return {$match[1]};"); //计算属性中的 PHP 代码，并用结果进行替换
 			}, $v);
 		}
-		if($tagName == 'include'){ //引入文件
+		if($tagName == 'include'){ //include 语句
 			$code = array();
 			foreach (explode(',', $attrs['data']) as $file) {
 				$file = trim($file);
@@ -133,21 +133,28 @@ final class template{
 			}
 			$code = implode('; ', $code);
 		}elseif($tagName == 'case'){ //case 语句
-			$code = implode('', array_map(function($v){
-				return 'case '.trim($v).': ';
-			}, explode(',', $attrs['data'])));
-		}elseif($tagName == 'default' || $tagName == 'else'){
+			$code = explode(',', $attrs['data']);
+			foreach ($code as &$v) {
+				$v = 'case '.trim($v).':';
+			}
+			$code = implode(' ', $code);
+		}elseif($tagName == 'default' || $tagName == 'else'){ //default/else 语句
 			$code = "{$tagName}:";
-		}elseif(in_array($tagName, $noDataTags) || $tagName == 'goto'){
+		}elseif(in_array($tagName, $noDataTags) || $tagName == 'goto'){ //无参数语句和 goto 语句
 			$code = $tagName.(!empty($attrs['data']) ? ' '.$attrs['data'] : '').';';
-		}elseif(in_array($tagName, self::$endTags) || $tagName == 'elseif'){
+		}elseif(in_array($tagName, self::$endTags) || $tagName == 'elseif'){ //必须关闭的语句和 elseif 语句
 			$code = "{$tagName}({$attrs['data']}):";
 		}else{
 			if(!empty($attrs['data'])){
-				$args = implode(', ', array_map(function($v){
-					return '"'.str_replace('"', '\"', trim($v)).'"';
-				}, explode(',', $attrs['data'])));
-			}else $args = '';
+				$args = explode(',', $attrs['data']);
+				foreach ($args as &$v) {
+					$v = trim($v);
+					$v = defined($v) ? $v : '"'.str_replace('"', '\"', $v).'"';
+				}
+				$args = implode(',', $args);
+			}else{
+				$args = '';
+			}
 			$code = "{$tagName}($args);"; //用户自定义标签
 		}
 		return str_replace($tag['element'], $code ? "<?php $code ?>" : '', $html); //替换标签为 PHP 代码
@@ -160,15 +167,14 @@ final class template{
 	 */
 	private static function handleEndTag($html){
 		$html = str_ireplace(array('</case>', '</default>'), '<?php break; ?>', $html);
-		$tags = array_map(function($v){
-			return '</'.$v.'>'; //普通结束标签
-		}, self::$tags);
-		$endTags = array_map(function($v){
-			return '</'.$v.'>'; //必须关闭的结束标签
-		}, self::$endTags);
-		$_endTags = array_map(function($v){
-			return '<?php end'.$v.'; ?>'; //必须关闭的结束标签对应的 PHP 代码
-		}, self::$endTags);
+		$tags = $endTags = $_endTags = array();
+		foreach (self::$tags as $v) {
+			$tags[] = '</'.$v.'>'; //普通结束标签
+		}
+		foreach (self::$endTags as $v) {
+			$endTags[] = '</'.$v.'>'; //必须关闭的结束标签
+			$_endTags[] = '<?php end'.$v.'; ?>'; //必须关闭的结束标签对应的 PHP 代码
+		}
 		$html = str_ireplace($endTags, $_endTags, $html); //替换必须关闭的标签为 PHP 代码
 		return str_ireplace($tags, '', $html); //移除将普通结束标签
 	}
@@ -188,7 +194,7 @@ final class template{
 				if(!preg_match($regexp[1], $exp)){ //判断表达式是否合法
 					$echo = $exp[0] != '!' ? 'echo ' : ''; //是否输出
 					$i = $echo ? 1 : 2;
-					$code = '<?php '.$echo.substr($exp, $i, strlen($exp)-$i-1).' ?>'; //PHP 代码
+					$code = '<?php '.$echo.substr($exp, $i, strlen($exp)-$i-1).'; ?>'; //PHP 代码
 					$html = str_replace($exp, $code, $html); //替换表达式
 				}
 			}

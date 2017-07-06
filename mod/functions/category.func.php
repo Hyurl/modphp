@@ -10,7 +10,7 @@ function category_tree($arg = array()){
 	if(is_numeric($arg)) $arg = array('category_id'=>$arg);
 	if(!$tree || $arg || $sid != session_id()){
 		$sid = session_id();
-		$tree = Category::getTree($arg); //获取目录树
+		$tree = category::getTree($arg); //获取目录树
 		error(null);
 	}
 	return $tree['success'] ? $tree['data'] : false;

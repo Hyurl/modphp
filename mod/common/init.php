@@ -5,7 +5,7 @@
 /** 定义常量 */
 define('INIT_MEMORY', memory_get_usage()); //初始内存占用
 define('INIT_TIME', microtime(true)); //初始运行时间
-define('MOD_VERSION', '2.2.8'); //ModPHP 版本
+define('MOD_VERSION', '2.2.9'); //ModPHP 版本
 defined('MOD_ZIP') or define('MOD_ZIP', ''); //ModPHP 压缩文件夹
 defined('STDIN') or define('STDIN', fopen('php://stdin','r')); //基本输出
 defined('STDOUT') or define('STDOUT', fopen('php://stdout','w')); //基本输出
@@ -150,7 +150,8 @@ $preinit = function() use($installed){
 				if(isset($url['path'][0], $url['path'][1])){
 					$_GET['obj'] = $url['path'][0];
 					$_GET['act'] = $url['path'][1];
-					for ($i=2; $i < count($url['path']); $i += 2) { 
+					$count = count($url['path']);
+					for ($i=2; $i < $count; $i += 2) { 
 						$_GET = array_merge($_GET, array($url['path'][$i] => isset($url['path'][$i+1]) ? $url['path'][$i+1] : ''));
 					}
 				}

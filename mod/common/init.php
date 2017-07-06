@@ -76,7 +76,7 @@ foreach ($GLOBALS['CORE'.INIT_TIME] as $file) {
 		$basename = basename($file, '.func.php');
 		if($basename == 'console' && !is_console())
 			continue; //console.func.php 仅在交互式控制台中引入
-		if(!$installed && $basename != 'user' && $basename != 'file' && isset($database[$basename]))
+		if(!$installed && $basename != 'user' && isset($database[$basename]))
 			continue; //模块函数文件仅在系统安装后引入
 		include_once __CORE__.$file;
 	}

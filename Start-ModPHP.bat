@@ -17,12 +17,12 @@ goto top
 :SocketServerThread
 set/p port="Set an available port for listening: "
 set/p threads="How many threads need to start: "
-php socket-server-thread.php %port% %threads% & pause
+php socket-server-thread.php %port% %threads% & pause & goto top
 
 :SocketServer
 set/p port="Set an available port for listening: "
-php socket-server.php %port% & pause
+php socket-server.php %port% & pause & goto top
 
 :HttpServer
 set/p port="Set an available port for listening: "
-php -S 0.0.0.0:%port% index.php & pause
+php -S 0.0.0.0:%port% index.php & pause & goto top

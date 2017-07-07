@@ -395,17 +395,18 @@ class mod{
 				if(empty($arg['src']) || empty($arg['md5']))
 					return error(lang('mod.missingArguments'));
 				$file = __ROOT__.(MOD_ZIP ?: 'modphp.zip');
-				//尝试获取安装包
-				$tmp = @file_get_contents($arg['src']);
-				if(!$tmp && function_exists('curl')){
-					$tmp = curl(array('url'=>$arg['src'], 'followLocation'=>1));
-					if(curl_info('error'))
-						$tmp = "";
+				$tmp = null;
+				if(ini_get('allow_url_fopen')){
+					$tmp = @file_get_contents($arg['src']); //获取更新包
+				}elseif(function_exists('curl')){
+					$tmp = curl(array('url'=>$arg['src'], 'followLocation'=>2)); //使用 CURL 获取更新包
 				}
-				$len = @file_put_contents($file, $tmp);
-				if($len && md5_file($file) == $arg['md5']){ //通过 MD5 验证安装包完整性
-					$ok = MOD_ZIP ? true : (function_exists('zip_extract') && zip_extract($file, __ROOT__)); //解压安装包
-					export(load_config_file('config.php'), __ROOT__.'user/config/config.php'); //更新配置
+				if($tmp){
+					$len = @file_put_contents($file, $tmp); //写出更新包
+					if($len && md5_file($file) == $arg['md5']){ //通过 MD5 验证安装包完整性
+						$ok = MOD_ZIP ? true : (function_exists('zip_extract') && zip_extract($file, __ROOT__)); //解压安装包
+						export(load_config_file('config.php'), __ROOT__.'user/config/config.php'); //更新配置
+					}
 				}
 			}else{ //更新数据库
 				include __CORE__.'common/update.php'; //调用执行数据库更新程序

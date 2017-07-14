@@ -5,7 +5,7 @@
 /** 定义常量 */
 define('INIT_MEMORY', memory_get_usage()); //初始内存占用
 define('INIT_TIME', microtime(true)); //初始运行时间
-define('MOD_VERSION', '2.2.9'); //ModPHP 版本
+define('MOD_VERSION', '2.3.0'); //ModPHP 版本
 defined('MOD_ZIP') or define('MOD_ZIP', ''); //ModPHP 压缩文件夹
 defined('STDIN') or define('STDIN', fopen('php://stdin','r')); //基本输出
 defined('STDOUT') or define('STDOUT', fopen('php://stdout','w')); //基本输出
@@ -33,14 +33,15 @@ if(MOD_ZIP){
 		if(strpos($file, 'mod/') === 0) $GLOBALS['CORE'.INIT_TIME][] = substr($file, 4);
 	}
 }else{
-	foreach(glob(__ROOT__.'mod/*/*.php') as $file){
+	$files = array_merge(glob(__ROOT__.'mod/*/*.php'), glob(__ROOT__.'mod/*/*/*.php'));
+	foreach($files as $file){
 		if(strpos($file, __CORE__) === 0) $GLOBALS['CORE'.INIT_TIME][] = substr($file, strlen(__CORE__));
 	}
 }
 
 //自动加载类文件（优先从用户目录加载）
 spl_autoload_register(function($class){
-	$class1 = strtolower($class); //小写类名
+	$class1 = str_replace('\\', '/', strtolower($class)); //小写类名
 	if(is_file($file = __ROOT__."user/classes/$class.class.php")){ //从用户目录按原类名导入
 		include_once $file;
 		return;
@@ -87,7 +88,7 @@ if($installed) register_module_functions(); //注册模块函数
 //预初始化
 $preinit = function() use($installed){
 	/** 自动重定向至固定网站地址 */
-	if(is_agent() && strpos(url(), site_url()) !== 0 && !is_proxy_server() && strapos(str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME'])), __ROOT__) === 0)
+	if(is_agent() && strpos(url(), site_url()) !== 0 && !is_proxy_server() && path_starts_with(str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME'])), __ROOT__))
 		redirect(site_url().substr(url(), strlen(detect_site_url())), 301);
 
 	/** 连接数据库 */
@@ -171,7 +172,7 @@ foreach (glob(__ROOT__.'user/functions/*.php') as $file) {
 	include_once $file;
 }
 
-unset($installed, $database, $file, $basename, $preinit); //释放变量
+unset($installed, $database, $files, $file, $basename, $preinit); //释放变量
 
 /** 加载模板函数文件 */
 if(file_exists(template_path('functions.php'))) include_once template_path('functions.php');
@@ -222,27 +223,6 @@ function init(){
 			}elseif($init['__DISPLAY__']){
 				display_file($init['__DISPLAY__'], true); //将初始化变量中的 __DISPLAY__ 设置为展示页面
 			}
-			//限制对正在维护的页面的访问
-			if(display_file() && is_template() && config('site.maintenance.pages')){
-				$maint = str_replace(' ', '', config('site.maintenance.pages'));
-				if(strpos($maint, ',')){
-					$maint = explode(',', $maint);
-				}else{
-					$maint = explode('|', $maint);
-				}
-				if(in_array(substr(display_file(), strlen($tplPath)), $maint)){
-					if(!eval('return '.config('site.maintenance.exception').';')){ //判断例外权限
-						$err = trim(config('site.maintenance.report'));
-						if(stripos($err, 'report_404') === 0){
-							display_file($err404, true);
-						}elseif(stripos($err, 'report_500') === 0){
-							display_file($err500, true);
-						}else{
-							display_file($err403, true);
-						}
-					}
-				}
-			}
 		}elseif(__SCRIPT__ == 'mod.php'){
 			if(isset($_SERVER['HTTP_REFERER'])){ //通过来路页面获取展示页面
 				$url = explode('?', $_SERVER['HTTP_REFERER']);
@@ -257,7 +237,6 @@ function init(){
 			if(isset($_GET['obj'], $_GET['act'])){
 				$obj = strtolower($_GET['obj']);
 				$act = $_GET['act'];
-
 				//判断请求的操作是否合法
 				if($obj != 'mod' && !is_subclass_of($obj, 'mod') || (!method_exists($obj, $act) && !is_callable(hooks($obj.'.'.$act))) || in_array($obj.'::'.strtolower($act), ${'DENIES'.INIT_TIME})){
 					display_file($err403, true);

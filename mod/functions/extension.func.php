@@ -1456,3 +1456,13 @@ function load_config($file){
 	else //载入 php
 		return include($file) ?: false;
 }
+
+/**
+ * path_starts_with() 判断一个路径是否以指定的字符串开头，在 Windows 中不区分大小写
+ * @param  string $path 待检测的路径
+ * @param  string $find 查找的字符串
+ * @return boolean
+ */
+function path_starts_with($path, $find){
+	return PHP_OS == 'WINNT' ? stripos($path, $find) === 0 : strpos($path, $find) === 0;
+}

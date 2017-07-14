@@ -1,4 +1,16 @@
 【ModPHP 更新日志】
+版本 2.3.0 (2017-7-15 1:30)
+1. 新增 path_starts_with() 函数用来判断一个路径是否以某字符串开头，Windows 中不区分大小写。
+2. 不再建议使用 strapos() 函数，可能会在未来版本中移除。
+3. 移除常规配置项 site.maintenance，不再支持将某个页面设置为维护页面。
+4. 推荐使用 <!-- CONTENTS --> 替代 __CONTENT__ 来作为布局模板的内容占位符。
+5. 修复 Image 扩展和 Mail 扩展的一些 BUG，Image 扩展能更好地支持远程图像资源。
+6. 新增 Image::readFromDataURL() 方法用来从经过 base64 编码的 Data URI Scheme 数据
+   中读取图像；Image::getBase64() 方法重命名为 Image::getDataURL()，原方法名作为别名
+   继续使用。
+7. 挂钩机制支持在 Api 上绑定类和方法名，如果绑定的是类，则尝试将类作为函数调用，需要在
+   类中定义 __invoke() 方法。
+
 版本 2.2.9 (2017-7-6 16:10)
 1. database 扩展在连接数据库时，可以设置 timeout 选项来规定连接的超时秒数，默认 5。
 2. template 模板引擎自定义标签的 data 属性也可以处理常量。

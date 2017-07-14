@@ -169,12 +169,12 @@ class mod{
 		$link = static::TABLE.'_link';
 		$primkey = static::PRIMKEY;
 		if(!empty($arg[$link])){
-			$hasRoot = strapos($arg[$link], site_url()) === 0; //判断链接是否为绝对 URL 地址
+			$hasRoot = path_starts_with($arg[$link], site_url()); //判断链接是否为绝对 URL 地址
 			$index = config('mod.pathinfoMode') ? 'index.php/' : ''; //pathinfo 模式
 			if($act != 'get'){
 				if($hasRoot) //获取相对链接
 					$arg[$link] = substr($arg[$link], strlen(site_url()));
-				if(strapos($arg[$link], 'index.php/') === 0)
+				if(path_starts_with($arg[$link], 'index.php/'))
 					$arg[$link] = substr($arg[$link], 10); //去掉链接的 index.php/ 前缀
 				if(file_exists($arg[$link]))
 					return error(lang('mod.linkUnavailable')); //链接不能与文件名冲突

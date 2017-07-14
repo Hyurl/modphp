@@ -42,7 +42,7 @@ return array(
 				'savePath' => 'tmp/', //编译文件保存路径
 				)
 			),
-		'SocketServer'=>array( //Socket 服务器设置
+		'SocketServer' => array( //Socket 服务器设置
 			'port' => 8080, //监听端口
 			),
 		),
@@ -59,11 +59,6 @@ return array(
 			404 => '404.php', //404 页面
 			500 => '500.php', //500 页面
 			),
-		'maintenance' => array( //维护页面设置
-			'pages' => '', //正在维护中的页面，多个页面用 | 或 , 分隔
-			'exception' => 'is_admin()', //例外条件，即 if() 的参数
-			'report' => 'report_500()', //报告消息，可以使用 report_403/404/500() 函数
-			)
 		),
 	'user' => array( //用户模块设置
 		'template' => 'profile.php', //模板文件
@@ -75,13 +70,13 @@ return array(
 			'serialize' => 'user_protect', //用户自序列化字段
 			),
 		'name' => array( //用户名设置
-			'minLength'=>2, //最小长度
-			'maxLength'=>30, //最大长度
+			'minLength' => 2, //最小长度
+			'maxLength' => 30, //最大长度
 			),
 		'password' => array( //字段设置
-			'minLength'=>5, //最小长度
-			'maxLength'=>18, //最大长度
-			'encryptKey'=>'MODPHP', //HTTP 摘要认证时，本地用户密码加密/解密的密钥
+			'minLength' => 5, //最小长度
+			'maxLength' => 18, //最大长度
+			'encryptKey' => 'MODPHP', //HTTP 摘要认证时，本地用户密码加密/解密的密钥
 			),
 		'level' => array( //级别设置
 			'admin' => 5, //管理员

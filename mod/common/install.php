@@ -48,7 +48,7 @@
 			texts = {install: '安装', update: '更新', uninstall: '卸载'},
 			text = texts[act];
 		btn = $(btn);
-		btn.innerText = text+'中...';
+		btn.textContent = text+'中...';
 		btn.setAttribute('disabled', 'disabled');
 		if(typeof data == 'object'){
 			for(var i in data){
@@ -59,35 +59,25 @@
 			str = data;
 		}
 		xhr.open('POST', 'mod.php?mod::'+act, true);
-		xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8');
-		xhr.onreadystatechange = function(){
+		xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+		xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
+		xhr.onload = xhr.onerror = function(){
 			var result = xhr.responseText;
-			if(xhr.readyState == 4){
-				console.log(result);
-				if(xhr.status == 200){
-					try{
-						result = result.match(/\{.*\}/)[0];
-						result = JSON.parse(result);
-						alert(result.data);
-						if(result.success){
-							btn.innerText = text+'成功！';
-							go_home();
-						}else{
-							btn.innerText = text+'失败！';
-						}
-					}catch(e){
-						alert(result);
-						btn.innerText = text+'失败！';
-					}
-				}else{
-					alert(result);
-					btn.innerText = text+'失败！';
+			if(xhr.status == 200){
+				result = JSON.parse(result.match(/\{.*\}/)[0]);
+				alert(result.data);
+				btn.textContent = text+(result.success ? '成功！' : '失败！');
+				if(result.success){
+					go_home();
 				}
-				setTimeout(function(){
-					btn.innerText = text;
-					btn.removeAttribute('disabled');
-				}, 2000);
+			}else{
+				alert(result || '与服务器的连接出现错误！');
+				btn.textContent = text+'失败！';
 			}
+			setTimeout(function(){
+				btn.textContent = text;
+				btn.removeAttribute('disabled');
+			}, 2000);
 		};
 		xhr.send(str);
 	}

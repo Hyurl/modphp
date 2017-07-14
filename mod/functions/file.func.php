@@ -9,7 +9,7 @@ add_hook(array('file.update.check_permission', 'file.delete.check_permission'), 
 
 /** 获取文件路径为绝对路径 */
 add_hook('file.get.absolute_src', function($data){
-	if(strapos($data['file_src'], site_url()) !== 0){
+	if(!path_starts_with($data['file_src'], site_url())){
 		$data['file_src'] = site_url().$data['file_src'];
 		return $data;
 	}
@@ -17,7 +17,7 @@ add_hook('file.get.absolute_src', function($data){
 
 /** 永远使用相对路径获取文件（如果存在） */
 add_hook('file.get.before.relative_src', function($arg){
-	if(!empty($arg['file_src']) && strapos($arg['file_src'], site_url()) === 0){
+	if(!empty($arg['file_src']) && path_starts_with($arg['file_src'], site_url())){
 		$arg['file_src'] = substr($arg['file_src'], strlen(site_url()));
 		return $arg;
 	}

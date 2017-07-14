@@ -120,8 +120,9 @@ final class mail{
 
 	/** getBase64Addr() 获取 base64 编码的邮件地址 */
 	private static function getBase64Addr($addr){
-		$addrs = str_replace(' ', '', explode(',', $addr));
+		$addrs = explode(',', $addr);
 		foreach ($addrs as &$addr) {
+			$addr = trim($addr);
 			$addr = preg_replace_callback('/(.*)<(.*)>/Ui', function($match){
 				return '"=?UTF-8?B?'.base64_encode(trim($match[1])).'?="<'.$match[2].'>';
 			}, $addr);

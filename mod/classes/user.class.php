@@ -80,7 +80,7 @@ final class user extends mod{
 		do_hooks('user.login', $arg); //执行登录前挂钩函数
 		if(error()) return error();
 		$installed = config('mod.installed');
-		$login = explode('|', config('user.keys.login'));
+		$login = explode('|', str_replace(' ', '', config('user.keys.login')));
 		$httpAuth = isset($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
 		if($httpAuth) Header("HTTP/1.0 401 Unauthorized"); //清除浏览器的授权信息
 		$hasUser = false;

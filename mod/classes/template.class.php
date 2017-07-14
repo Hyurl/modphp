@@ -93,9 +93,12 @@ final class template{
 				$file = self::compile($file, false); //编译布局文件
 			}
 			if($file){
-				//将布局文件中的占位标记替换为模板内容
-				$layout = explode('__CONTENT__', file_get_contents($file));
-				$html = substr($html, 0, $index).$layout[0].substr($html, $index).$layout[1];
+				//将布局文件中的内容占位符替换为模板内容
+				$layout = file_get_contents($file);
+				if(preg_match('/<!--[\s]*CONTENT[S\s]*-->|__CONTENT[S]*__/Ui', $layout, $match)){
+					$layout = explode($match[0], $layout);
+					$html = substr($html, 0, $index).$layout[0].substr($html, $index).$layout[1];
+				}
 			}
 		}
 		return $html;

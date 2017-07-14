@@ -36,6 +36,7 @@ final class image{
 		imagefill($tmp, 0, 0, $color);
 		return $tmp;
 	}
+
 	/** getcolor() 解析并获取颜色 */
 	private static function getcolor($str){
 		$color = false;
@@ -58,6 +59,7 @@ final class image{
 		}
 		return $color;
 	}
+
 	/**
 	 * imagecopymergealpha() 合并图像并保留透明度
 	 * @static
@@ -109,6 +111,7 @@ final class image{
 		}
 		return true;
 	}
+
 	/** 
 	 * imagecreatefrombmp() 从 BMP 文件创建图像
 	 * @static
@@ -187,6 +190,7 @@ final class image{
 		fclose($f1);
 		return $res;
 	}
+
 	/** getxy() 获取 x, y */
 	private static function getxy($x = 0, $y = 0){
 		$x = $x ?: self::$x;
@@ -195,6 +199,7 @@ final class image{
 		$y = $y >= 0 ? $y : imagesy(self::$src) + $y;
 		return array($x, $y);
 	}
+
 	/**
 	 * set() 设置属性，在对图像进行各种操作前，如画点、画线、画图形等，需要先设置好画笔的属性，如位置、颜色等
 	 * @static
@@ -210,8 +215,8 @@ final class image{
 		}elseif($k == 'style'){
 			imagesetstyle($src, $v);
 		}elseif($k == 'brush' || $k == 'tile') {
-			$src = getimagesize($v);
-			$func = 'imagecreatefrom'.substr($src['mime'], strpos($src['mime'], '/') + 1);
+			$info = getimagesize($v);
+			$func = 'imagecreatefrom'.substr($info['mime'], strpos($info['mime'], '/') + 1);
 			if(function_exists($func)){
 				$tmp = $func($v);
 				$color = imagecolorallocate($tmp, 255, 255, 255);
@@ -229,6 +234,7 @@ final class image{
 		self::${$k}= $v;
 		return new self;
 	}
+
 	/**
 	 * open() 打开一个图像
 	 * @static
@@ -545,19 +551,19 @@ final class image{
 	/**
 	 * tile() 设置贴图
 	 * @static
-	 * @param  string $tile    [可选]贴图文件
+	 * @param  string $file    [可选]贴图文件
 	 * @param  int    $width   [可选]宽度
 	 * @param  int    $height  [可选]高度
 	 * @param  int    $opacity [可选]不透明度
 	 * @param  int    $rotate  [可选]旋转角度
 	 * @return object          当前对象
 	 */
-	static function tile($tile = '', $width = 0, $height = 0, $opacity = 1, $rotate = 0){
-		if($tile) self::set('tile', $tile);
+	static function tile($file = '', $width = 0, $height = 0, $opacity = 1, $rotate = 0){
+		if($file) self::set('tile', $file);
 		$src = getimagesize($file);
 		$func = 'imagecreatefrom'.substr($src['mime'], strpos($src['mime'], '/') + 1);
 		if(function_exists($func)){
-			$tmp = $func($tile);
+			$tmp = $func($file);
 		}elseif(self::$mime == 'image/x-ms-bmp'){
 			$tmp = self::imagecreatefrombmp($file); //BMP 贴图
 		}else{
@@ -600,7 +606,7 @@ final class image{
 		imagesavealpha(self::$src, true);
 		$mime = self::$mime;
 		$_file = $file ?: self::$file;
-		if(strpos($_file, '://')) return false;
+		$isURL = strpos($_file, '://');
 		if($_file == self::$file && $mime){
 			if($mime == 'image/x-ms-bmp'){
 				$func = 'imagejpeg'; //bmp 图像当作 jpeg 保存
@@ -622,10 +628,11 @@ final class image{
 			}else{
 				$result = $func(self::$src, $file ?: null);
 			}
-			if($result && $close) self::close();
+			if($close) self::close();
 			return $result;
 		}else return false;
 	}
+
 	/**  close() 关闭图像 */
 	static function close(){
 		return self::$src && imagedestroy(self::$src);
@@ -635,9 +642,10 @@ final class image{
 	 * getBinary() 获取图像的二值化文本
 	 * @static
 	 * @param  boolean $reverse [可选]反转 0 和 1，默认 false
-	 * @return string           二值化文本
+	 * @param  boolean $close   [可选]获取后关闭图像，默认 true
+	 * @return string           由 0 和 1 组成的二值化文本
 	 */
-	static function getBinary($reverse = false){
+	static function getBinary($reverse = false, $close = true){
 		$data = array();
 		for($i=0; $i < self::$height; ++$i){
 			for($j=0; $j < self::$width; ++$j){
@@ -652,18 +660,38 @@ final class image{
 				}
 			}
 		}
+		if($close) self::close();
 		return implode("\n", $data);
 	}
 
 	/**
-	 * getBase64() 获取 base64 编码的 Data URI Scheme 数据 
+	 * getDataURL() 获取 base64 编码的 Data URI Scheme 数据 
 	 * @static
-	 * @param  bool   $close [可选]关闭图像资源，默认 true
-	 * @return string        经过 base64 编码的 Data URI Scheme 文本
+	 * @param  bool   $close [可选]获取后关闭图像，默认 true
+	 * @return string        经过 base64 编码的 Data URI Scheme 数据
 	 */
-	static function getBase64($close = true){
+	static function getDataURL($close = true){
 		ob_start();
 		self::output('', $close);
 		return 'data:'.self::$mime.';base64,'.base64_encode(ob_get_clean());
+	}
+
+	/** getBase64() image::getDataURL() 的别名 */
+	static function getBase64($close = true){
+		return self::getDataURL($close);
+	}
+
+	/**
+	 * readFromDataURL() 从 base64 编码的 Data URI Scheme 数据中读取图像
+	 * @param  string $data 经过 base64 编码的 Data URI Scheme 数据
+	 * @return object       当前对象
+	 */
+	static function readFromDataURL($data){
+		$file = '~'.uniqid();
+		file_put_contents($file, base64_decode(ltrim(strstr($data, ','), ','))); //创建缓存文件
+		$obj = self::open($file); //从缓存文件中读取图像
+		self::$file = '';
+		unlink($file); //删除缓存文件
+		return $obj;
 	}
 }

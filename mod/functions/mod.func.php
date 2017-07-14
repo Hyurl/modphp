@@ -123,12 +123,21 @@ function do_hooks($api, &$input = null){
 	if(!error() && $hooks){
 		$isSet = is_array($hooks);
 		$hooks = $isSet ? $hooks : array($hooks);
-		foreach ($hooks as $hook) {
-			if(is_callable($hook)){
-				$result = $hook($input);
-				if(error() && $isSet) break; //出现错误则不再执行后面的回调函数
-				if($result !== null) $input = $result; //如果回调函数有返回值，则将其填充到传入参数中
+		foreach ($hooks as $func) {
+			if(is_string($func) && strpos($func, '::')){ //处理类方法
+				list($class, $method) = explode('::', $func);
+				$class = new $class; //实例化对象
+				$result = $class->$method($input); //执行类方法
+			}elseif(is_callable($func)){ //处理回掉函数
+				$result = $func($input);
+			}elseif(method_exists($func, '__invoke')){
+				$func = new $func;
+				$result = $func($input); //将类作为回调函数执行
+			}else{
+				$result = null;
 			}
+			if(error() && $isSet) break; //出现错误则不再执行后面的回调函数
+			if($result !== null) $input = $result; //如果回调函数有返回值，则将其填充到传入参数中
 		}
 	}
 }
@@ -189,11 +198,11 @@ function staticuri($file = '', $format = ''){
 	static $uri = array();
 	if(!$uri) $uri = load_config_file('static-uri.php');
 	if(!$file) return $uri;
-	if(is_string($file) && strapos($file, __ROOT__) === 0) //替换为相对于 __ROOT__ 的路径
+	if(is_string($file) && path_starts_with($file, __ROOT__)) //替换为相对于 __ROOT__ 的路径
 		$file = substr($file, strlen(__ROOT__));
 	if(is_assoc($file)){ //同时设置多个伪静态规则
 		foreach ($file as $k => $v) {
-			if(strapos($k, __ROOT__) === 0) $k = substr($k, strlen(__ROOT__));
+			if(path_starts_with($k, __ROOT__)) $k = substr($k, strlen(__ROOT__));
 			$uri[$k] = $v;
 		}
 		return true;
@@ -274,7 +283,7 @@ function error($data = '', array $extra = array()){
 function is_display($file){
 	if(!display_file()) return false;
 	if($file[strlen($file)-1] == '/')
-		return strapos(display_file(), $file) === 0; //判断目录
+		return path_starts_with(display_file(), $file); //判断目录
 	return $file == display_file(); //判断文件
 }
 
@@ -347,14 +356,14 @@ function detect_site_url($header = '', $host = ''){
 	}else{ //客户端请求
 		$docRoot = str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'])); //获取 Document Root
 		if($docRoot) $docRoot = $docRoot.'/';
-		if(strapos(__ROOT__, $docRoot) !== 0){ //ModPHP 运行在虚拟目录中
+		if(!path_starts_with(__ROOT__, $docRoot)){ //ModPHP 运行在符号链接目录中
 			$scriptFile = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 			$i = strrpos($scriptFile, $script);
 			$docRoot = substr($scriptFile, 0, $i+1);
 		}
 		extract(parse_url(url()));
 	}
-	if(strapos(__ROOT__, $docRoot) === 0){
+	if(path_starts_with(__ROOT__, $docRoot)){
 		$sitePath = substr(__ROOT__, strlen($docRoot)); //网站目录
 	}else{
 		$sitePath = substr($script, 1, strrpos($script, '/')+1);
@@ -414,9 +423,9 @@ function analyze_url($format, $url = ''){
 	$url = $url ?: url(); //如果未提供 URL 地址，则使用当前访问的地址
 	$uri = strstr($url, '?', true) ?: $url;
 	$uri = urldecode($uri); //对 URI 地址进行转义解码
-	if(strapos($uri, site_url('index.php')) === 0) //URL 以网站地址 + index.php 开始
+	if(path_starts_with($uri, site_url('index.php'))) //URL 以网站地址 + index.php 开始
 		$uri = substr($uri, strlen(site_url())+10);
-	elseif(strapos($uri, site_url()) === 0) //URL 以网站地址开始
+	elseif(path_starts_with($uri, site_url())) //URL 以网站地址开始
 		$uri = substr($uri, strlen(site_url()));
 	$format = explode('/', trim($format, '/')); //使用 / 作为分隔符
 	$uri = explode('/', trim($uri, '/'));
@@ -487,7 +496,7 @@ function_alias('template_path', 'template_dir');
  * @return string  文件名
  */
 function template_file(){
-	return strapos(display_file(), template_path('', false)) === 0 ? substr(display_file(), strlen(template_path('', false))) : '';
+	return path_starts_with(display_file(), template_path('', false)) ? substr(display_file(), strlen(template_path('', false))) : '';
 }
 
 /**
@@ -507,14 +516,14 @@ function current_dir_url($file = ''){
  * @return null|mixed   如果载入的是 php 文件或未知文件，则返回其内容
  */
 function import($file, $tag = '', $attr = ''){
-	if(strapos($file, __ROOT__) === 0){ //$file 为绝对服务器路径
+	if(path_starts_with($file, __ROOT__)){ //$file 为绝对服务器路径
 		$url = site_url(substr($file, strlen(__ROOT__)));
 	}elseif(strpos($file, '://')){ //$file 为 URL 地址
 		$url = $file;
 	}elseif($file[1] != ':' && $file[0] != '/'){ //$file 为相对路径
 		$url =  current_dir_url($file); //获取绝对 URL 地址
 		$file = current_dir($file); //获取绝对服务器路径
-		if(template::$saveDir && strapos($file, template::$saveDir) === 0){ //该文件在模板编译目录下
+		if(template::$saveDir && path_starts_with($file, template::$saveDir)){ //该文件在模板编译目录下
 			$path = substr($file, strlen(template::$saveDir));
 			$file = template::$rootDir.$path; //获取原始目录路径
 			$url = template::$rootDirURL.$path;
@@ -554,11 +563,11 @@ function get_template_file($url = '', $tpldir = '', $rootURL = '', $uri = ''){
 	if(!$uri){
 		$url = $url ?: url(); //如果不提供 URL 则使用当前访问的地址
 		$rootURL = $rootURL ?: current_dir_url();
-		if($rootURL && strapos($url, $rootURL) === 0)
+		if($rootURL && path_starts_with($url, $rootURL))
 			$uri = substr($url, strlen($rootURL)); //获取相对路径
 		$query = strstr($uri, '?'); //查询字符串
 		$uri = $_uri = strstr($uri, '?', true) ?: $uri;
-		if(strapos($uri, 'index.php/') === 0)
+		if(path_starts_with($uri, 'index.php/'))
 			$uri = substr($uri, 10); //以 index.php/ 开头则将其去掉
 		$uri = rtrim($tpldir.$uri, '/');
 	}
@@ -600,7 +609,7 @@ function display_file($url = '', $set = false){
 	static $sid = null; //在 Socket 中区别不同的客户端
 	if($file !== '' && !$url) return $file;
 	if($set){
-		if(strapos($url, __ROOT__) === 0)
+		if(path_starts_with($url, __ROOT__))
 			$url = substr($url, strlen(__ROOT__)); //获取文件相对路径
 		return $file = $url;
 	}elseif(!$url && (__SCRIPT__ == 'mod.php' || is_socket())){
@@ -612,7 +621,7 @@ function display_file($url = '', $set = false){
 	$url = $url ?: url();
 	if(!$url) return false;
 	$uri = strstr($url, '?', true) ?: $url;
-	if(strapos($uri, site_url('index.php')) === 0){
+	if(path_starts_with($uri, site_url('index.php'))){
 		$index = 'index.php/';
 		$uri = site_url().substr($uri, strlen(site_url())+10); //10 表示截掉 index.php? 或 index.php/
 	}else{
@@ -623,7 +632,7 @@ function display_file($url = '', $set = false){
 	$home = config('site.home.template');
 	if($uri == site_url() || $uri == site_url($home)){ //首页
 		return $file = $tplPath.$home;
-	}elseif(strapos($uri, site_url()) === 0){
+	}elseif(path_starts_with($uri, site_url())){
 		$uri = substr($uri, strlen(site_url())); //获取相对路径
 	}elseif(strpos($uri, '://')){ //URL 地址不是本站地址
 		return $file = __SCRIPT__;

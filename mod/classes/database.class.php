@@ -440,4 +440,12 @@ final class database{
 		}
 		return substr($where, 0, strlen($where)-5);
 	}
+
+	/**
+	 * getPDO() 获取底层 PDO 实例
+	 * @return PDO Object
+	 */
+	static function getPDO(){
+		return self::$link[self::$name];
+	}
 }

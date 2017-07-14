@@ -21,7 +21,7 @@ if(!MOD_ZIP && file_exists($zip = __ROOT__.'modphp.zip') && extension_loaded('zi
 }
 
 //Session 保存目录的 .htaccess，禁止客户端访问该目录
-if(strapos($tmp, __ROOT__) === 0 && !file_exists($file = $tmp.'.htaccess')){
+if(path_starts_with($tmp, __ROOT__) && !file_exists($file = $tmp.'.htaccess')){
 	file_put_contents($file, "order deny,allow\ndeny from all");
 }
 

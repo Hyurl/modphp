@@ -84,9 +84,10 @@ final class file extends mod{
 			$savepath = substr($savepath, 0, -strlen($ext)).'_'.$md5Name.$ext; //获取唯一文件名
 			$path = __ROOT__.$savepath;
 		}
+		$path = str_replace('\\', '/', realpath($path));
 		if(!file_exists($path) || $append){
-			if($append && strapos(str_replace('\\', '/', realpath($path)), __ROOT__.$uploadPath) !== 0)
-				error(lang('mod.permissionDenied')); //仅允许在上传的文件后追加数据
+			if($append && !path_starts_with($path, __ROOT__.$uploadPath))
+				error(lang('mod.permissionDenied')); //仅允许在上传目录中的文件后追加数据
 			if(config('mod.installed') && !error()) do_hooks('file.save', $file); //执行挂钩函数
 			if(error()) return false; //如果遇到错误，则不再继续
 			if($append){ //追加数据
@@ -114,7 +115,7 @@ final class file extends mod{
 			if($pxes){
 				foreach (explode('|', $pxes) as $px) { //为每个尺寸创建/删除副本，副本命名如 src_64.png
 					if($action == 'copy'){ //创建
-						Image::open($src)->resize((int)$px)->save($basename.'_'.$px.$ext);
+						image::open($src)->resize((int)$px)->save($basename.'_'.$px.$ext);
 					}elseif($action == 'delete'){ //删除
 						if(file_exists($file = $basename.'_'.$px.$ext))
 							unlink($file);
@@ -166,9 +167,9 @@ final class file extends mod{
 		$installed = config('mod.installed');
 		$src = !empty($arg['file_src']) ? $arg['file_src'] : ''; //分片上传时的源文件地址
 		// 获取相对路径
-		if($src && strapos($src, site_url()) === 0)
+		if($src && path_starts_with($src, site_url()))
 			$src = substr($src, strlen(site_url()));
-		if($src && strapos($src, __ROOT__) === 0)
+		if($src && path_starts_with($src, __ROOT__))
 			$src = substr($src, strlen(__ROOT__));
 		$data = array();
 		foreach ($_FILES as $files) { //遍历 $_FILES 并执行文件保存操作
@@ -239,11 +240,11 @@ final class file extends mod{
 		$_arg = array();
 		if(!empty($arg['file_id'])) $_arg['file_id'] = $arg['file_id'];
 		if(!empty($arg['file_src'])){
-			if(strapos($arg['file_src'], __ROOT__) === 0) //获取相对路径
+			if(path_starts_with($arg['file_src'], __ROOT__)) //获取相对路径
 				$arg['file_src'] = substr($arg['file_src'], strlen(__ROOT__));
 			$_arg['file_src'] = $arg['file_src'];
 			$src = str_replace('\\', '/', realpath(__ROOT__.$arg['file_src'])); //获取绝对路径
-			if(strapos($src, __ROOT__.config('file.upload.savePath')) !== 0)
+			if(!path_starts_with($src, __ROOT__.config('file.upload.savePath')))
 				return error(lang('mod.permissionDenied')); //只允许删除上传的文件
 			if($encoding) $src = iconv('UTF-8', $encoding, $src);
 		}
@@ -253,7 +254,7 @@ final class file extends mod{
 				$result = parent::delete($arg); //删除数据库记录
 				if(error()) return error();
 				$src = file_src();
-				if(strapos($src, site_url()) === 0)
+				if(path_starts_with($src, site_url()))
 					$src = __ROOT__.substr($src, strlen(site_url())); //将绝对 URL 地址转换为绝对磁盘地址
 				if($encoding) $src = iconv('UTF-8', $encoding, $src);
 			}

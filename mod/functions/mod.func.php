@@ -126,13 +126,15 @@ function do_hooks($api, &$input = null){
 		foreach ($hooks as $func) {
 			if(is_string($func) && strpos($func, '::')){ //处理类方法
 				list($class, $method) = explode('::', $func);
-				$class = new $class; //实例化对象
-				$result = $class->$method($input); //执行类方法
-			}elseif(is_callable($func)){ //处理回掉函数
+				if(method_exists($class, $method))
+					$result = $class::$method($input); //静态调用类方法
+				else
+					$result = null;
+			}elseif(is_callable($func)){ //处理回掉函数，PHP7 中也可以处理匿名类，需要类中定义 __invoke() 方法
 				$result = $func($input);
-			}elseif(method_exists($func, '__invoke')){
+			}elseif(method_exists($func, '__invoke')){ //将类作为函数调用
 				$func = new $func;
-				$result = $func($input); //将类作为回调函数执行
+				$result = $func($input);
 			}else{
 				$result = null;
 			}

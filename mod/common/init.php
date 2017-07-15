@@ -17,7 +17,7 @@ define('__CORE__', (MOD_ZIP ? 'zip://'.__ROOT__.MOD_ZIP.'#mod/' : __ROOT__.'mod/
 $file = str_replace('\\', '/', realpath($_SERVER['SCRIPT_FILENAME']));
 define('__SCRIPT__', substr($file, strlen(__ROOT__)) ?: $file, true); //执行脚本
 
-error_reporting(E_ALL ^ E_STRICT); //抑制严格性错误
+error_reporting(E_ALL & ~E_STRICT); //抑制严格性错误
 if(version_compare(PHP_VERSION, '5.3.0') < 0) //ModPHP 需要运行在 PHP 5.3+ 环境
 	exit('PHP version lower 5.3.0, unable to start ModPHP.');
 
@@ -258,10 +258,11 @@ if(is_agent()){
 		$act = $_GET['act'];
 		if(!is_get() && !is_post()) $reqMd = 'REQUEST';
 		do_hooks('mod.client.call', ${'_'.$reqMd}); //在执行类方法前执行挂钩回调函数
-		set_content_type('application/json'); //设置文档类型为 json
 		$result = error() ?: $_GET['obj']::$act(${'_'.$reqMd}); //执行类方法并获取结果
 		$result  = array_merge($result, array('obj'=>$_GET['obj'], 'act'=>$act));
+		error(null); //清空错误信息
 		do_hooks('mod.client.call.complete', $result); //在获取结果后执行回调函数
+		set_content_type('application/json'); //设置文档类型为 json
 		exit(json_encode($result)); //输出 JSON 结果
 	}elseif(__SCRIPT__ == 'index.php'){ /** 载入模板文件 */
 		display:

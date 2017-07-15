@@ -121,10 +121,11 @@ SocketServer::on('open', function($event){ //绑定连接事件
 	}elseif(($obj == 'mod' || is_subclass_of($obj, 'mod')) && (method_exists($obj, $act) || is_callable(hooks($obj.'.'.$act))) && !in_array($obj.'::'.strtolower($act), ${'DENIES'.INIT_TIME})){
 		$uid = $installed ? me_id() : 0;
 		sendResult:
-		if(!error()) do_hooks('mod.client.call', $data);
+		do_hooks('mod.client.call', $data);
 		$result = error() ?: $obj::$act($data);
 		$result = array_merge($result, array('obj'=>$_GET['obj'], 'act'=>$_GET['act']));
-		do_hooks('mod.client.call', $result);
+		error(null); //清空错误信息
+		do_hooks('mod.client.call.complete', $result); //在获取结果后执行回调函数
 		//调用类方法并将结果发送给客户端
 		SocketServer::send(@json_encode($result)); //发送 JSON 结果
 		if($installed && $obj == 'user' && $result['success']){

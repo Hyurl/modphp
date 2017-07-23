@@ -236,8 +236,8 @@ if(extension_loaded('zip')):
  * @return bool
  */
 function zip_compress($path, $file){
-	$zip = new ZipArchive();
-	$zip->open($file, ZipArchive::CREATE | ZipArchive::OVERWRITE); //以新建/重写模式打开 ZIP
+	$zip = new \ZipArchive();
+	$zip->open($file, \ZipArchive::CREATE | \ZipArchive::OVERWRITE); //以新建/重写模式打开 ZIP
 	$ok = false;
 	if(is_dir($path)){ //压缩文件夹
 		foreach(array2path(xscandir($path)) as $file){
@@ -264,7 +264,7 @@ function zip_compress($path, $file){
  * @return bool
  */
 function zip_extract($file, $path){
-	$zip = new ZipArchive();
+	$zip = new \ZipArchive();
 	$ok = $zip->open($file) ? @$zip->extractTo($path) : false;
 	$zip->close();
 	return $ok;
@@ -1212,9 +1212,8 @@ endif;
  */
 function doc($name = '', $return = false){
 	$name = $_name = $name ?: __function__;
-	$class = '';
 	$isClass = false; //是否为类
-	if($isMd = strpos($name, '::')){ //判断是否为方法
+	if($isMd = strpos($name, '::')){ //判断是否为类或者方法
 		$class = substr($name, 0, $isMd);
 		$mdName = substr($name, $isMd+2);
 		if($mdName){
@@ -1243,68 +1242,56 @@ function doc($name = '', $return = false){
 		$name = substr($name, $hasNs+1);
 	}
 	if($isMd || $isClass){ //处理类和类方法
-		$i = strpos($name, '::');
-		$class = substr($name, 0, $i);
-		$name = $mdName;
-		$classReg1 = '/class[\s]+'.ltrim($class, '\\').'/i'; //类定义格式
-		$classReg2 = '/[\s]+extends[\s]+([\\\_a-zA-Z0-9]*)/i'; //继承
-	}
-	$doc = '';
-	$includes = get_included_files(); //获取引入的所有文件
-	$classReg = "/(\/\*\*[\s\S]*\/)[\r\n\sa-zA-Z]+class[\s]+".ltrim($class, '\\').'[\s\S]*\{/iU'; //类定义格式
-	$funcReg = "/(\/\*\*[\s\S]*\/)[\r\n\sa-zA-Z]+function[\s]+".ltrim($name, '\\').'\([\s\S]*\)/iU'; //函数定义格式
-	$getDoc = function($code) use ($classReg, $funcReg, $isClass, $isMd, $hasNs, &$getDoc){
-		if((!$isClass && preg_match($funcReg, $code, $match)) || ($isClass && preg_match($classReg, $code, $match))){
-			$declare = $match[0]; //定义函数/类/类方法的代码（包括 PHPDoc）
-			$end = strrpos($declare, '*/');
-			$declare = trim(substr($declare, $end+2), "\r\n"); //定义语句
-			if(!$isMd && !$isClass){
+		$ref = new \ReflectionClass($class);
+		if(!$mdName)
+			$doc = $ref->getDocComment(); //获取类文档
+		else
+			$doc = $ref->getMethod($mdName)->getDocComment(); //获取方法文档
+	}else{
+		$funcReg = "/(\/\*\*[\s\S]*\/)[\r\n]+function[\s]+".ltrim($name, '\\').'\([\s\S]*\)/iU'; //函数定义格式
+		$getDoc = function($code) use ($funcReg, $hasNs, &$getDoc){
+			if(preg_match($funcReg, $code, $match)){
+				$declare = $match[0]; //定义函数/类/类方法的代码（包括 PHPDoc）
+				$end = strrpos($declare, '*/');
+				$declare = trim(substr($declare, $end+2), "\r\n"); //定义语句
 				if((!$hasNs && stripos($declare, 'function') !== 0) || ($hasNs && stripos(trim($declare), 'function') !== 0)){
 					$code = substr($code, strpos($code, $declare)+strlen($declare));
 					return $getDoc($code);
 				}
+				$match = $match[1];
+				$start = strrpos($match, '/**'); //定位到文档开始位置
+				return substr($match, $start);
 			}
-			$match = $match[1];
-			$start = strrpos($match, '/**'); //定位到文档开始位置
-			$doc = substr($match, $start);
-			$docs = explode("\n", $doc);
-			foreach ($docs as &$line) {
-				$line = trim($line); //去除文档每一行两端的空格
-				if($line[0] == '*') $line = ' '.$line; //恢复对齐
+		};
+		$includes = get_included_files(); //获取引入的所有文件
+		foreach ($includes as $file) {
+			$inZip = stripos($file, '.zip#'); //是否为 ZIP 中的文件
+			$code = file_get_contents($inZip ? 'zip://'.$file : $file); //文件内容
+			if($hasNs){ //处理命名空间
+				if(!preg_match($nsReg, $code, $match))
+					continue;
+				else
+					$code = strstr($code, $match[0]); //定位到命名空间位置
 			}
-			return join("\n", $docs);
+			$doc = $getDoc($code);
+			if($doc) break;
 		}
-	};
-	foreach ($includes as $file) {
-		$inZip = stripos($file, '.zip#'); //是否为 ZIP 中的文件
-		$code = file_get_contents($inZip ? 'zip://'.$file : $file); //文件内容
-		if($hasNs){ //处理命名空间
-			if(!preg_match($nsReg, $code, $match))
-				continue;
-			else
-				$code = strstr($code, $match[0]); //定位到命名空间位置
-		}
-		if($isMd || $isClass){ //处理类方法
-			if(!preg_match($classReg1, $code, $match))
-				continue;
-			elseif($isMd){
-				$code = strstr($code, $match[0]); //定位到类位置
-				if(preg_match($classReg2, strstr($code, "\n", true), $match)){
-					$parent = $match[1]; //父类
-				}
-			}
-		}
-		$doc = $getDoc($code);
-		if($doc) break;
 	}
-	if(!$doc && isset($parent)){
-		$doc = doc($parent.'::'.$mdName, true); //从父类获取方法文档
+	if($doc){
+		$docs = explode("\n", $doc);
+		foreach ($docs as &$line) {
+			$line = str_replace("\t", '    ', trim($line)); //修正文档格式
+			if($line[0] == '*') $line = ' '.$line; //恢复对齐
+		}
+		$doc = join("\n", $docs);
 	}
 	if($return){
 		return $doc;
 	}else{
-		if($doc && is_browser() && !is_ajax()){
-			$doc = '<pre>'.$doc.'</pre>';
+		if(function_exists('is_browser') && function_exists('is_ajax')){
+			if($doc && is_browser() && !is_ajax()){
+				$doc = '<pre>'.$doc.'</pre>';
+			}
 		}
 		echo $doc ?: ($isMd ? "Method $_name()" : ($isClass ? "Class ".rtrim($_name, '::') : "Function $_name()"))." doesn't have a documentation.";
 	}

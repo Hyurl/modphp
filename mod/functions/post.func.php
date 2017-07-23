@@ -35,16 +35,20 @@ add_hook('post.get.set_comment_counts', function($data){
 }, false);
 
 /** 分割搜索字符串 */
-add_hook('post.get.before.split_keyword', function($arg){
-	if(!empty($arg['keyword'])){
-		if(strpos($arg['keyword'], '，')){
+add_hook('post.get.before.split_keywords', function($arg){
+	if(isset($arg['keyword']) && !isset($arg['keywords'])){
+		$arg['keywords'] = $arg['keyword']; //将 keyword 修改为 keywords，以兼容未来版本
+		unset($arg['keyword']);
+	}
+	if(!empty($arg['keywords'])){
+		if(strpos($arg['keywords'], '，')){
 			$sep = '，'; //以中文逗号分割
-		}elseif(strpos($arg['keyword'], ',')){
+		}elseif(strpos($arg['keywords'], ',')){
 			$sep = ','; //以英文逗号分割
 		}else{
 			$sep = ' '; //以空格分割
 		}
-		$arg['keyword'] = explode($sep, $arg['keyword']);
+		$arg['keywords'] = explode($sep, $arg['keywords']);
 		return $arg;
 	}
 }, false);

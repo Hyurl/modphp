@@ -433,11 +433,11 @@ function is_assoc($input){
  * @return string        合并后的字符串
  */
 function implode_assoc($assoc, $sep, $sep2){
-	$arr = array();
-	foreach ($assoc as $key => $value){
-		$arr[] = $key.$sep.$value;
-	}
-	return implode($sep2, $arr);
+    $arr = array();
+    foreach ($assoc as $key => $value){
+        $arr[] = $key.($value ? $sep.$value : '');
+    }
+    return implode($sep2, $arr);
 }
 
 /**
@@ -448,16 +448,16 @@ function implode_assoc($assoc, $sep, $sep2){
  * @return array        分割后的关联数组
  */
 function explode_assoc($str, $sep, $sep2){
-	if(!$str) return array();
-	$arr = explode($sep, $str);
-	$assoc = array();
-	foreach ($arr as $value){
-		$i = strpos($value, $sep2);
-		$k = substr($value, 0, $i);
-		$v = substr($value, $i+1) ?: '';
-		$assoc[$k] = $v;
-	}
-	return $assoc;
+    if(!$str) return array();
+    $arr = explode($sep, $str);
+    $assoc = array();
+    foreach ($arr as $value){
+        $i = strpos($value, $sep2);
+        $k = $i ? substr($value, 0, $i) : $value;
+        $v = $i ? substr($value, $i+1) : '';
+        $assoc[$k] = $v;
+    }
+    return $assoc;
 }
 
 /**

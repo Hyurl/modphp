@@ -1,4 +1,3 @@
-#!/usr/bin/env php
 <?php
 // ModPHP 压缩包名称，如果设置，ModPHP 将从 ZIP 中加载内核
 defined('MOD_ZIP') or define('MOD_ZIP', '');

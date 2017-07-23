@@ -533,7 +533,7 @@ class mod{
 	 * search() 搜索记录，使用模糊查询，需要配置模块的搜索字段
 	 * @static
 	 * @param  array  $arg  请求参数，可以包含所有的数据表字段，以及下面这些额外的参数：
-	 *                      [keyword] => 查询的关键字
+	 *                      [keywords] => 查询的关键字
 	 *                      [orderby] => 按指定的字段排序，默认主键
 	 *                      [sequence] => 排序方式, asc 升序(默认)，desc 降序，rand 随机
 	 *                      [limit] => 单页获取上限，默认 10
@@ -544,18 +544,22 @@ class mod{
 		$tb = static::TABLE;
 		if(!$tb) return error(lang('mod.methodDenied', __method__));
 		$default = array(
-			'keyword'=>'',
+			'keywords'=>'',
 			'orderby'=>static::PRIMKEY,
 			'sequence'=>'asc',
 			'limit'=>10,
 			'page'=>1
 			);
+		if(isset($arg['keyword']) && !isset($arg['keywords'])){
+			$arg['keywords'] = $arg['keyword']; //将 keyword 修改为 keywords
+			unset($arg['keyword']);
+		}
 		$arg = array_merge($default, $arg);
 		if(!config($tb.'.keys.search'))
 			return error(lang('mod.noSearchKeys', lang($tb.'.label')));
-		if(!$arg['keyword'])
+		if(!$arg['keywords'])
 			return error(lang('mod.missingArguments'));
-		$extra['keyword'] = $arg['keyword'];
+		$extra['keywords'] = $arg['keywords'];
 		do_hooks($tb.'.get.before', $arg); //执行记录获取前挂钩函数
 		if(error()) return error();
 		//确保参数合法
@@ -576,12 +580,12 @@ class mod{
 				$where[$tb.'.'.$k] = $extra[$k] = trim($v, '{}'); //设置 where 条件
 			}
 		}
-		$keyword = $arg['keyword'];
-		if(is_string($keyword)) $keyword = array($keyword); //始终使用多关键字查询
+		$keywords = $arg['keywords'];
+		if(is_string($keywords)) $keywords = array($keywords); //始终使用多关键字查询
 		$a = $b = array();
 		$keys = explode('|', str_replace(' ', '', config($tb.'.keys.search')));
 		$count = count($keys);
-		foreach($keyword as $v){
+		foreach($keywords as $v){
 			$v = str_replace('%', '[%]', $v); //转义 %
 			for($i=0; $i < $count; $i++){ 
 				$a[$i][] = "`{$keys[$i]}` LIKE ".database::quote("%{$v}%"); //组合 like 条件

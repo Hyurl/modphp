@@ -521,7 +521,7 @@ function is_mobile($agent = ''){
  * @return boolean
  */
 function is_ajax(){
-	return is_browser() && isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && strtolower($_SERVER["HTTP_X_REQUESTED_WITH"]) == 'xmlhttprequest';
+	return is_browser() && (isset($_SERVER["HTTP_X_REQUESTED_WITH"]) && strtolower($_SERVER["HTTP_X_REQUESTED_WITH"]) == 'xmlhttprequest' || is_json_request() || stripos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
 }
 
 /**
@@ -714,6 +714,7 @@ if(extension_loaded('curl')):
  *                              [cookie] => 发送 Cookie, 支持关联数组、索引数组和 Cookie 字符串
  *                              [referer] => 来路页面
  *                              [userAgent] => 客户端信息
+ *                              [contentType] => 请求主体的 mime 类型
  *                              [requestHeaders] => 请求头部信息，支持索引数组和关联数组
  *                              [followLocation] => 跟随跳转，设置数值为最大跳转次数，默认 0
  *                              [autoReferer] => 跳转时自动设置来路页面，默认 true
@@ -746,6 +747,7 @@ function curl($options, $wait = false){
 		'cookie'=>'',
 		'referer'=>'',
 		'userAgent'=>'curl/'.$curl['version'],
+		'contentType'=>'',
 		'requestHeaders'=>array(),
 		'followLocation'=>0,
 		'autoReferer'=>true,
@@ -794,6 +796,8 @@ function curl($options, $wait = false){
 						}
 					}
 				}
+			}elseif($contentType){
+				$requestHeaders['Content-Type'] = $contentType;
 			}
 			curl_setopt($ch[$i], CURLOPT_POST, 1);
 			curl_setopt($ch[$i], CURLOPT_POSTFIELDS, $data);
@@ -1452,4 +1456,43 @@ function load_config($file){
  */
 function path_starts_with($path, $find){
 	return PHP_OS == 'WINNT' ? stripos($path, $find) === 0 : strpos($path, $find) === 0;
+}
+
+/**
+ * is_xml_request() 判断客户端是否使用 XML 进行请求
+ * @return boolean
+ */
+function is_xml_request($type = 'text/xml'){
+	return !empty($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], $type) !== false;
+}
+
+/**
+ * is_json_request() 判断客户端是否使用 json 请求
+ * @return boolean
+ */
+function is_json_request(){
+	return is_xml_request('application/json');
+}
+
+/**
+ * handle_xml_request() 处理 XML 请求
+ * @return null
+ */
+function handle_xml_request($type = 'text/xml'){
+	if(is_post() && !$_POST && is_xml_request($type)){
+		$data = file_get_contents('php://input');
+		$data = $type == 'text/xml' ? @xml2array($data) : @json_decode($data, true);
+		if($data){
+			$_POST = $data;
+			$_REQUEST = array_merge($_REQUEST, $_POST);
+		}
+	}
+}
+
+/**
+ * handle_json_request() 处理 json 请求
+ * @return null
+ */
+function handle_json_request(){
+	return handle_xml_request('application/json');
 }

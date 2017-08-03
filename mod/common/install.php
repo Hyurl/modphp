@@ -51,15 +51,12 @@
 		btn.textContent = text+'中...';
 		btn.setAttribute('disabled', 'disabled');
 		if(typeof data == 'object'){
-			for(var i in data){
-				str += '&'+encodeURIComponent(i)+'='+encodeURIComponent(data[i]);
-			}
-			str = str.substring(1);
+			str = JSON.stringify(data);
 		}else{
 			str = data;
 		}
 		xhr.open('POST', 'mod.php?mod::'+act, true);
-		xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+		xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
 		xhr.setRequestHeader("X-Requested-With", "XMLHttpRequest");
 		xhr.onload = xhr.onerror = function(){
 			var result = xhr.responseText;

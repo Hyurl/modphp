@@ -84,7 +84,8 @@ final class file extends mod{
 			$savepath = substr($savepath, 0, -strlen($ext)).'_'.$md5Name.$ext; //获取唯一文件名
 			$path = __ROOT__.$savepath;
 		}
-		$path = str_replace('\\', '/', realpath($path));
+		if($append)
+			$path = str_replace('\\', '/', realpath($path));
 		if(!file_exists($path) || $append){
 			if($append && !path_starts_with($path, __ROOT__.$uploadPath))
 				error(lang('mod.permissionDenied')); //仅允许在上传目录中的文件后追加数据

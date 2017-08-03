@@ -5,7 +5,7 @@
 /** 定义常量 */
 define('INIT_MEMORY', memory_get_usage()); //初始内存占用
 define('INIT_TIME', microtime(true)); //初始运行时间
-define('MOD_VERSION', '2.3.1'); //ModPHP 版本
+define('MOD_VERSION', '2.3.3'); //ModPHP 版本
 defined('MOD_ZIP') or define('MOD_ZIP', ''); //ModPHP 压缩文件夹
 defined('STDIN') or define('STDIN', fopen('php://stdin','r')); //基本输出
 defined('STDOUT') or define('STDOUT', fopen('php://stdout','w')); //基本输出
@@ -251,9 +251,15 @@ function init(){
 
 /** 执行客户端请求 */
 if(is_agent()){
+	if(is_xml_request())
+		handle_xml_request(); //处理 XML 请求
+	elseif(is_json_request())
+		handle_json_request(); //处理 JSON 请求
+	elseif(__SCRIPT__ == 'mod.php')
+		conv_request_vars(); //转换表单请求参数
+
 	if(__SCRIPT__ == 'mod.php'){ //通过 URL 传参的方式执行类方法
 		if(is_403() || is_404() || is_500()) goto display; //HTTP 错误跳转到显示页面
-		conv_request_vars(); //转换表单请求参数
 		$reqMd = $_SERVER['REQUEST_METHOD'];
 		$act = $_GET['act'];
 		if(!is_get() && !is_post()) $reqMd = 'REQUEST';

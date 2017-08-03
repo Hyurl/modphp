@@ -1,4 +1,16 @@
 【ModPHP 更新日志】
+版本 2.3.3 (2017-8-3 21:39)
+1. 修复文件上传 BUG。
+
+版本 2.3.2 (2017-7-29 11:35)
+1. 支持客户端使用 JSON 和 XML 进行 HTTP 请求。
+2. 新增以下函数用户检测和处理 JSON 与 XML 请求：
+   is_xml_request() 判断是否为 XML 请求；
+   is_json_request() 判断是否为 JSON 请求；
+   handle_xml_request() 处理 XML 请求；
+   handle_json_request() 处理 JSON 请求。
+3. curl() 函数支持设置一个 contentType 选项，标识所发送的请求主体内容的 Mime 类型。
+
 版本 2.3.1 (2017-7-24 00:10)
 1. 修复 explode_assoc() 函数的 BUG。
 2. Mod::search() 方法中，将查询的 keyword 参数修改为 keywords，前者依旧可用，但不再推荐。

@@ -586,7 +586,7 @@ class mod{
 		$keys = explode('|', str_replace(' ', '', config($tb.'.keys.search')));
 		$count = count($keys);
 		foreach($keywords as $v){
-			$v = str_replace('%', '[%]', $v); //转义 %
+			$v = str_replace(array('\\', '&'), array('\\\\', '\%'), $v); //转义 %
 			for($i=0; $i < $count; $i++){ 
 				$a[$i][] = "`{$keys[$i]}` LIKE ".database::quote("%{$v}%"); //组合 like 条件
 			}

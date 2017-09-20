@@ -814,7 +814,7 @@ function register_module_functions($module = ''){
 					_'.$module.'("pages", $result["pages"]);
 					_'.$module.'("orderby", $result["orderby"]);
 					_'.$module.'("sequence", $result["sequence"]);
-					if($act == "search") _'.$module.'("keyword", $result["keyword"]);
+					if($act == "search") _'.$module.'("keywords", $result["keywords"]);
 				}
 				$data = $result["data"][$i];
 				$i++;

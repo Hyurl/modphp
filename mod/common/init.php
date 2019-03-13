@@ -61,7 +61,6 @@ spl_autoload_register(function($class){
 $installed = config('mod.installed');
 $database = database();
 
-set_content_type('text/html'); //设置默认文档类型
 ini_set('default_charset', 'UTF-8'); //设置默认脚本编码
 ini_set('user_agent', 'ModPHP/'.MOD_VERSION); //设置 PHP 远程请求客户端
 date_default_timezone_set(config('mod.timezone')); //设置默认时区
@@ -272,6 +271,17 @@ if(is_agent()){
 		exit(json_encode($result)); //输出 JSON 结果
 	}elseif(__SCRIPT__ == 'index.php'){ /** 载入模板文件 */
 		display:
+		$mime = load_config_file("mime.ini");
+		$ext = pathinfo(display_file(), PATHINFO_EXTENSION);
+		$ext = $ext ? ".".$ext : "";
+
+		//设置默认文档类型
+		if (in_array($ext, $mime)) {
+			set_content_type('text/html');
+		} else if ($ext) {
+			set_content_type($mime[$ext]);
+		}
+
 		do_hooks('mod.template.load'); //在载入模板前执行挂钩回调函数
 		//错误处理
 		if(is_403()) report_403();
